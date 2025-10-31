@@ -1,6 +1,17 @@
 import React, { useState } from 'react';
-// Use Vite env or fallback to local backend
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+// Use Vite env or fallback to local backend. Normalize common paste mistakes
+const _rawApiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+let API_BASE = _rawApiBase;
+try {
+  // Extract the first http(s) URL if the value accidentally contains the URL twice
+  const m = String(_rawApiBase).match(/https?:\/\/[^\s'"]+/i);
+  if (m && m[0]) API_BASE = m[0];
+  // Trim trailing slash for consistency
+  API_BASE = API_BASE.replace(/\/$/, '');
+} catch (e) {
+  API_BASE = _rawApiBase;
+}
+
 import { FileText, Download, User, Phone, MapPin, Calendar, Users, GraduationCap, Printer } from 'lucide-react';
 
 const HostelAdmissionForm = () => {
