@@ -1,64 +1,76 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const admin = require('firebase-admin');
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import admin from 'firebase-admin';
+import bodyParser from 'body-parser';
+import fs from 'fs';
+import path from 'path';
 
-// Initialize Firebase Admin SDK.
-// Support three methods (in this order):
-// 1) GOOGLE_SERVICE_ACCOUNT_BASE64 (base64-encoded JSON)
-// 2) GOOGLE_SERVICE_ACCOUNT (raw JSON string)
-// 3) GOOGLE_APPLICATION_CREDENTIALS (path to json file; handled by ADC)
-// 4) fallback to local backend/serviceAccountKey.json (development only)
-let initialized = false;
+dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: '20mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '20mb' }));
+
+// -----------------------
+// Firebase initialization (support multiple env options)
+// -----------------------
+let firebaseInitialized = false;
 try {
   if (process.env.GOOGLE_SERVICE_ACCOUNT_BASE64) {
-    const decoded = Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8');
-    const serviceAccount = JSON.parse(decoded);
+    console.log('GOOGLE_SERVICE_ACCOUNT_BASE64 found — initializing Firebase');
+    const buf = Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_BASE64, 'base64');
+    const serviceAccount = JSON.parse(buf.toString('utf8'));
     admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    console.log('Firebase initialized from GOOGLE_SERVICE_ACCOUNT_BASE64');
-    initialized = true;
+    firebaseInitialized = true;
   } else if (process.env.GOOGLE_SERVICE_ACCOUNT) {
+    console.log('GOOGLE_SERVICE_ACCOUNT found — initializing Firebase');
     const serviceAccount = typeof process.env.GOOGLE_SERVICE_ACCOUNT === 'string'
       ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT)
       : process.env.GOOGLE_SERVICE_ACCOUNT;
     admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    console.log('Firebase initialized from GOOGLE_SERVICE_ACCOUNT');
-    initialized = true;
+    firebaseInitialized = true;
   } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    // Let Google ADC pick up the credentials from the file path
+    console.log('GOOGLE_APPLICATION_CREDENTIALS set — initializing Firebase using ADC');
     admin.initializeApp();
-    console.log('Firebase initialized using GOOGLE_APPLICATION_CREDENTIALS (ADC)');
-    initialized = true;
+    firebaseInitialized = true;
+  } else {
+    // try local file (development)
+    const localPath = path.resolve('./backend/serviceAccountKey.json');
+    if (fs.existsSync(localPath)) {
+      console.log('Local serviceAccountKey.json found — initializing Firebase (dev)');
+      const serviceAccount = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+      firebaseInitialized = true;
+    } else {
+      const altLocal = path.resolve('./serviceAccountKey.json');
+      if (fs.existsSync(altLocal)) {
+        console.log('Local serviceAccountKey.json found at repo root — initializing Firebase (dev)');
+        const serviceAccount = JSON.parse(fs.readFileSync(altLocal, 'utf8'));
+        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+        firebaseInitialized = true;
+      }
+    }
   }
 } catch (err) {
-  console.error('Failed to initialize Firebase from environment variables:', err);
+  console.error('Failed to initialize Firebase Admin SDK:', err);
 }
 
-if (!initialized) {
-  try {
-    const serviceAccount = require('./serviceAccountKey.json');
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    console.log('Firebase initialized from local serviceAccountKey.json');
-    initialized = true;
-  } catch (err) {
-    console.error('Failed to initialize Firebase Admin SDK. Provide credentials via environment variables or place serviceAccountKey.json in the backend folder.', err);
-    process.exit(1);
-  }
+if (!firebaseInitialized) {
+  console.error('Firebase Admin SDK was not initialized. Set GOOGLE_SERVICE_ACCOUNT_BASE64 or GOOGLE_APPLICATION_CREDENTIALS or place serviceAccountKey.json in backend/');
+  // Do not exit — allow the server to run in a degraded mode for debugging, but any Firestore calls will fail.
 }
 
-const db = admin.firestore();
+const db = admin.firestore ? admin.firestore() : null;
 
-const app = express();
-app.use(cors());
-app.use(bodyParser.json({ limit: '10mb' }));
-
-const PORT = process.env.PORT || 5000;
-
-// Health
+// -----------------------
+// Routes: Students CRUD
+// -----------------------
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
-// Create student
 app.post('/api/students', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
   try {
     const data = req.body || {};
     data.createdAt = admin.firestore.FieldValue.serverTimestamp();
@@ -71,8 +83,8 @@ app.post('/api/students', async (req, res) => {
   }
 });
 
-// Get all students
 app.get('/api/students', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
   try {
     const snap = await db.collection('students').orderBy('createdAt', 'desc').get();
     const students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -83,8 +95,8 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
-// Get student by id
 app.get('/api/students/:id', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
   try {
     const { id } = req.params;
     const doc = await db.collection('students').doc(id).get();
@@ -96,8 +108,8 @@ app.get('/api/students/:id', async (req, res) => {
   }
 });
 
-// Update student
 app.put('/api/students/:id', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
   try {
     const { id } = req.params;
     const data = req.body || {};
@@ -111,8 +123,8 @@ app.put('/api/students/:id', async (req, res) => {
   }
 });
 
-// Delete student
 app.delete('/api/students/:id', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
   try {
     const { id } = req.params;
     await db.collection('students').doc(id).delete();
@@ -123,6 +135,12 @@ app.delete('/api/students/:id', async (req, res) => {
   }
 });
 
+// Fallback for undefined routes (helps show clear errors instead of HTML)
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found', path: req.originalUrl });
+});
+
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Backend server listening on http://localhost:${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });
