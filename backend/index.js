@@ -1,96 +1,70 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const admin = require('firebase-admin');
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import admin from "firebase-admin";
+import bodyParser from "body-parser";
 
-// Initialize Firebase Admin SDK using service account key in this folder
-try {
-  const serviceAccount = require('./serviceAccountKey.json');
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
-} catch (err) {
-  console.error('Failed to initialize Firebase Admin SDK. Make sure serviceAccountKey.json exists and is valid.', err);
-  process.exit(1);
-}
-
-const db = admin.firestore();
+dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json({ limit: '10mb' }));
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
+// =======================
+// 🔥 Firebase Initialization
+// =======================
+try {
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_BASE64) {
+    console.log("✅ GOOGLE_SERVICE_ACCOUNT_BASE64 variable found. Decoding...");
+
+    const serviceAccountBuffer = Buffer.from(
+      process.env.GOOGLE_SERVICE_ACCOUNT_BASE64,
+      "base64"
+    );
+    const serviceAccount = JSON.parse(serviceAccountBuffer.toString("utf-8"));
+
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+
+    console.log("✅ Firebase initialized from GOOGLE_SERVICE_ACCOUNT_BASE64");
+  } else {
+    console.warn("⚠️ GOOGLE_SERVICE_ACCOUNT_BASE64 not found — trying local file...");
+
+    admin.initializeApp({
+      credential: admin.credential.cert("./serviceAccountKey.json"),
+    });
+
+    console.log("✅ Firebase initialized from serviceAccountKey.json");
+  }
+} catch (err) {
+  console.error("❌ Failed to initialize Firebase Admin SDK:", err);
+  console.log(
+    "🔍 GOOGLE_SERVICE_ACCOUNT_BASE64 length:",
+    process.env.GOOGLE_SERVICE_ACCOUNT_BASE64
+      ? process.env.GOOGLE_SERVICE_ACCOUNT_BASE64.length
+      : 0
+  );
+}
+
+// =======================
+// 🔗 Example Routes
+// =======================
+app.get("/", (req, res) => {
+  res.send("🚀 Backend is running successfully!");
+});
+
+// Example protected route (optional)
+app.post("/api/test", (req, res) => {
+  res.json({ message: "Test endpoint working fine!" });
+});
+
+// =======================
+// ⚙️ Server Start
+// =======================
 const PORT = process.env.PORT || 5000;
 
-// Health
-app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
-
-// Create student
-app.post('/api/students', async (req, res) => {
-  try {
-    const data = req.body || {};
-    data.createdAt = admin.firestore.FieldValue.serverTimestamp();
-    const ref = await db.collection('students').add(data);
-    const snap = await ref.get();
-    res.status(201).json({ id: ref.id, data: snap.data() });
-  } catch (err) {
-    console.error('POST /api/students error', err);
-    res.status(500).json({ error: String(err) });
-  }
-});
-
-// Get all students
-app.get('/api/students', async (req, res) => {
-  try {
-    const snap = await db.collection('students').orderBy('createdAt', 'desc').get();
-    const students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    res.json(students);
-  } catch (err) {
-    console.error('GET /api/students error', err);
-    res.status(500).json({ error: String(err) });
-  }
-});
-
-// Get student by id
-app.get('/api/students/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const doc = await db.collection('students').doc(id).get();
-    if (!doc.exists) return res.status(404).json({ error: 'Not found' });
-    res.json({ id: doc.id, ...doc.data() });
-  } catch (err) {
-    console.error('GET /api/students/:id error', err);
-    res.status(500).json({ error: String(err) });
-  }
-});
-
-// Update student
-app.put('/api/students/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = req.body || {};
-    data.updatedAt = admin.firestore.FieldValue.serverTimestamp();
-    await db.collection('students').doc(id).set(data, { merge: true });
-    const doc = await db.collection('students').doc(id).get();
-    res.json({ id: doc.id, ...doc.data() });
-  } catch (err) {
-    console.error('PUT /api/students/:id error', err);
-    res.status(500).json({ error: String(err) });
-  }
-});
-
-// Delete student
-app.delete('/api/students/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    await db.collection('students').doc(id).delete();
-    res.json({ id });
-  } catch (err) {
-    console.error('DELETE /api/students/:id error', err);
-    res.status(500).json({ error: String(err) });
-  }
-});
-
 app.listen(PORT, () => {
-  console.log(`Backend server listening on http://localhost:${PORT}`);
+  console.log(`✅ Server is running on port ${PORT}`);
 });
