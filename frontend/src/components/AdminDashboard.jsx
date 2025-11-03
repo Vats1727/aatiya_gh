@@ -391,20 +391,38 @@ const AdminDashboard = () => {
 
   const handleDownload = async (id) => {
     try {
-      // Request server-rendered PDF and download it
-      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
-      if (!response.ok) throw new Error('Failed to fetch PDF');
+      // First, get the student data
+      const studentRes = await fetch(`${API_BASE}/api/students/${id}`);
+      if (!studentRes.ok) throw new Error('Failed to fetch student data');
+      const studentData = await studentRes.json();
+      
+      // Then generate and download the PDF
+      const response = await fetch(`${API_BASE}/api/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(studentData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to generate PDF');
+      }
+      
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `student-${id}.pdf`;
+      a.download = `${studentData.studentName || 'student'}-${id}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (err) {
-      setError(err.message);
+      console.error('Download error:', err);
+      setError(err.message || 'Failed to download PDF');
     }
   };
 
