@@ -11,6 +11,7 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -406,18 +407,12 @@ const AdminDashboard = () => {
 
   const handleDownload = async (id) => {
     try {
-      // Request server-rendered PDF and download it
-      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
-      if (!response.ok) throw new Error('Failed to fetch PDF');
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `student-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
+      // Fetch student record and generate client-side PDF (same logic as Print)
+      const res = await fetch(`${API_BASE}/api/students/${id}`);
+      if (!res.ok) throw new Error('Failed to fetch student data');
+      const student = await res.json();
+      // Use the same client-side generator as handlePrint to download
+      await handlePrint(student);
     } catch (err) {
       setError(err.message);
     }
@@ -708,8 +703,23 @@ const AdminDashboard = () => {
               '@media (min-width: 768px)': {
                 display: 'flex',
               },
+              alignItems: 'center'
             }}
           >
+            <input
+              type="search"
+              aria-label="Search students"
+              placeholder="Search by name, contact or district"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                padding: '0.5rem 0.75rem',
+                borderRadius: '0.5rem',
+                border: '1px solid #e5e7eb',
+                minWidth: '220px',
+                marginRight: '0.5rem'
+              }}
+            />
             <button 
               style={{ ...styles.button, ...styles.addButton }} 
               onClick={handleAddNew}
@@ -727,6 +737,12 @@ const AdminDashboard = () => {
 
         {error && <div style={styles.error} role="alert">{error}</div>}
 
+        {/* Apply search filter */}
+        {/** compute visible students based on searchQuery **/}
+        {
+          (() => {})()
+        }
+        
         {/* Desktop Table View */}
         <div style={styles.tableWrapper}>
           <table style={styles.table}>
@@ -741,7 +757,13 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {students.map((student, idx) => (
+              {(() => {
+                const q = String(searchQuery || '').trim().toLowerCase();
+                const visibleStudents = students.filter(s => {
+                  if (!q) return true;
+                  return [s.studentName, s.mobile1, s.district].some(f => (String(f || '').toLowerCase().includes(q)));
+                });
+                return visibleStudents.map((student, idx) => (
                 <tr key={`desktop-${student.id}`}>
                   <td style={styles.td}>{idx + 1}</td>
                   <td style={styles.td}>{student.studentName}</td>
@@ -756,14 +778,21 @@ const AdminDashboard = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ));
+              })()}
             </tbody>
           </table>
         </div>
 
         {/* Mobile Card View */}
         <div style={{ '@media (min-width: 769px)': { display: 'none' } }}>
-          {students.map((student, idx) => (
+          {(() => {
+            const q = String(searchQuery || '').trim().toLowerCase();
+            const visibleStudents = students.filter(s => {
+              if (!q) return true;
+              return [s.studentName, s.mobile1, s.district].some(f => (String(f || '').toLowerCase().includes(q)));
+            });
+            return visibleStudents.map((student, idx) => (
             <div key={`mobile-${student.id}`} style={styles.mobileCard}>
               <div style={styles.mobileCardRow}>
                 <span style={styles.mobileLabel}>#</span>
@@ -791,7 +820,8 @@ const AdminDashboard = () => {
                 {renderActionButtons(student)}
               </div>
             </div>
-          ))}
+            ));
+          })()}
         </div>
       </div>
     </div>
