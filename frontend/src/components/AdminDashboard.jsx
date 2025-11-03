@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Edit, Check, X, Trash, Menu, Printer } from 'lucide-react';
+import { Download, Edit, Check, X, Trash, Menu } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
@@ -652,16 +652,7 @@ const AdminDashboard = () => {
       >
         <Download size={16} color="white" />
       </button>
-      <button
-        style={{ ...styles.actionButton, background: '#06b6d4' }}
-        onClick={(e) => {
-          e.stopPropagation();
-          handlePrint(student);
-        }}
-        aria-label="Print"
-      >
-        <Printer size={16} color="white" />
-      </button>
+      
       <button
         style={{ ...styles.actionButton, background: '#ef4444' }}
         onClick={(e) => {
@@ -711,14 +702,7 @@ const AdminDashboard = () => {
               >
                 Logout
               </button>
-              <button 
-                style={styles.menuButton} 
-                onClick={toggleMenu}
-                aria-expanded={isMenuOpen}
-                aria-label="Toggle menu"
-              >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
+              
             </div>
           </div>
           
