@@ -460,7 +460,6 @@ const AdminDashboard = () => {
   }
 
   return (
-<<<<<<< HEAD
     <div style={applyResponsiveStyles(styles.container)}>
       <div style={applyResponsiveStyles(styles.content)}>
         <div style={applyResponsiveStyles(styles.header)}>
@@ -480,29 +479,6 @@ const AdminDashboard = () => {
             >
               Logout
             </button>
-=======
-    <div style={styles.container}>
-      <div style={styles.content}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>Admin Dashboard</h1>
-          <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-            <input
-              placeholder="Search by name or mobile"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={styles.searchInput}
-            />
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={styles.filterSelect}>
-              <option value="all">All statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-          <div>
-            <button style={styles.addButton} onClick={handleAddNew}>Add New Student</button>
-            <button style={styles.logoutButton} onClick={handleLogout}>Logout</button>
->>>>>>> dd84d7ed103cd6d4df77434ff18a191ee2da23ad
           </div>
         </div>
 
@@ -609,7 +585,6 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
