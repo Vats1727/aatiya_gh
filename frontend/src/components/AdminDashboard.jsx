@@ -6,6 +6,9 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -324,7 +327,8 @@ const AdminDashboard = () => {
         throw new Error('Failed to fetch students');
       }
       const data = await response.json();
-      setStudents(data);
+      setAllStudents(data || []);
+      setStudents(data || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -497,6 +501,29 @@ const AdminDashboard = () => {
             {error}
           </div>
         )}
+
+        {/* Toolbar: search and status filter */}
+        <div style={applyResponsiveStyles(styles.toolbar)}>
+          <input
+            aria-label="Search students"
+            placeholder="Search by name or mobile"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={applyResponsiveStyles(styles.searchInput)}
+            type="search"
+          />
+          <select
+            aria-label="Filter by status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={applyResponsiveStyles(styles.filterSelect)}
+          >
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
 
         <div style={applyResponsiveStyles(styles.tableContainer)}>
           <table style={{ 
