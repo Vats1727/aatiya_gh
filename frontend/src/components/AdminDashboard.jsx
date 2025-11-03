@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Edit, Check, X, Trash, Menu, X as CloseIcon } from 'lucide-react';
+import { Download, Edit, Check, X, Trash, Menu } from 'lucide-react';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -286,7 +286,7 @@ const AdminDashboard = () => {
       title: {
         fontSize: '1.125rem',
       },
-      headerActions {
+      headerActions: {
         flexDirection: 'column',
         gap: '0.5rem',
       },
@@ -312,7 +312,7 @@ const AdminDashboard = () => {
         textAlign: 'left',
         fontSize: '0.9375rem',
       },
-      mobileActions {
+      mobileActions: {
         gap: '0.25rem',
       },
       actionButton: {
@@ -531,7 +531,7 @@ const AdminDashboard = () => {
               aria-expanded={isMenuOpen}
               aria-label="Toggle menu"
             >
-              {isMenuOpen ? <CloseIcon size={24} /> : <Menu size={24} />}
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
           
