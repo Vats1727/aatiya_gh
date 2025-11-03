@@ -147,43 +147,45 @@ const AdminDashboard = () => {
 
   const handleStatusChange = async (id, status) => {
     try {
-      const response = await fetch(`${API_BASE}/api/students/${id}/status`, {
+      // Use existing PUT /api/students/:id to update status (merge)
+      const response = await fetch(`${API_BASE}/api/students/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update status');
       }
-      
-      // Update local state
-      setStudents(students.map(student => 
-        student._id === id ? { ...student, status } : student
-      ));
+
+      // Update local state by matching `id` field
+      setStudents(prev => prev.map(student => (
+        (student.id === id) ? { ...student, status } : student
+      )));
     } catch (err) {
       setError(err.message);
     }
   };
 
   const handleEdit = (id) => {
-    navigate(`/admin/edit/${id}`);
+    // Redirect to form with editId query so StudentForm can load the data
+    navigate(`/?editId=${id}`);
   };
 
   const handleDownload = async (id) => {
     try {
-      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
-      if (!response.ok) {
-        throw new Error('Failed to download PDF');
-      }
-      const blob = await response.blob();
+      // Fetch student data and download as JSON file (server-side PDF not available)
+      const response = await fetch(`${API_BASE}/api/students/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch student');
+      const data = await response.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `student-form-${id}.pdf`;
+      a.download = `student-${id}.json`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -226,7 +228,7 @@ const AdminDashboard = () => {
             </thead>
             <tbody>
               {students.map((student) => (
-                <tr key={student._id}>
+                <tr key={student.id}>
                   <td style={styles.td}>{student.studentName}</td>
                   <td style={styles.td}>{student.mobile1}</td>
                   <td style={styles.td}>{student.district}</td>
@@ -243,28 +245,28 @@ const AdminDashboard = () => {
                   <td style={styles.td}>
                     <button
                       style={{ ...styles.actionButton, background: '#10b981' }}
-                      onClick={() => handleStatusChange(student._id, 'approved')}
+                      onClick={() => handleStatusChange(student.id, 'approved')}
                       title="Approve"
                     >
                       <Check size={16} color="white" />
                     </button>
                     <button
                       style={{ ...styles.actionButton, background: '#ef4444' }}
-                      onClick={() => handleStatusChange(student._id, 'rejected')}
+                      onClick={() => handleStatusChange(student.id, 'rejected')}
                       title="Reject"
                     >
                       <X size={16} color="white" />
                     </button>
                     <button
                       style={{ ...styles.actionButton, background: '#6366f1' }}
-                      onClick={() => handleEdit(student._id)}
+                      onClick={() => handleEdit(student.id)}
                       title="Edit"
                     >
                       <Edit size={16} color="white" />
                     </button>
                     <button
                       style={{ ...styles.actionButton, background: '#8b5cf6' }}
-                      onClick={() => handleDownload(student._id)}
+                      onClick={() => handleDownload(student.id)}
                       title="Download"
                     >
                       <Download size={16} color="white" />

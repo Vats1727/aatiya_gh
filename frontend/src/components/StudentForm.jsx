@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 // Use Vite env or fallback to local backend. Normalize common paste mistakes
 const _rawApiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 let API_BASE = _rawApiBase;
@@ -47,6 +48,60 @@ const HostelAdmissionForm = () => {
   });
 
   const [showPreview, setShowPreview] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
+  const editId = params.get('editId');
+
+  // If editId present, load student data to edit
+  useEffect(() => {
+    if (!editId) return;
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/students/${editId}`);
+        if (!res.ok) throw new Error('Failed to load student');
+        const payload = await res.json();
+        // payload contains id and fields
+        const data = payload;
+        // Map known fields into formData shape
+        setFormData(prev => ({
+          ...prev,
+          studentName: data.studentName || prev.studentName,
+          motherName: data.motherName || prev.motherName,
+          fatherName: data.fatherName || prev.fatherName,
+          mobile1: data.mobile1 || prev.mobile1,
+          mobile2: data.mobile2 || prev.mobile2,
+          village: data.village || prev.village,
+          post: data.post || prev.post,
+          policeStation: data.policeStation || prev.policeStation,
+          district: data.district || prev.district,
+          pinCode: data.pinCode || prev.pinCode,
+          dob: data.dob || prev.dob,
+          allowedPerson1: data.allowedPerson1 || prev.allowedPerson1,
+          allowedPerson2: data.allowedPerson2 || prev.allowedPerson2,
+          allowedPerson3: data.allowedPerson3 || prev.allowedPerson3,
+          allowedPerson4: data.allowedPerson4 || prev.allowedPerson4,
+          coaching1Name: data.coaching1Name || prev.coaching1Name,
+          coaching1Address: data.coaching1Address || prev.coaching1Address,
+          coaching2Name: data.coaching2Name || prev.coaching2Name,
+          coaching2Address: data.coaching2Address || prev.coaching2Address,
+          coaching3Name: data.coaching3Name || prev.coaching3Name,
+          coaching3Address: data.coaching3Address || prev.coaching3Address,
+          coaching4Name: data.coaching4Name || prev.coaching4Name,
+          coaching4Address: data.coaching4Address || prev.coaching4Address,
+          studentPhoto: data.studentPhoto || prev.studentPhoto,
+          parentPhoto: data.parentPhoto || prev.parentPhoto,
+          studentSignature: data.studentSignature || prev.studentSignature,
+          parentSignature: data.parentSignature || prev.parentSignature,
+          admissionDate: data.admissionDate || prev.admissionDate,
+        }));
+      } catch (err) {
+        console.error('Failed to load student for edit', err);
+        alert('Failed to load student for editing');
+      }
+    };
+    load();
+  }, [editId]);
 
   const styles = {
     container: {
@@ -369,7 +424,26 @@ const HostelAdmissionForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Add status as pending for new submissions
+      if (editId) {
+        // Update existing student
+        const res = await fetch(`${API_BASE}/api/students/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...formData, updatedAt: new Date().toISOString() })
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error('Failed to update student', errText);
+          alert('Failed to update student. See console for details.');
+          return;
+        }
+        alert('Record updated successfully');
+        // After editing, go back to admin dashboard
+        navigate('/admin/dashboard');
+        return;
+      }
+
+      // New submission: Add status as pending
       const formDataWithStatus = {
         ...formData,
         status: 'pending',

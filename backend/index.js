@@ -111,6 +111,51 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
+// Get single student by ID
+app.get('/api/students/:id', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
+  try {
+    const { id } = req.params;
+    const docRef = db.collection('students').doc(id);
+    const snap = await docRef.get();
+    if (!snap.exists) return res.status(404).json({ error: 'Not found' });
+    res.json({ id: snap.id, ...snap.data() });
+  } catch (err) {
+    console.error('GET /api/students/:id error', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// Update (merge) student by ID
+app.put('/api/students/:id', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
+  try {
+    const { id } = req.params;
+    const updates = req.body || {};
+    updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+    const docRef = db.collection('students').doc(id);
+    await docRef.set(updates, { merge: true });
+    const snap = await docRef.get();
+    res.json({ id: snap.id, ...snap.data() });
+  } catch (err) {
+    console.error('PUT /api/students/:id error', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// Delete student by ID
+app.delete('/api/students/:id', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
+  try {
+    const { id } = req.params;
+    await db.collection('students').doc(id).delete();
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /api/students/:id error', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 // Error handling middleware
 function notFound(req, res, next) {
   res.status(404).json({ error: 'Not Found', path: req.originalUrl });
