@@ -137,88 +137,162 @@ app.get('/api/students/:id/pdf', async (req, res) => {
     if (!snap.exists) return res.status(404).json({ error: 'Not found' });
     const data = snap.data() || {};
 
-    // Create PDF
-    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    // Create PDF matching StudentForm print layout
+    const doc = new PDFDocument({ size: 'A4', margin: 36 });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=student-${id}.pdf`);
     doc.pipe(res);
 
-    // Title
-    doc.fontSize(18).text('आतिया गर्ल्स हॉस्टल - Admission Form', { align: 'center' });
-    doc.moveDown(0.5);
-
-    // Photos (parent then student) if available
-    const drawImageFromDataUrl = (dataUrl, x, y, opts = {}) => {
+    // Helpers
+    const drawImageFromDataUrl = (dataUrl, opts = {}) => {
       try {
         const m = String(dataUrl).match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
-        if (!m) return false;
+        if (!m) return null;
         const buf = Buffer.from(m[2], 'base64');
-        doc.image(buf, x, y, opts);
-        return true;
+        return buf;
       } catch (err) {
-        console.warn('Failed to draw image', err);
-        return false;
+        console.warn('Failed to decode image', err);
+        return null;
       }
     };
 
-    const startY = doc.y;
-    // Try to place images side by side
-    const imgBoxW = 120;
-    const gap = 20;
-    const leftX = doc.page.margins.left;
-    const rightX = leftX + imgBoxW + gap;
-
-    if (data.parentPhoto) drawImageFromDataUrl(data.parentPhoto, leftX, startY, { fit: [imgBoxW, imgBoxW], align: 'center' });
-    if (data.studentPhoto) drawImageFromDataUrl(data.studentPhoto, rightX, startY, { fit: [imgBoxW, imgBoxW], align: 'center' });
-
-    // Move cursor below images
-    doc.moveDown(6);
-
-    // Key fields
-    const p = (label, value) => {
-      doc.fontSize(11).font('Helvetica-Bold').text(label + ': ', { continued: true });
-      doc.font('Helvetica').text(value || '');
-    };
-
-    p('Student Name', data.studentName || '');
-    p('Mother Name', data.motherName || '');
-    p('Father Name', data.fatherName || '');
-    p('Date of Birth', data.dob || '');
-    p('Mobile 1', data.mobile1 || '');
-    p('Mobile 2', data.mobile2 || '');
-    p('Village', data.village || '');
-    p('Post', data.post || '');
-    p('Police Station', data.policeStation || '');
-    p('District', data.district || '');
-    p('Pin Code', data.pinCode || '');
+    // Header
+    doc.fontSize(20).font('Helvetica-Bold').fillColor('#111827').text('आतिया गर्ल्स हॉस्टल', { align: 'center' });
+    doc.fontSize(14).font('Helvetica').fillColor('#374151').text('ATIYA GIRLS HOSTEL', { align: 'center' });
+    doc.moveDown(0.25);
+    doc.fontSize(10).text('रामपाड़ा कटिहार / Rampada Katihar', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(13).font('Helvetica-Bold').text('नामांकन फॉर्म / ADMISSION FORM', { align: 'center' });
+    doc.moveDown(0.25);
+    doc.fontSize(9).text(`Date: ${data.admissionDate || ''}`, { align: 'right' });
     doc.moveDown(0.5);
 
-    // Coaching info
-    doc.fontSize(12).font('Helvetica-Bold').text('Coaching Details');
+    // Photos side by side
+    const imgSize = 110;
+    const startX = doc.x;
+    const leftImg = data.parentPhoto ? drawImageFromDataUrl(data.parentPhoto) : null;
+    const rightImg = data.studentPhoto ? drawImageFromDataUrl(data.studentPhoto) : null;
+    if (leftImg) {
+      try { doc.image(leftImg, startX, doc.y, { fit: [imgSize, imgSize], align: 'center' }); } catch (e) {}
+    }
+    if (rightImg) {
+      try { doc.image(rightImg, startX + imgSize + 20, doc.y, { fit: [imgSize, imgSize], align: 'center' }); } catch (e) {}
+    }
+    doc.moveDown(6);
+
+    // Personal Information grid (two columns)
+    const info = [
+      ['छात्रा का नाम / Student Name', data.studentName || ''],
+      ['माता का नाम / Mother\'s Name', data.motherName || ''],
+      ['पिता का नाम / Father\'s Name', data.fatherName || ''],
+      ['जन्म तिथि / Date of Birth', data.dob || '']
+    ];
+    const colWidth = (doc.page.width - doc.page.margins.left - doc.page.margins.right) / 2 - 10;
+    for (let i = 0; i < info.length; i += 2) {
+      const left = info[i];
+      const right = info[i+1];
+      const yBefore = doc.y;
+      doc.font('Helvetica-Bold').fontSize(10).text(left[0] + ':', { continued: true, width: colWidth });
+      doc.font('Helvetica').text(' ' + (left[1] || ''), { width: colWidth });
+      if (right) {
+        // move up to same line
+        const xPos = doc.x;
+        const savedY = yBefore;
+        doc.y = savedY;
+        doc.x = doc.page.margins.left + colWidth + 20;
+        doc.font('Helvetica-Bold').fontSize(10).text(right[0] + ':', { continued: true, width: colWidth });
+        doc.font('Helvetica').text(' ' + (right[1] || ''), { width: colWidth });
+        doc.moveDown(0.5);
+        // reset x
+        doc.x = doc.page.margins.left;
+      }
+    }
+
+    doc.moveDown(0.5);
+    // Contact Information
+    doc.fontSize(11).font('Helvetica-Bold').text('संपर्क जानकारी / Contact Information');
+    doc.moveDown(0.25);
+    doc.font('Helvetica-Bold').text('मोबाइल नं (1):', { continued: true }); doc.font('Helvetica').text(' ' + (data.mobile1 || ''));
+    doc.font('Helvetica-Bold').text('मोबाइल नं (2):', { continued: true }); doc.font('Helvetica').text(' ' + (data.mobile2 || 'N/A'));
+    doc.moveDown(0.5);
+
+    // Address
+    doc.fontSize(11).font('Helvetica-Bold').text('स्थायी पता / Permanent Address');
+    doc.moveDown(0.25);
+    const addr = [
+      ['ग्राम', data.village || ''],
+      ['पोस्ट', data.post || ''],
+      ['थाना', data.policeStation || ''],
+      ['जिला', data.district || ''],
+      ['पिन कोड', data.pinCode || '']
+    ];
+    addr.forEach(([label, val]) => {
+      doc.font('Helvetica-Bold').text(label + ':', { continued: true });
+      doc.font('Helvetica').text(' ' + (val || ''));
+    });
+
+    doc.moveDown(0.5);
+    // Allowed Visitors
+    doc.fontSize(11).font('Helvetica-Bold').text('छात्रा से मिलने वाले का नाम / Allowed Visitors');
+    doc.moveDown(0.25);
+    for (let i = 1; i <= 4; i++) {
+      const ap = data[`allowedPerson${i}`];
+      if (ap) doc.font('Helvetica').text(`${i}. ${ap}`);
+    }
+
+    doc.moveDown(0.5);
+    // Coaching Details
+    doc.fontSize(11).font('Helvetica-Bold').text('कोचिंग विवरण / Coaching Details');
     doc.moveDown(0.25);
     for (let i = 1; i <= 4; i++) {
       const name = data[`coaching${i}Name`];
       const addr = data[`coaching${i}Address`];
       if (name || addr) {
-        doc.fontSize(10).font('Helvetica-Bold').text(`Coaching ${i}: `, { continued: true });
+        doc.font('Helvetica-Bold').text(`कोचिंग ${i}: `, { continued: true });
         doc.font('Helvetica').text(`${name || ''} ${addr ? '- ' + addr : ''}`);
       }
     }
 
     doc.moveDown(0.5);
-    doc.fontSize(12).font('Helvetica-Bold').text('Allowed Visitors');
-    doc.moveDown(0.25);
-    for (let i = 1; i <= 4; i++) {
-      const ap = data[`allowedPerson${i}`];
-      if (ap) doc.fontSize(10).font('Helvetica').text(`- ${ap}`);
-    }
+    // Signatures
+    doc.fontSize(10).text('');
+    const sigY = doc.y;
+    doc.text(' ', { continued: false });
+    // Left signature (student)
+    doc.moveDown(2);
+    doc.font('Helvetica').text(`Student Signature: ${data.studentSignature || ''}`);
+    doc.moveUp(1);
+    doc.x = doc.page.width / 2;
+    doc.font('Helvetica').text(`Parent Signature: ${data.parentSignature || ''}`);
 
+    // Page break and Affidavit / Rules (mirror StudentForm)
     doc.addPage();
-    doc.fontSize(14).text('Affidavit / शपथ पत्र', { align: 'center' });
+    doc.fontSize(14).font('Helvetica-Bold').text('शपथ पत्र', { align: 'center' });
     doc.moveDown(0.5);
-    doc.fontSize(11).text(`I, ${data.parentSignature || ''} (parent), declare that my daughter ${data.studentName || ''} ...`);
+    doc.fontSize(11).text(`मैं ${data.parentSignature || ''} अपनी पुत्री / बहन ${data.studentName || ''} ग्राम ${data.village || ''} पो॰ ${data.post || ''} थाना ${data.policeStation || ''} जिला ${data.district || ''} को अपना मर्ज़ी से आतिया गर्ल्स हॉस्टल में रख रहा हूँ। मैं और मेरी पुत्री / बहन यह ${data.admissionDate || ''} शपथ लेते हैं कि हॉस्टल के निम्नलिखित नियमों का पालन करेंगे।`);
+    doc.moveDown(0.5);
+    const rules = [
+      'हॉस्टल से बाहर निकलने के पूर्व का आने के समय हॉस्टल इंचार्ज से अनुमति लेने अनिवार्य होगा।',
+      'कोचिंग का समय प्राप्त होने के 30 मिनट पूर्व हॉस्टल से निकलना एवं कोचिंग के समाप्त होने पर 30 मिनट के अंदर हॉस्टल वापस आना अनिवार्य होगा।',
+      'हॉस्टल के अन्दर साफाई का विधि। स्वयं रखना।',
+      'हॉस्टल से निकलने के पूर्व पक्का एवं बर्त्ती को बंद करना अनिवार्य है नहीं करने पर 50 रुपया दंड लगेगा।',
+      'हॉस्टल से निकलने के बाद मेरी पुत्री अगर भाग जाती हैं तो इसके लिये हॉस्टल जिम्मेदार नहीं होगा।',
+      'हॉस्टल _____ प्रत्येक हर महीने के 01 तारिख से 05 तारिख तक जमा करना अनिवार्य हैं।',
+      'अभिवावक से आग्रह है कि अपनी बच्ची से रविवार को ही मिले। मिलने वाले मे माता–पिता अपना भाई–बहन के अलावा कोई नहीं मिलना हैं।',
+      'मिलने के पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है। गुरु जी से आग्रह है कि हॉस्टल रक्षा में प्रवेश न करें। एवं मिलने का समय 30 मिनट से कम हो।',
+      'खिड़कीयों पर खड़ा होना सख़्ती से मनाही हैं।',
+      'कोई भी वस्तू खिड़की से बाहर न फेकें। कचड़ा पेटी का प्रयोग करें।',
+      'पढ़ाई पर बिश। ध्यान रखें।',
+      'कोई भी समस्या होने पर इसे की शिकायत हॉस्टल इंचार्ज को फोन दें।',
+      'जब भी हॉस्टल छोड़ना (खाली) करना हो तो एक माह पूर्व बताना अनिवार्य है नहीं तो दुस्त माह का _____ टुक देना होगा।'
+    ];
+    rules.forEach((r, i) => {
+      doc.fontSize(10).text(`${i+1}. ${r}`, { paragraphGap: 2 });
+    });
 
-    // finalize
+    // Footer / finalize
+    doc.moveDown(2);
+    doc.fontSize(11).text('धन्यवाद', { align: 'center' });
     doc.end();
   } catch (err) {
     console.error('Error generating PDF', err);

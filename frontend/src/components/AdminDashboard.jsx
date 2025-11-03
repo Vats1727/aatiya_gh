@@ -6,9 +6,6 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
-  const [allStudents, setAllStudents] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -17,41 +14,27 @@ const AdminDashboard = () => {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-      padding: '1.5rem 1rem',
-      boxSizing: 'border-box',
-      width: '100%',
-      overflowX: 'hidden',
+      padding: '2rem',
     },
     content: {
       maxWidth: '1200px',
       margin: '0 auto',
-      width: '100%',
-      boxSizing: 'border-box',
     },
     header: {
       background: 'white',
-      padding: '1.25rem',
+      padding: '1.5rem',
       borderRadius: '1rem',
       boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      marginBottom: '1.5rem',
+      marginBottom: '2rem',
       display: 'flex',
-      flexDirection: 'row',
-      flexWrap: 'wrap',
       justifyContent: 'space-between',
       alignItems: 'center',
-      gap: '1rem',
     },
     title: {
       color: '#db2777',
       fontSize: '1.5rem',
       fontWeight: 'bold',
       margin: 0,
-      lineHeight: '1.3',
-    },
-    headerActions: {
-      display: 'flex',
-      gap: '0.75rem',
-      flexWrap: 'wrap',
     },
     logoutButton: {
       background: '#4b5563',
@@ -60,253 +43,75 @@ const AdminDashboard = () => {
       padding: '0.5rem 1rem',
       borderRadius: '0.5rem',
       cursor: 'pointer',
-      fontSize: '0.9375rem',
-      fontWeight: '500',
-      transition: 'all 0.2s ease',
-      whiteSpace: 'nowrap',
-      ':hover': {
-        opacity: 0.9,
-        transform: 'translateY(-1px)',
-      },
     },
     addButton: {
       background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
       color: 'white',
       border: 'none',
-      padding: '0.625rem 1.25rem',
+      padding: '0.75rem 1.5rem',
       borderRadius: '0.5rem',
-      fontWeight: '600',
+      fontWeight: 'bold',
       cursor: 'pointer',
-      fontSize: '0.9375rem',
-      transition: 'all 0.2s ease',
-      whiteSpace: 'nowrap',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      ':hover': {
-        transform: 'translateY(-1px)',
-        boxShadow: '0 4px 12px rgba(147, 51, 234, 0.3)',
-      },
-    },
-    tableContainer: {
-      width: '100%',
-      overflowX: 'auto',
-      WebkitOverflowScrolling: 'touch',
-      msOverflowStyle: '-ms-autohiding-scrollbar',
-      borderRadius: '1rem',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      background: 'white',
-      marginBottom: '2rem',
     },
     table: {
       width: '100%',
-      minWidth: '800px',
-      borderCollapse: 'separate',
-      borderSpacing: 0,
+      background: 'white',
+      borderRadius: '1rem',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      overflow: 'hidden',
     },
     th: {
       background: '#f3e8ff',
-      padding: '0.875rem 1rem',
+      padding: '1rem',
       textAlign: 'left',
       color: '#6b21a8',
-      fontWeight: '600',
-      fontSize: '0.875rem',
-      whiteSpace: 'nowrap',
+      fontWeight: 'bold',
     },
     td: {
-      padding: '0.875rem 1rem',
+      padding: '1rem',
       borderTop: '1px solid #e5e7eb',
-      verticalAlign: 'middle',
-      fontSize: '0.875rem',
-      lineHeight: '1.5',
-    },
-    actionCell: {
-      whiteSpace: 'nowrap',
     },
     actionButton: {
-      padding: '0.4rem 0.75rem',
+      padding: '0.5rem',
       border: 'none',
-      borderRadius: '0.375rem',
+      borderRadius: '0.25rem',
       marginRight: '0.5rem',
-      marginBottom: '0.25rem',
       cursor: 'pointer',
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '0.375rem',
-      fontSize: '0.8125rem',
-      fontWeight: '500',
-      transition: 'all 0.2s ease',
-      ':hover': {
-        transform: 'translateY(-1px)',
-      },
+      gap: '0.25rem',
     },
     loading: {
       textAlign: 'center',
       padding: '2rem',
       color: '#6b21a8',
-      fontSize: '1.1rem',
-      fontWeight: '500',
-    },
-    toolbar: {
-      display: 'flex',
-      gap: '0.5rem',
-      alignItems: 'center',
-      margin: '0 0 1rem 0'
-    },
-    searchInput: {
-      padding: '0.5rem 0.75rem',
-      borderRadius: '0.5rem',
-      border: '1px solid #e5e7eb',
-      minWidth: '220px'
-    },
-    filterSelect: {
-      padding: '0.5rem 0.75rem',
-      borderRadius: '0.5rem',
-      border: '1px solid #e5e7eb'
     },
     error: {
       background: '#fee2e2',
-      color: '#b91c1c',
+      color: '#ef4444',
       padding: '1rem',
       borderRadius: '0.5rem',
-      marginBottom: '1.5rem',
-      borderLeft: '4px solid #dc2626',
-      fontSize: '0.9375rem',
-      lineHeight: '1.5',
+      marginBottom: '1rem',
     },
     statusBadge: {
       padding: '0.25rem 0.75rem',
       borderRadius: '9999px',
-      fontSize: '0.8125rem',
+      fontSize: '0.875rem',
       fontWeight: '500',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      whiteSpace: 'nowrap',
     },
     pendingBadge: {
       background: '#fef3c7',
-      color: '#92400e',
+      color: '#d97706',
     },
     approvedBadge: {
       background: '#dcfce7',
-      color: '#166534',
+      color: '#15803d',
     },
     rejectedBadge: {
       background: '#fee2e2',
-      color: '#991b1b',
-    },
-    emptyState: {
-      textAlign: 'center',
-      padding: '3rem 1rem',
-      color: '#6b7280',
-      fontSize: '1rem',
-      lineHeight: '1.5',
-    },
-    '@media (max-width: 1024px)': {
-      container: {
-        padding: '1.25rem 0.75rem',
-      },
-      header: {
-        padding: '1rem',
-        marginBottom: '1.25rem',
-      },
-      title: {
-        fontSize: '1.375rem',
-      },
-    },
-    '@media (max-width: 768px)': {
-      container: {
-        padding: '1rem 0.5rem',
-      },
-      header: {
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: '0.75rem',
-        padding: '1rem',
-      },
-      title: {
-        fontSize: '1.25rem',
-      },
-      headerActions: {
-        width: '100%',
-        justifyContent: 'space-between',
-      },
-      th: {
-        padding: '0.75rem 0.5rem',
-        fontSize: '0.8125rem',
-      },
-      td: {
-        padding: '0.75rem 0.5rem',
-        fontSize: '0.8125rem',
-      },
-    },
-    '@media (max-width: 480px)': {
-      container: {
-        padding: '0.75rem 0.25rem',
-      },
-      header: {
-        padding: '0.875rem',
-        borderRadius: '0.75rem',
-        marginBottom: '1rem',
-      },
-      title: {
-        fontSize: '1.25rem',
-      },
-      logoutButton: {
-        padding: '0.5rem 0.75rem',
-        fontSize: '0.875rem',
-      },
-      addButton: {
-        padding: '0.5rem 1rem',
-        fontSize: '0.875rem',
-      },
-      tableContainer: {
-        borderRadius: '0.75rem',
-        marginBottom: '1.5rem',
-      },
-      th: {
-        padding: '0.625rem 0.5rem',
-        fontSize: '0.75rem',
-      },
-      td: {
-        padding: '0.625rem 0.5rem',
-        fontSize: '0.75rem',
-      },
-      actionButton: {
-        padding: '0.35rem 0.5rem',
-        fontSize: '0.75rem',
-        marginRight: '0.25rem',
-        marginBottom: '0.25rem',
-      },
-      statusBadge: {
-        padding: '0.2rem 0.5rem',
-        fontSize: '0.75rem',
-      },
+      color: '#dc2626',
     },
   };
-
-  // Filter students locally based on search and status
-  const filterStudents = () => {
-    const q = String(searchQuery || '').trim().toLowerCase();
-    const filtered = allStudents.filter(s => {
-      // status filter
-      if (statusFilter && statusFilter !== 'all') {
-        if ((s.status || 'pending') !== statusFilter) return false;
-      }
-      if (!q) return true;
-      // match name or mobile1 or mobile2
-      const name = String(s.studentName || '').toLowerCase();
-      const m1 = String(s.mobile1 || '').toLowerCase();
-      const m2 = String(s.mobile2 || '').toLowerCase();
-      return name.includes(q) || m1.includes(q) || m2.includes(q);
-    });
-    setStudents(filtered);
-  };
-
-  useEffect(() => {
-    filterStudents();
-  }, [searchQuery, statusFilter, allStudents]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -327,8 +132,7 @@ const AdminDashboard = () => {
         throw new Error('Failed to fetch students');
       }
       const data = await response.json();
-      setAllStudents(data || []);
-      setStudents(data || []);
+      setStudents(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -387,38 +191,20 @@ const AdminDashboard = () => {
 
   const handleDownload = async (id) => {
     try {
-      // First, get the student data
-      const studentRes = await fetch(`${API_BASE}/api/students/${id}`);
-      if (!studentRes.ok) throw new Error('Failed to fetch student data');
-      const studentData = await studentRes.json();
-      
-      // Then generate and download the PDF
-      const response = await fetch(`${API_BASE}/api/generate-pdf`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(studentData),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to generate PDF');
-      }
-      
+      // Request server-rendered PDF and download it
+      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
+      if (!response.ok) throw new Error('Failed to fetch PDF');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `${studentData.studentName || 'student'}-${id}.pdf`;
+      a.download = `student-${id}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
     } catch (err) {
-      console.error('Download error:', err);
-      setError(err.message || 'Failed to download PDF');
+      setError(err.message);
     }
   };
 
@@ -426,111 +212,25 @@ const AdminDashboard = () => {
     navigate('/');
   };
 
-  const applyResponsiveStyles = (styleObj) => {
-    const appliedStyles = { ...styleObj };
-    
-    // Handle media query styles
-    if (window.innerWidth <= 1024) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 1024px)']);
-    }
-    if (window.innerWidth <= 768) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 768px)']);
-    }
-    if (window.innerWidth <= 480) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 480px)']);
-    }
-    
-    // Remove media query keys
-    const { 
-      '@media (max-width: 1024px)': mq1024, 
-      '@media (max-width: 768px)': mq768, 
-      '@media (max-width: 480px)': mq480, 
-      ...cleanStyles 
-    } = appliedStyles;
-    
-    return cleanStyles;
-  };
-
   if (loading) {
-    return (
-      <div style={applyResponsiveStyles(styles.container)}>
-        <div style={applyResponsiveStyles(styles.content)}>
-          <div style={applyResponsiveStyles(styles.loading)}>Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={applyResponsiveStyles(styles.container)}>
-        <div style={applyResponsiveStyles(styles.content)}>
-          <div style={applyResponsiveStyles(styles.error)}>
-            <strong>Error:</strong> {error}
-          </div>
-        </div>
-      </div>
-    );
+    return <div style={styles.loading}>Loading...</div>;
   }
 
   return (
-    <div style={applyResponsiveStyles(styles.container)}>
-      <div style={applyResponsiveStyles(styles.content)}>
-        <div style={applyResponsiveStyles(styles.header)}>
-          <h1 style={applyResponsiveStyles(styles.title)}>Admin Dashboard</h1>
-          <div style={applyResponsiveStyles(styles.headerActions)}>
-            <button 
-              style={applyResponsiveStyles(styles.addButton)} 
-              onClick={handleAddNew}
-              type="button"
-            >
-              Add New Student
-            </button>
-            <button 
-              style={applyResponsiveStyles(styles.logoutButton)} 
-              onClick={handleLogout}
-              type="button"
-            >
-              Logout
-            </button>
+    <div style={styles.container}>
+      <div style={styles.content}>
+        <div style={styles.header}>
+          <h1 style={styles.title}>Admin Dashboard</h1>
+          <div>
+            <button style={styles.addButton} onClick={handleAddNew}>Add New Student</button>
+            <button style={styles.logoutButton} onClick={handleLogout}>Logout</button>
           </div>
         </div>
 
-        {error && (
-          <div style={applyResponsiveStyles(styles.error)}>
-            {error}
-          </div>
-        )}
+        {error && <div style={styles.error}>{error}</div>}
 
-        {/* Toolbar: search and status filter */}
-        <div style={applyResponsiveStyles(styles.toolbar)}>
-          <input
-            aria-label="Search students"
-            placeholder="Search by name or mobile"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={applyResponsiveStyles(styles.searchInput)}
-            type="search"
-          />
-          <select
-            aria-label="Filter by status"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={applyResponsiveStyles(styles.filterSelect)}
-          >
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </div>
-
-        <div style={applyResponsiveStyles(styles.tableContainer)}>
-          <table style={{ 
-            ...applyResponsiveStyles(styles.table), 
-            width: '100%', 
-            borderCollapse: 'collapse' 
-          }}>
+        <div style={styles.table}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                         <th style={styles.th}>#</th>
@@ -560,50 +260,30 @@ const AdminDashboard = () => {
                   </td>
                   <td style={styles.td}>
                     <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#10b981' 
-                      }}
+                      style={{ ...styles.actionButton, background: '#10b981' }}
                       onClick={() => handleStatusChange(student.id, 'approved')}
                       title="Approve"
-                      type="button"
-                      aria-label={`Approve ${student.studentName}`}
                     >
                       <Check size={16} color="white" />
                     </button>
                     <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#ef4444' 
-                      }}
+                      style={{ ...styles.actionButton, background: '#ef4444' }}
                       onClick={() => handleStatusChange(student.id, 'rejected')}
                       title="Reject"
-                      type="button"
-                      aria-label={`Reject ${student.studentName}`}
                     >
                       <X size={16} color="white" />
                     </button>
                     <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#6366f1' 
-                      }}
+                      style={{ ...styles.actionButton, background: '#6366f1' }}
                       onClick={() => handleEdit(student.id)}
                       title="Edit"
-                      type="button"
-                      aria-label={`Edit ${student.studentName}`}
                     >
                       <Edit size={16} color="white" />
                     </button>
                     <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#8b5cf6' 
-                      }}
+                      style={{ ...styles.actionButton, background: '#8b5cf6' }}
                       onClick={() => handleDownload(student.id)}
                       title="Download"
-                      type="button"
-                      aria-label={`Download ${student.studentName}'s form`}
                     >
                       <Download size={16} color="white" />
                     </button>
@@ -618,10 +298,10 @@ const AdminDashboard = () => {
                 </tr>
               ))}
             </tbody>
-            </table>
-          </div>
+          </table>
         </div>
       </div>
+    </div>
   );
 };
 

@@ -52,7 +52,6 @@ const HostelAdmissionForm = () => {
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const editId = params.get('editId');
-  const downloadPdf = params.get('downloadPdf') === '1' || params.get('downloadPdf') === 'true';
 
   // If editId present, load student data to edit
   useEffect(() => {
@@ -96,10 +95,6 @@ const HostelAdmissionForm = () => {
           parentSignature: data.parentSignature || prev.parentSignature,
           admissionDate: data.admissionDate || prev.admissionDate,
         }));
-        // If this view was opened specifically to download PDF, enable preview
-        if (downloadPdf) {
-          setShowPreview(true);
-        }
       } catch (err) {
         console.error('Failed to load student for edit', err);
         alert('Failed to load student for editing');
@@ -108,176 +103,111 @@ const HostelAdmissionForm = () => {
     load();
   }, [editId]);
 
-  // If the print preview is shown and downloadPdf flag is present, generate PDF client-side
-  useEffect(() => {
-    if (!showPreview || !downloadPdf) return;
-    const generate = async () => {
-      try {
-        // Dynamically import html2pdf to avoid bundling unless needed
-        const mod = await import('html2pdf.js');
-        const html2pdf = mod && (mod.default || mod);
-        if (!html2pdf) return;
-        const element = document.querySelector('.print-content');
-        if (!element) return;
-        const filename = `student-${editId || new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
-        const opt = {
-          margin: 0.4,
-          filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-        };
-        await html2pdf().set(opt).from(element).save();
-        // Close window if it was opened by admin via window.open
-        try { window.close(); } catch (e) { /* ignore */ }
-      } catch (err) {
-        console.error('PDF generation failed', err);
-      }
-    };
-    // Delay a bit to allow images to render
-    const t = setTimeout(generate, 600);
-    return () => clearTimeout(t);
-  }, [showPreview, downloadPdf, editId]);
-
   const styles = {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-      padding: '1.5rem 0.75rem',
-      fontFamily: 'Arial, sans-serif',
-      boxSizing: 'border-box',
-      width: '100%',
-      overflowX: 'hidden',
+      padding: '2rem 1rem',
+      fontFamily: 'Arial, sans-serif'
     },
     maxWidth: {
       maxWidth: '1200px',
-      margin: '0 auto',
-      width: '100%',
-      padding: '0 0.75rem',
-      boxSizing: 'border-box',
+      margin: '0 auto'
     },
     card: {
       background: 'white',
       borderRadius: '1rem',
       boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-      padding: '1.5rem',
-      marginBottom: '1.25rem',
-      width: '100%',
-      boxSizing: 'border-box',
+      padding: '2rem',
+      marginBottom: '1.5rem'
     },
     header: {
-      textAlign: 'center',
-      padding: '0.5rem 0',
+      textAlign: 'center'
     },
     h1: {
-      fontSize: '2rem',
+      fontSize: '2.5rem',
       fontWeight: 'bold',
       color: '#db2777',
-      margin: '0 0 0.5rem',
-      lineHeight: '1.2',
+      marginBottom: '0.5rem'
     },
     h2: {
-      fontSize: '1.75rem',
+      fontSize: '2rem',
       fontWeight: 'bold',
       color: '#ec4899',
-      margin: '0 0 0.5rem',
-      lineHeight: '1.2',
+      marginBottom: '0.5rem'
     },
     subtitle: {
-      fontSize: '1.1rem',
+      fontSize: '1.25rem',
       color: '#4b5563',
-      margin: '0 0 0.5rem',
-      lineHeight: '1.4',
+      marginBottom: '0.5rem'
     },
     formTitle: {
-      fontSize: '1.4rem',
+      fontSize: '1.5rem',
       fontWeight: '600',
       color: '#9333ea',
-      margin: '1rem 0 0.75rem',
-      lineHeight: '1.3',
+      marginTop: '1rem'
     },
     sectionTitle: {
-      fontSize: '1.2rem',
+      fontSize: '1.25rem',
       fontWeight: 'bold',
       color: '#9333ea',
-      margin: '1.5rem 0 1rem',
+      marginBottom: '1rem',
       borderBottom: '2px solid #e9d5ff',
       paddingBottom: '0.5rem',
       display: 'flex',
-      alignItems: 'center',
-      flexWrap: 'wrap',
-      gap: '0.5rem',
+      alignItems: 'center'
     },
     gridTwo: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-      gap: '1.25rem',
-      marginBottom: '1.75rem',
-      width: '100%',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+      gap: '1.5rem',
+      marginBottom: '2rem'
     },
     formGroup: {
-      marginBottom: '1rem',
-      width: '100%',
+      marginBottom: '0.5rem'
     },
     label: {
       display: 'block',
       fontSize: '0.875rem',
       fontWeight: '600',
       color: '#374151',
-      marginBottom: '0.4rem',
-      lineHeight: '1.4',
+      marginBottom: '0.5rem'
     },
     input: {
       width: '100%',
-      padding: '0.6875rem 0.875rem',
+      padding: '0.75rem 1rem',
       border: '2px solid #fbcfe8',
       borderRadius: '0.5rem',
-      fontSize: '0.9375rem',
+      fontSize: '1rem',
       outline: 'none',
-      transition: 'all 0.2s ease',
-      boxSizing: 'border-box',
-      backgroundColor: '#fff',
-      ':focus': {
-        borderColor: '#ec4899',
-        boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
-      },
+      transition: 'border-color 0.3s',
+      boxSizing: 'border-box'
     },
     fileInput: {
       width: '100%',
       padding: '0.5rem',
       border: '2px solid #fbcfe8',
       borderRadius: '0.5rem',
-      fontSize: '0.8125rem',
-      boxSizing: 'border-box',
-      backgroundColor: '#fff',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      ':focus': {
-        borderColor: '#ec4899',
-        boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
-      },
+      fontSize: '0.875rem',
+      boxSizing: 'border-box'
     },
     photoPreview: {
-      width: '100%',
-      maxWidth: '150px',
-      height: 'auto',
-      maxHeight: '150px',
+      width: '128px',
+      height: '128px',
       objectFit: 'cover',
       borderRadius: '0.5rem',
-      marginTop: '0.5rem',
-      border: '2px solid #f3e8ff',
+      marginTop: '0.5rem'
     },
     coachingCard: {
       marginBottom: '1.5rem',
       padding: '1rem',
       background: '#fce7f3',
-      borderRadius: '0.5rem',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      borderRadius: '0.5rem'
     },
     coachingTitle: {
       fontWeight: '600',
       color: '#374151',
-      marginBottom: '0.75rem',
+      marginBottom: '0.75rem'
     },
     button: {
       background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
@@ -292,86 +222,83 @@ const HostelAdmissionForm = () => {
       alignItems: 'center',
       gap: '0.75rem',
       boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      transition: 'transform 0.2s',
-      ':hover': {
-        transform: 'scale(1.05)',
-      },
+      transition: 'transform 0.2s'
     },
     buttonCenter: {
       display: 'flex',
       justifyContent: 'center',
-      marginTop: '2rem',
+      marginTop: '2rem'
     },
     // Print Preview Styles
     printContainer: {
-      maxWidth: '900px',
-      margin: '0 auto',
-      background: 'white',
-      padding: '1.5rem',
-      boxSizing: 'border-box',
-      fontSize: '0.75rem',
+        maxWidth: '900px',
+        margin: '0 auto',
+        background: 'white',
+        padding: '1.5rem',
+        boxSizing: 'border-box',
+        fontSize: '0.75rem'
     },
     printHeader: {
       textAlign: 'center',
       borderBottom: '3px solid #9ca3af',
       paddingBottom: '0.5rem',
-      marginBottom: '1rem',
+      marginBottom: '1rem'
     },
     printH1: {
       fontSize: '1.5rem',
       fontWeight: 'bold',
       color: '#111827',
-      margin: '0 0 0.25rem 0',
+      margin: '0 0 0.25rem 0'
     },
     printH2: {
-      fontSize: '1rem',
-      fontWeight: 'bold',
-      color: '#374151',
-      margin: '0 0 0.25rem 0',
+        fontSize: '1rem',
+        fontWeight: 'bold',
+        color: '#374151',
+        margin: '0 0 0.25rem 0'
     },
     printSubtitle: {
-      fontSize: '0.875rem',
-      color: '#374151',
-      margin: '0',
+        fontSize: '0.875rem',
+        color: '#374151',
+        margin: '0'
     },
     printFormTitle: {
       fontSize: '1rem',
       fontWeight: '700',
       color: '#111827',
       marginTop: '0.5rem',
-      marginBottom: '0.25rem',
+      marginBottom: '0.25rem'
     },
     printDate: {
       fontSize: '0.75rem',
       color: '#6b7280',
-      marginTop: '0.25rem',
+      marginTop: '0.25rem'
     },
     photoSection: {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
       gap: '1.5rem',
-      marginBottom: '1rem',
+      marginBottom: '1rem'
     },
     photoBox: {
-      textAlign: 'center',
+      textAlign: 'center'
     },
     photoLabel: {
       fontWeight: '600',
       marginBottom: '0.25rem',
       display: 'block',
-      fontSize: '0.75rem',
+      fontSize: '0.75rem'
     },
     photoFrame: {
       border: 'none',
       height: '80px',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'center'
     },
     photoImg: {
       maxHeight: '100%',
       maxWidth: '100%',
-      objectFit: 'contain',
+      objectFit: 'contain'
     },
     printSectionTitle: {
       fontSize: '0.85rem',
@@ -380,57 +307,57 @@ const HostelAdmissionForm = () => {
       padding: '0.25rem 0.5rem',
       marginBottom: '0.4rem',
       marginTop: '0.5rem',
-      borderRadius: '3px',
+      borderRadius: '3px'
     },
     infoGrid: {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
       gap: '0.25rem 1rem',
       fontSize: '0.7rem',
-      marginBottom: '0.5rem',
+      marginBottom: '0.5rem'
     },
     infoGridFull: {
-      display: 'grid',
-      gridTemplateColumns: '1fr',
-      gap: '0.25rem',
-      fontSize: '0.7rem',
-      marginBottom: '0.5rem',
+        display: 'grid',
+        gridTemplateColumns: '1fr',
+        gap: '0.25rem',
+        fontSize: '0.7rem',
+        marginBottom: '0.5rem'
     },
     infoLabel: {
-      fontWeight: '600',
+      fontWeight: '600'
     },
     signatureSection: {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
       gap: '2rem',
       marginTop: '1rem',
-      marginBottom: '0.5rem',
+      marginBottom: '0.5rem'
     },
     signatureBox: {
-      textAlign: 'center',
+      textAlign: 'center'
     },
     signatureLine: {
       borderTop: '2px solid #9ca3af',
       paddingTop: '0.5rem',
-      marginTop: '1.5rem',
+      marginTop: '1.5rem'
     },
     signatureName: {
       fontWeight: '600',
       marginBottom: '0.25rem',
-      fontSize: '0.8rem',
+      fontSize: '0.8rem'
     },
     signatureLabel: {
-      fontSize: '0.7rem',
+      fontSize: '0.7rem'
     },
     rulesSection: {
-      borderTop: 'none',
-      paddingTop: '1rem',
+        borderTop: 'none',
+        paddingTop: '1rem'
     },
     rulesTitle: {
-      fontSize: '1.25rem',
-      fontWeight: 'bold',
-      textAlign: 'center',
-      marginBottom: '0.75rem',
+        fontSize: '1.25rem',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: '0.75rem'
     },
     backButton: {
       background: '#4b5563',
@@ -440,8 +367,8 @@ const HostelAdmissionForm = () => {
       fontWeight: '600',
       border: 'none',
       cursor: 'pointer',
-      marginTop: '2rem',
-    },
+      marginTop: '2rem'
+    }
   };
 
   // Helper to format date values to DD-MM-YYYY for display
@@ -763,116 +690,16 @@ const HostelAdmissionForm = () => {
     );
   }
 
-  // Apply responsive styles
-  const applyResponsiveStyles = (styleObj) => {
-    const appliedStyles = { ...styleObj };
-    
-    // Handle media query styles
-    if (window.innerWidth <= 1024) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 1024px)']);
-    }
-    if (window.innerWidth <= 768) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 768px)']);
-    }
-    if (window.innerWidth <= 480) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 480px)']);
-    }
-    
-    // Remove media query keys
-    const { 
-      '@media (max-width: 1024px)': mq1024, 
-      '@media (max-width: 768px)': mq768, 
-      '@media (max-width: 480px)': mq480, 
-      ...cleanStyles 
-    } = appliedStyles;
-    
-    return cleanStyles;
-  };
-
-  // Add responsive styles
-  const responsiveStyles = {
-    ...styles,
-    container: {
-      ...styles.container,
-      '@media (max-width: 1024px)': {
-        padding: '1.25rem 0.5rem',
-      },
-      '@media (max-width: 768px)': {
-        padding: '1rem 0.5rem',
-      },
-      '@media (max-width: 480px)': {
-        padding: '0.75rem 0.25rem',
-      },
-    },
-    maxWidth: {
-      ...styles.maxWidth,
-      '@media (max-width: 1024px)': {
-        padding: '0 0.5rem',
-      },
-      '@media (max-width: 480px)': {
-        padding: '0 0.25rem',
-      },
-    },
-    card: {
-      ...styles.card,
-      '@media (max-width: 768px)': {
-        padding: '1.25rem',
-        marginBottom: '1rem',
-        borderRadius: '0.75rem',
-      },
-      '@media (max-width: 480px)': {
-        padding: '1rem 0.75rem',
-        marginBottom: '0.75rem',
-        borderRadius: '0.5rem',
-      },
-    },
-    gridTwo: {
-      ...styles.gridTwo,
-      '@media (max-width: 768px)': {
-        gridTemplateColumns: '1fr',
-        gap: '1rem',
-        marginBottom: '1.5rem',
-      },
-      '@media (max-width: 480px)': {
-        gap: '0.75rem',
-        marginBottom: '1.25rem',
-      },
-    },
-    formGroup: {
-      ...styles.formGroup,
-      '@media (max-width: 480px)': {
-        marginBottom: '0.75rem',
-      },
-    },
-  };
-
-  // Function to render form fields
-  const renderFormField = (name, label, type = 'text', required = false) => (
-    <div style={applyResponsiveStyles(responsiveStyles.formGroup)}>
-      <label style={applyResponsiveStyles(responsiveStyles.label)}>
-        {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
-      </label>
-      <input
-        type={type}
-        name={name}
-        value={formData[name] || ''}
-        onChange={handleInputChange}
-        style={applyResponsiveStyles(responsiveStyles.input)}
-        required={required}
-      />
-    </div>
-  );
-
   return (
-    <div style={applyResponsiveStyles(responsiveStyles.container)}>
-      <div style={applyResponsiveStyles(responsiveStyles.maxWidth)}>
+    <div style={styles.container}>
+      <div style={styles.maxWidth}>
         {/* Header */}
-        <div style={applyResponsiveStyles(responsiveStyles.card)}>
-          <div style={applyResponsiveStyles(responsiveStyles.header)}>
-            <h1 style={applyResponsiveStyles(responsiveStyles.h1)}>आतिया गर्ल्स हॉस्टल</h1>
-            <h2 style={applyResponsiveStyles(responsiveStyles.h2)}>ATIYA GIRLS HOSTEL</h2>
-            <p style={applyResponsiveStyles(responsiveStyles.subtitle)}>रामपाड़ा कटिहार / Rampada Katihar</p>
-            <p style={applyResponsiveStyles(responsiveStyles.formTitle)}>नामांकन फॉर्म / ADMISSION FORM</p>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <h1 style={styles.h1}>आतिया गर्ल्स हॉस्टल</h1>
+            <h2 style={styles.h2}>ATIYA GIRLS HOSTEL</h2>
+            <p style={styles.subtitle}>रामपाड़ा कटिहार / Rampada Katihar</p>
+            <p style={styles.formTitle}>नामांकन फॉर्म / ADMISSION FORM</p>
           </div>
         </div>
 
