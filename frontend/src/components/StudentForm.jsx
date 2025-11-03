@@ -52,6 +52,7 @@ const HostelAdmissionForm = () => {
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const editId = params.get('editId');
+  const downloadPdf = params.get('downloadPdf') === '1' || params.get('downloadPdf') === 'true';
 
   // If editId present, load student data to edit
   useEffect(() => {
@@ -95,6 +96,10 @@ const HostelAdmissionForm = () => {
           parentSignature: data.parentSignature || prev.parentSignature,
           admissionDate: data.admissionDate || prev.admissionDate,
         }));
+        // If this view was opened specifically to download PDF, enable preview
+        if (downloadPdf) {
+          setShowPreview(true);
+        }
       } catch (err) {
         console.error('Failed to load student for edit', err);
         alert('Failed to load student for editing');
@@ -102,6 +107,37 @@ const HostelAdmissionForm = () => {
     };
     load();
   }, [editId]);
+
+  // If the print preview is shown and downloadPdf flag is present, generate PDF client-side
+  useEffect(() => {
+    if (!showPreview || !downloadPdf) return;
+    const generate = async () => {
+      try {
+        // Dynamically import html2pdf to avoid bundling unless needed
+        const mod = await import('html2pdf.js');
+        const html2pdf = mod && (mod.default || mod);
+        if (!html2pdf) return;
+        const element = document.querySelector('.print-content');
+        if (!element) return;
+        const filename = `student-${editId || new Date().toISOString().replace(/[:.]/g, '-')}.pdf`;
+        const opt = {
+          margin: 0.4,
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        await html2pdf().set(opt).from(element).save();
+        // Close window if it was opened by admin via window.open
+        try { window.close(); } catch (e) { /* ignore */ }
+      } catch (err) {
+        console.error('PDF generation failed', err);
+      }
+    };
+    // Delay a bit to allow images to render
+    const t = setTimeout(generate, 600);
+    return () => clearTimeout(t);
+  }, [showPreview, downloadPdf, editId]);
 
   const styles = {
     container: {

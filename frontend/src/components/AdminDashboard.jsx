@@ -6,11 +6,8 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
-  const [allStudents, setAllStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const navigate = useNavigate();
 
   const styles = {
@@ -89,23 +86,6 @@ const AdminDashboard = () => {
       padding: '2rem',
       color: '#6b21a8',
     },
-    toolbar: {
-      display: 'flex',
-      gap: '0.5rem',
-      alignItems: 'center',
-      margin: '0 0 1rem 0'
-    },
-    searchInput: {
-      padding: '0.5rem 0.75rem',
-      borderRadius: '0.5rem',
-      border: '1px solid #e5e7eb',
-      minWidth: '220px'
-    },
-    filterSelect: {
-      padding: '0.5rem 0.75rem',
-      borderRadius: '0.5rem',
-      border: '1px solid #e5e7eb'
-    },
     error: {
       background: '#fee2e2',
       color: '#ef4444',
@@ -133,28 +113,6 @@ const AdminDashboard = () => {
     },
   };
 
-  // Filter students locally based on search and status
-  const filterStudents = () => {
-    const q = String(searchQuery || '').trim().toLowerCase();
-    const filtered = allStudents.filter(s => {
-      // status filter
-      if (statusFilter && statusFilter !== 'all') {
-        if ((s.status || 'pending') !== statusFilter) return false;
-      }
-      if (!q) return true;
-      // match name or mobile1 or mobile2
-      const name = String(s.studentName || '').toLowerCase();
-      const m1 = String(s.mobile1 || '').toLowerCase();
-      const m2 = String(s.mobile2 || '').toLowerCase();
-      return name.includes(q) || m1.includes(q) || m2.includes(q);
-    });
-    setStudents(filtered);
-  };
-
-  useEffect(() => {
-    filterStudents();
-  }, [searchQuery, statusFilter, allStudents]);
-
   useEffect(() => {
     const checkAuth = () => {
       const isAuthenticated = localStorage.getItem('adminAuthenticated');
@@ -174,8 +132,7 @@ const AdminDashboard = () => {
         throw new Error('Failed to fetch students');
       }
       const data = await response.json();
-        setAllStudents(data);
-        setStudents(data);
+      setStudents(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -207,9 +164,6 @@ const AdminDashboard = () => {
       setStudents(prev => prev.map(student => (
         (student.id === id) ? { ...student, status } : student
       )));
-      setAllStudents(prev => prev.map(student => (
-        (student.id === id) ? { ...student, status } : student
-      )));
     } catch (err) {
       setError(err.message);
     }
@@ -229,29 +183,21 @@ const AdminDashboard = () => {
       });
       if (!response.ok) throw new Error('Failed to delete record');
       // Remove from local state
-  setStudents(prev => prev.filter(s => s.id !== id));
-  setAllStudents(prev => prev.filter(s => s.id !== id));
+      setStudents(prev => prev.filter(s => s.id !== id));
     } catch (err) {
       setError(err.message);
     }
   };
 
   const handleDownload = async (id) => {
+    // Open the form view in a new tab with a download flag. The StudentForm will render the same print
+    // layout and auto-generate the PDF client-side using html2pdf, producing an identical result.
     try {
-      // Request server-rendered PDF and download it
-      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
-      if (!response.ok) throw new Error('Failed to fetch PDF');
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `student-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
+      const origin = window.location.origin;
+      const url = `${origin}/?editId=${encodeURIComponent(id)}&downloadPdf=1`;
+      window.open(url, '_blank');
     } catch (err) {
-      setError(err.message);
+      setError(String(err));
     }
   };
 
@@ -268,20 +214,6 @@ const AdminDashboard = () => {
       <div style={styles.content}>
         <div style={styles.header}>
           <h1 style={styles.title}>Admin Dashboard</h1>
-          <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-            <input
-              placeholder="Search by name or mobile"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={styles.searchInput}
-            />
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={styles.filterSelect}>
-              <option value="all">All statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
           <div>
             <button style={styles.addButton} onClick={handleAddNew}>Add New Student</button>
             <button style={styles.logoutButton} onClick={handleLogout}>Logout</button>
