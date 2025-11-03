@@ -685,14 +685,41 @@ const AdminDashboard = () => {
         <header style={styles.header}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <h1 style={styles.title}>Admin Dashboard</h1>
-            <button 
-              style={styles.menuButton} 
-              onClick={toggleMenu}
-              aria-expanded={isMenuOpen}
-              aria-label="Toggle menu"
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input
+                type="search"
+                aria-label="Search students"
+                placeholder="Search by name, contact or district"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #e5e7eb',
+                  minWidth: '220px'
+                }}
+              />
+              <button
+                style={{ ...styles.button, ...styles.addButton }}
+                onClick={handleAddNew}
+              >
+                Add New Student
+              </button>
+              <button
+                style={{ ...styles.button, ...styles.logoutButton }}
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+              <button 
+                style={styles.menuButton} 
+                onClick={toggleMenu}
+                aria-expanded={isMenuOpen}
+                aria-label="Toggle menu"
+              >
+                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
           </div>
           
           <div 
@@ -706,32 +733,7 @@ const AdminDashboard = () => {
               alignItems: 'center'
             }}
           >
-            <input
-              type="search"
-              aria-label="Search students"
-              placeholder="Search by name, contact or district"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '0.5rem',
-                border: '1px solid #e5e7eb',
-                minWidth: '220px',
-                marginRight: '0.5rem'
-              }}
-            />
-            <button 
-              style={{ ...styles.button, ...styles.addButton }} 
-              onClick={handleAddNew}
-            >
-              Add New Student
-            </button>
-            <button 
-              style={{ ...styles.button, ...styles.logoutButton }} 
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
+            {/* Collapsible actions (kept for compatibility with mobile menu toggle) */}
           </div>
         </header>
 
