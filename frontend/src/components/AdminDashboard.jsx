@@ -176,16 +176,15 @@ const AdminDashboard = () => {
 
   const handleDownload = async (id) => {
     try {
-      // Fetch student data and download as JSON file (server-side PDF not available)
-      const response = await fetch(`${API_BASE}/api/students/${id}`);
-      if (!response.ok) throw new Error('Failed to fetch student');
-      const data = await response.json();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      // Request server-rendered PDF and download it
+      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
+      if (!response.ok) throw new Error('Failed to fetch PDF');
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `student-${id}.json`;
+      a.download = `student-${id}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

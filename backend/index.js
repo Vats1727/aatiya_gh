@@ -6,6 +6,7 @@ import bodyParser from 'body-parser';
 import fs from 'fs';
 import path from 'path';
 import morgan from 'morgan';
+import PDFDocument from 'pdfkit';
 
 // Load environment variables
 dotenv.config();
@@ -122,6 +123,105 @@ app.get('/api/students/:id', async (req, res) => {
     res.json({ id: snap.id, ...snap.data() });
   } catch (err) {
     console.error('GET /api/students/:id error', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// Generate PDF for a student and stream as attachment
+app.get('/api/students/:id/pdf', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
+  try {
+    const { id } = req.params;
+    const docRef = db.collection('students').doc(id);
+    const snap = await docRef.get();
+    if (!snap.exists) return res.status(404).json({ error: 'Not found' });
+    const data = snap.data() || {};
+
+    // Create PDF
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=student-${id}.pdf`);
+    doc.pipe(res);
+
+    // Title
+    doc.fontSize(18).text('आतिया गर्ल्स हॉस्टल - Admission Form', { align: 'center' });
+    doc.moveDown(0.5);
+
+    // Photos (parent then student) if available
+    const drawImageFromDataUrl = (dataUrl, x, y, opts = {}) => {
+      try {
+        const m = String(dataUrl).match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
+        if (!m) return false;
+        const buf = Buffer.from(m[2], 'base64');
+        doc.image(buf, x, y, opts);
+        return true;
+      } catch (err) {
+        console.warn('Failed to draw image', err);
+        return false;
+      }
+    };
+
+    const startY = doc.y;
+    // Try to place images side by side
+    const imgBoxW = 120;
+    const gap = 20;
+    const leftX = doc.page.margins.left;
+    const rightX = leftX + imgBoxW + gap;
+
+    if (data.parentPhoto) drawImageFromDataUrl(data.parentPhoto, leftX, startY, { fit: [imgBoxW, imgBoxW], align: 'center' });
+    if (data.studentPhoto) drawImageFromDataUrl(data.studentPhoto, rightX, startY, { fit: [imgBoxW, imgBoxW], align: 'center' });
+
+    // Move cursor below images
+    doc.moveDown(6);
+
+    // Key fields
+    const p = (label, value) => {
+      doc.fontSize(11).font('Helvetica-Bold').text(label + ': ', { continued: true });
+      doc.font('Helvetica').text(value || '');
+    };
+
+    p('Student Name', data.studentName || '');
+    p('Mother Name', data.motherName || '');
+    p('Father Name', data.fatherName || '');
+    p('Date of Birth', data.dob || '');
+    p('Mobile 1', data.mobile1 || '');
+    p('Mobile 2', data.mobile2 || '');
+    p('Village', data.village || '');
+    p('Post', data.post || '');
+    p('Police Station', data.policeStation || '');
+    p('District', data.district || '');
+    p('Pin Code', data.pinCode || '');
+    doc.moveDown(0.5);
+
+    // Coaching info
+    doc.fontSize(12).font('Helvetica-Bold').text('Coaching Details');
+    doc.moveDown(0.25);
+    for (let i = 1; i <= 4; i++) {
+      const name = data[`coaching${i}Name`];
+      const addr = data[`coaching${i}Address`];
+      if (name || addr) {
+        doc.fontSize(10).font('Helvetica-Bold').text(`Coaching ${i}: `, { continued: true });
+        doc.font('Helvetica').text(`${name || ''} ${addr ? '- ' + addr : ''}`);
+      }
+    }
+
+    doc.moveDown(0.5);
+    doc.fontSize(12).font('Helvetica-Bold').text('Allowed Visitors');
+    doc.moveDown(0.25);
+    for (let i = 1; i <= 4; i++) {
+      const ap = data[`allowedPerson${i}`];
+      if (ap) doc.fontSize(10).font('Helvetica').text(`- ${ap}`);
+    }
+
+    doc.addPage();
+    doc.fontSize(14).text('Affidavit / शपथ पत्र', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(11).text(`I, ${data.parentSignature || ''} (parent), declare that my daughter ${data.studentName || ''} ...`);
+
+    // finalize
+    doc.end();
+  } catch (err) {
+    console.error('Error generating PDF', err);
     res.status(500).json({ error: String(err) });
   }
 });
