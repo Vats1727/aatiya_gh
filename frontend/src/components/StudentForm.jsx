@@ -369,11 +369,18 @@ const HostelAdmissionForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Add status as pending for new submissions
+      const formDataWithStatus = {
+        ...formData,
+        status: 'pending',
+        submittedAt: new Date().toISOString()
+      };
+
       // POST form data to backend API
       const res = await fetch(`${API_BASE}/api/students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formDataWithStatus)
       });
       if (!res.ok) {
         const errText = await res.text();
@@ -382,7 +389,8 @@ const HostelAdmissionForm = () => {
         return;
       }
       const payload = await res.json();
-      // Optional: you could store returned id in state if needed
+      // Show success message
+      alert('Form submitted successfully! Waiting for admin approval.');
       setShowPreview(true);
       setTimeout(() => {
         window.print();
