@@ -6,7 +6,7 @@ import bodyParser from 'body-parser';
 import fs from 'fs';
 import path from 'path';
 import morgan from 'morgan';
-import PDFDocument from 'pdfkit';
+import puppeteer from 'puppeteer';
 
 // Load environment variables
 dotenv.config();
@@ -137,91 +137,101 @@ app.get('/api/students/:id/pdf', async (req, res) => {
     if (!snap.exists) return res.status(404).json({ error: 'Not found' });
     const data = snap.data() || {};
 
-    // Create PDF
-    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    // Build HTML that mirrors the StudentForm print preview
+    const buildHtml = (d) => {
+      // minimal inline CSS to match print layout
+      const css = `
+        body { font-family: Arial, sans-serif; color: #111827; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; border-bottom: 3px solid #9ca3af; padding-bottom: 8px; margin-bottom: 12px; }
+        .title { font-size: 18px; font-weight: bold; color: #111827; margin: 0; }
+        .subtitle { font-size: 12px; color: #374151; margin: 0; }
+        .grid { display: flex; gap: 16px; margin-bottom: 12px; }
+        .photo { width: 140px; height: 140px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; }
+        .info { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; font-size: 11px; }
+        .section-title { background: #f3e8ff; padding: 6px 8px; font-weight: bold; margin-top: 8px; }
+      `;
+
+      const imgTag = (dataUrl, alt) => {
+        if (!dataUrl) return `<div style="width:140px;height:140px;border:1px solid #e5e7eb;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#9ca3af">${alt}</div>`;
+        return `<img src="${dataUrl}" class="photo" alt="${alt}" />`;
+      };
+
+      return `<!doctype html>
+      <html>
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="title">आतिया गर्ल्स हॉस्टल</div>
+            <div class="subtitle">ATIYA GIRLS HOSTEL — रामपाड़ा कटिहार</div>
+            <div style="font-weight:700;margin-top:6px;">नामांकन फॉर्म / ADMISSION FORM</div>
+            <div style="font-size:10px;margin-top:4px;">Date: ${d.admissionDate || ''}</div>
+          </div>
+
+          <div class="grid">
+            <div style="flex:1">
+              <div style="margin-bottom:6px;font-size:12px;font-weight:700">Personal Information</div>
+              <div class="info">
+                <div><strong>Student Name:</strong> ${d.studentName || ''}</div>
+                <div><strong>Mother Name:</strong> ${d.motherName || ''}</div>
+                <div><strong>Father Name:</strong> ${d.fatherName || ''}</div>
+                <div><strong>DOB:</strong> ${d.dob || ''}</div>
+                <div><strong>Mobile 1:</strong> ${d.mobile1 || ''}</div>
+                <div><strong>Mobile 2:</strong> ${d.mobile2 || ''}</div>
+                <div><strong>Village:</strong> ${d.village || ''}</div>
+                <div><strong>Post:</strong> ${d.post || ''}</div>
+                <div><strong>Police Station:</strong> ${d.policeStation || ''}</div>
+                <div><strong>District:</strong> ${d.district || ''}</div>
+                <div><strong>PIN:</strong> ${d.pinCode || ''}</div>
+              </div>
+            </div>
+            <div style="width:160px;text-align:center">
+              <div style="margin-bottom:8px;font-weight:700">Parent Photo</div>
+              ${imgTag(d.parentPhoto, 'Parent')}
+              <div style="height:8px"></div>
+              <div style="margin-top:8px;font-weight:700">Student Photo</div>
+              ${imgTag(d.studentPhoto, 'Student')}
+            </div>
+          </div>
+
+          <div class="section-title">Coaching Details</div>
+          <div style="font-size:11px;margin-bottom:8px;">
+            ${[1,2,3,4].map(i => {
+              const name = d[`coaching${i}Name`] || '';
+              const addr = d[`coaching${i}Address`] || '';
+              return (name || addr) ? `<div><strong>Coaching ${i}:</strong> ${name} ${addr ? '- ' + addr : ''}</div>` : '';
+            }).join('')}
+          </div>
+
+          <div class="section-title">Allowed Visitors</div>
+          <div style="font-size:11px;margin-bottom:8px;">
+            ${[1,2,3,4].map(i => d[`allowedPerson${i}`] ? `<div>- ${d[`allowedPerson${i}`]}</div>` : '').join('')}
+          </div>
+
+          <div style="margin-top:12px;font-size:11px;">
+            <div style="font-weight:700">Affidavit / शपथ पत्र</div>
+            <p>I, ${d.parentSignature || ''} (parent), declare that my daughter ${d.studentName || ''}...</p>
+          </div>
+        </div>
+      </body>
+      </html>`;
+    };
+
+    const html = buildHtml(data);
+
+    // Launch headless browser and render PDF
+    const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '20mm', bottom: '20mm', left: '15mm', right: '15mm' } });
+    await browser.close();
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=student-${id}.pdf`);
-    doc.pipe(res);
-
-    // Title
-    doc.fontSize(18).text('आतिया गर्ल्स हॉस्टल - Admission Form', { align: 'center' });
-    doc.moveDown(0.5);
-
-    // Photos (parent then student) if available
-    const drawImageFromDataUrl = (dataUrl, x, y, opts = {}) => {
-      try {
-        const m = String(dataUrl).match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
-        if (!m) return false;
-        const buf = Buffer.from(m[2], 'base64');
-        doc.image(buf, x, y, opts);
-        return true;
-      } catch (err) {
-        console.warn('Failed to draw image', err);
-        return false;
-      }
-    };
-
-    const startY = doc.y;
-    // Try to place images side by side
-    const imgBoxW = 120;
-    const gap = 20;
-    const leftX = doc.page.margins.left;
-    const rightX = leftX + imgBoxW + gap;
-
-    if (data.parentPhoto) drawImageFromDataUrl(data.parentPhoto, leftX, startY, { fit: [imgBoxW, imgBoxW], align: 'center' });
-    if (data.studentPhoto) drawImageFromDataUrl(data.studentPhoto, rightX, startY, { fit: [imgBoxW, imgBoxW], align: 'center' });
-
-    // Move cursor below images
-    doc.moveDown(6);
-
-    // Key fields
-    const p = (label, value) => {
-      doc.fontSize(11).font('Helvetica-Bold').text(label + ': ', { continued: true });
-      doc.font('Helvetica').text(value || '');
-    };
-
-    p('Student Name', data.studentName || '');
-    p('Mother Name', data.motherName || '');
-    p('Father Name', data.fatherName || '');
-    p('Date of Birth', data.dob || '');
-    p('Mobile 1', data.mobile1 || '');
-    p('Mobile 2', data.mobile2 || '');
-    p('Village', data.village || '');
-    p('Post', data.post || '');
-    p('Police Station', data.policeStation || '');
-    p('District', data.district || '');
-    p('Pin Code', data.pinCode || '');
-    doc.moveDown(0.5);
-
-    // Coaching info
-    doc.fontSize(12).font('Helvetica-Bold').text('Coaching Details');
-    doc.moveDown(0.25);
-    for (let i = 1; i <= 4; i++) {
-      const name = data[`coaching${i}Name`];
-      const addr = data[`coaching${i}Address`];
-      if (name || addr) {
-        doc.fontSize(10).font('Helvetica-Bold').text(`Coaching ${i}: `, { continued: true });
-        doc.font('Helvetica').text(`${name || ''} ${addr ? '- ' + addr : ''}`);
-      }
-    }
-
-    doc.moveDown(0.5);
-    doc.fontSize(12).font('Helvetica-Bold').text('Allowed Visitors');
-    doc.moveDown(0.25);
-    for (let i = 1; i <= 4; i++) {
-      const ap = data[`allowedPerson${i}`];
-      if (ap) doc.fontSize(10).font('Helvetica').text(`- ${ap}`);
-    }
-
-    doc.addPage();
-    doc.fontSize(14).text('Affidavit / शपथ पत्र', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(11).text(`I, ${data.parentSignature || ''} (parent), declare that my daughter ${data.studentName || ''} ...`);
-
-    // finalize
-    doc.end();
+    res.send(pdfBuffer);
   } catch (err) {
-    console.error('Error generating PDF', err);
+    console.error('Error generating PDF (puppeteer)', err);
     res.status(500).json({ error: String(err) });
   }
 });
