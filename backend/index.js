@@ -192,4 +192,3 @@ app.use((err, req, res, next) => { console.error(err); res.status(500).json({ er
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
-    import fs from 'fs';
