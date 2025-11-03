@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Edit, Check, X } from 'lucide-react';
+import { Download, Edit, Check, X, Trash } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -174,6 +174,21 @@ const AdminDashboard = () => {
     navigate(`/?editId=${id}`);
   };
 
+  const handleDelete = async (id) => {
+    try {
+      const ok = window.confirm('Are you sure you want to delete this record? This action cannot be undone.');
+      if (!ok) return;
+      const response = await fetch(`${API_BASE}/api/students/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete record');
+      // Remove from local state
+      setStudents(prev => prev.filter(s => s.id !== id));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const handleDownload = async (id) => {
     try {
       // Request server-rendered PDF and download it
@@ -218,6 +233,7 @@ const AdminDashboard = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
+                        <th style={styles.th}>#</th>
                 <th style={styles.th}>Name</th>
                 <th style={styles.th}>Contact</th>
                 <th style={styles.th}>District</th>
@@ -226,12 +242,13 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {students.map((student) => (
-                <tr key={student.id}>
-                  <td style={styles.td}>{student.studentName}</td>
-                  <td style={styles.td}>{student.mobile1}</td>
-                  <td style={styles.td}>{student.district}</td>
-                  <td style={styles.td}>
+                      {students.map((student, idx) => (
+                        <tr key={student.id}>
+                          <td style={styles.td}>{idx + 1}</td>
+                          <td style={styles.td}>{student.studentName}</td>
+                          <td style={styles.td}>{student.mobile1}</td>
+                          <td style={styles.td}>{student.district}</td>
+                          <td style={styles.td}>
                     <span style={{
                       ...styles.statusBadge,
                       ...(student.status === 'pending' ? styles.pendingBadge :
@@ -269,6 +286,13 @@ const AdminDashboard = () => {
                       title="Download"
                     >
                       <Download size={16} color="white" />
+                    </button>
+                    <button
+                      style={{ ...styles.actionButton, background: '#ef4444' }}
+                      onClick={() => handleDelete(student.id)}
+                      title="Delete"
+                    >
+                      <Trash size={16} color="white" />
                     </button>
                   </td>
                 </tr>
