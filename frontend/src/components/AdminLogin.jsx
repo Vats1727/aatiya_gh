@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useResponsiveStyles } from '../utils/responsiveStyles';
 
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({
@@ -7,9 +8,11 @@ const AdminLogin = () => {
     password: '',
   });
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const styles = {
+  // Base styles for the component
+  const baseStyles = {
     container: {
       minHeight: '100vh',
       display: 'flex',
@@ -18,15 +21,17 @@ const AdminLogin = () => {
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
       padding: '1rem',
       boxSizing: 'border-box',
+      width: '100%',
     },
     form: {
       background: 'white',
-      padding: '1.5rem',
+      padding: '2rem',
       borderRadius: '1rem',
       boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
       width: '100%',
       maxWidth: '400px',
       margin: '1rem',
+      boxSizing: 'border-box',
     },
     title: {
       textAlign: 'center',
@@ -37,6 +42,7 @@ const AdminLogin = () => {
     },
     inputGroup: {
       marginBottom: '1.25rem',
+      width: '100%',
     },
     label: {
       display: 'block',
@@ -47,17 +53,22 @@ const AdminLogin = () => {
     },
     input: {
       width: '100%',
-      padding: '0.75rem',
+      padding: '0.75rem 1rem',
       border: '2px solid #fbcfe8',
       borderRadius: '0.5rem',
       fontSize: '1rem',
       outline: 'none',
       boxSizing: 'border-box',
-      transition: 'border-color 0.2s',
+      transition: 'all 0.2s ease',
+      minHeight: '48px',
+      ':focus': {
+        borderColor: '#ec4899',
+        boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
+      },
     },
     button: {
       width: '100%',
-      padding: '0.875rem',
+      padding: '1rem',
       background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
       color: 'white',
       border: 'none',
@@ -65,40 +76,74 @@ const AdminLogin = () => {
       fontSize: '1rem',
       fontWeight: 'bold',
       cursor: 'pointer',
-      transition: 'all 0.2s',
+      transition: 'all 0.2s ease',
       WebkitTapHighlightColor: 'transparent',
+      minHeight: '48px',
+      ':hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: '0 4px 12px rgba(147, 51, 234, 0.3)',
+      },
+      ':active': {
+        transform: 'translateY(0)',
+      },
+      ':disabled': {
+        opacity: 0.7,
+        cursor: 'not-allowed',
+        transform: 'none',
+        boxShadow: 'none',
+      },
     },
     error: {
       color: '#ef4444',
       marginBottom: '1rem',
       textAlign: 'center',
       fontSize: '0.9375rem',
+      padding: '0.75rem',
+      borderRadius: '0.375rem',
+      backgroundColor: '#fef2f2',
+      border: '1px solid #fecaca',
+    },
+    // Responsive styles
+    '@media (max-width: 1024px)': {
+      form: {
+        padding: '1.75rem',
+        maxWidth: '380px',
+      },
+      title: {
+        fontSize: '1.625rem',
+      },
     },
     '@media (max-width: 768px)': {
+      container: {
+        padding: '0.75rem',
+      },
       form: {
-        padding: '1.25rem',
+        padding: '1.5rem',
         margin: '0.75rem',
+        maxWidth: '100%',
       },
       title: {
         fontSize: '1.5rem',
         marginBottom: '1.25rem',
       },
       input: {
-        padding: '0.6875rem',
+        padding: '0.75rem',
         fontSize: '0.9375rem',
       },
       button: {
-        padding: '0.8125rem',
+        padding: '0.875rem',
         fontSize: '0.9375rem',
       },
     },
     '@media (max-width: 480px)': {
       container: {
-        padding: '0.75rem',
+        padding: '0.5rem',
+        minHeight: '100vh',
       },
       form: {
-        padding: '1rem',
+        padding: '1.25rem',
         margin: '0.5rem',
+        borderRadius: '0.75rem',
       },
       title: {
         fontSize: '1.375rem',
@@ -108,97 +153,118 @@ const AdminLogin = () => {
         marginBottom: '1rem',
       },
       input: {
-        padding: '0.625rem',
-        fontSize: '0.9375rem',
-      },
-      button: {
         padding: '0.75rem',
         fontSize: '0.9375rem',
       },
-    }
+      button: {
+        padding: '0.875rem',
+        fontSize: '0.9375rem',
+      },
+    },
   };
 
+  // Apply responsive styles
+  const styles = useResponsiveStyles(baseStyles);
+
+  // Handle input changes
   const handleChange = (e) => {
-    setCredentials({
-      ...credentials,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setCredentials(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  // Handle form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (credentials.username === 'admin' && credentials.password === 'admin123') {
-      localStorage.setItem('adminAuthenticated', 'true');
-      navigate('/admin/dashboard');
-    } else {
-      setError('Invalid username or password');
+    setIsSubmitting(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (credentials.username === 'admin' && credentials.password === 'admin123') {
+        localStorage.setItem('adminAuthenticated', 'true');
+        navigate('/admin/dashboard');
+      } else {
+        setError('Invalid username or password');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+      console.error('Login error:', err);
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  const applyResponsiveStyles = (styleObj) => {
-    const appliedStyles = { ...styleObj };
-
-    if (window.innerWidth <= 768) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 768px)']);
-    }
-    if (window.innerWidth <= 480) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 480px)']);
-    }
-
-    const { '@media (max-width: 768px)': mq768, '@media (max-width: 480px)': mq480, ...cleanStyles } = appliedStyles;
-    return cleanStyles;
   };
 
   return (
-    <div style={applyResponsiveStyles(styles.container)}>
+    <div style={styles.container}>
       <form 
-        style={applyResponsiveStyles(styles.form)} 
+        style={styles.form} 
         onSubmit={handleSubmit}
-        onTouchStart={() => {}} 
+        aria-label="Admin login form"
       >
-        <h1 style={applyResponsiveStyles(styles.title)}>Admin Login</h1>
-        {error && <div style={applyResponsiveStyles(styles.error)}>{error}</div>}
-        <div style={applyResponsiveStyles(styles.inputGroup)}>
-          <label style={applyResponsiveStyles(styles.label)}>Username</label>
+        <h1 style={styles.title}>Admin Login</h1>
+        
+        {error && (
+          <div style={styles.error} role="alert">
+            {error}
+          </div>
+        )}
+        
+        <div style={styles.inputGroup}>
+          <label htmlFor="username" style={styles.label}>
+            Username
+          </label>
           <input
             type="text"
+            id="username"
             name="username"
             value={credentials.username}
             onChange={handleChange}
-            style={applyResponsiveStyles(styles.input)}
+            style={styles.input}
             required
             autoComplete="username"
+            aria-required="true"
+            aria-invalid={error ? 'true' : 'false'}
+            disabled={isSubmitting}
           />
         </div>
-        <div style={applyResponsiveStyles(styles.inputGroup)}>
-          <label style={applyResponsiveStyles(styles.label)}>Password</label>
+        
+        <div style={styles.inputGroup}>
+          <label htmlFor="password" style={styles.label}>
+            Password
+          </label>
           <input
             type="password"
+            id="password"
             name="password"
             value={credentials.password}
             onChange={handleChange}
-            style={applyResponsiveStyles(styles.input)}
+            style={styles.input}
             required
             autoComplete="current-password"
+            aria-required="true"
+            aria-invalid={error ? 'true' : 'false'}
+            disabled={isSubmitting}
           />
         </div>
-        <button
-          type="submit"
+        
+        <button 
+          type="submit" 
           style={{
-            ...applyResponsiveStyles(styles.button),
-            ':active': {
-              transform: 'scale(0.98)',
-            },
-            ':hover': {
-              transform: 'scale(1.02)',
-            },
+            ...styles.button,
+            opacity: isSubmitting ? 0.7 : 1,
+            cursor: isSubmitting ? 'not-allowed' : 'pointer',
           }}
-          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          onTouchStart={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
-          onTouchEnd={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          disabled={isSubmitting}
+          aria-busy={isSubmitting}
+          aria-live="polite"
         >
-          Login
+          {isSubmitting ? 'Logging in...' : 'Login'}
         </button>
       </form>
     </div>
