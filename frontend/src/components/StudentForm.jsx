@@ -16,6 +16,7 @@ try {
 }
 
 import { FileText, Download, User, Phone, MapPin, Calendar, Users, GraduationCap, Printer } from 'lucide-react';
+import PlaceholderImage from '../assets/Image.jpg';
 
 const HostelAdmissionForm = () => {
   const [formData, setFormData] = useState({
@@ -105,83 +106,108 @@ const HostelAdmissionForm = () => {
     load();
   }, [editId]);
 
-  // Base styles with mobile-first approach
+  // Responsive styles with mobile-first approach
   const styles = {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-      padding: '1rem 0.5rem',
-      fontFamily: '"Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", sans-serif',
+      padding: '0.5rem',
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       boxSizing: 'border-box',
       width: '100%',
       overflowX: 'hidden',
       WebkitFontSmoothing: 'antialiased',
       MozOsxFontSmoothing: 'grayscale',
+      '@media (min-width: 480px)': {
+        padding: '0.75rem',
+      },
+      '@media (min-width: 768px)': {
+        padding: '1rem',
+      },
     },
     maxWidth: {
       maxWidth: '1200px',
       margin: '0 auto',
       width: '100%',
-      padding: '0 0.75rem',
+      padding: '0 0.5rem',
       boxSizing: 'border-box',
-      '@media (max-width: 480px)': {
-        padding: '0 0.5rem',
+      '@media (min-width: 480px)': {
+        padding: '0 0.75rem',
+      },
+      '@media (min-width: 768px)': {
+        padding: '0 1rem',
       },
     },
     card: {
       background: 'white',
       borderRadius: '0.75rem',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      padding: '1.25rem',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+      padding: '1rem',
       marginBottom: '1rem',
       width: '100%',
       boxSizing: 'border-box',
       transition: 'box-shadow 0.2s ease, transform 0.1s ease',
       ':hover': {
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
       },
       '@media (min-width: 480px)': {
-        padding: '1.5rem',
-        borderRadius: '1rem',
+        padding: '1.25rem',
+        borderRadius: '0.875rem',
       },
       '@media (min-width: 768px)': {
-        padding: '2rem',
-        marginBottom: '1.5rem',
+        padding: '1.5rem',
+        marginBottom: '1.25rem',
+        borderRadius: '1rem',
       },
     },
     header: {
       textAlign: 'center',
-      padding: '0.5rem 0 1rem',
+      padding: '0.5rem 0',
+      marginBottom: '0.5rem',
       '@media (min-width: 480px)': {
-        padding: '0.75rem 0 1.5rem',
+        padding: '0.75rem 0',
+        marginBottom: '0.75rem',
+      },
+      '@media (min-width: 768px)': {
+        padding: '1rem 0',
+        marginBottom: '1rem',
       },
     },
     h1: {
-      fontSize: '1.5rem',
+      fontSize: '1.375rem',
       fontWeight: '700',
       color: '#db2777',
       margin: '0 0 0.25rem',
-      lineHeight: '1.25',
-      letterSpacing: '-0.025em',
+      lineHeight: '1.2',
+      letterSpacing: '-0.02em',
       '@media (min-width: 480px)': {
-        fontSize: '1.75rem',
+        fontSize: '1.5rem',
         marginBottom: '0.375rem',
       },
       '@media (min-width: 768px)': {
-        fontSize: '2rem',
+        fontSize: '1.75rem',
         marginBottom: '0.5rem',
+      },
+      '@media (min-width: 1024px)': {
+        fontSize: '2rem',
       },
     },
     h2: {
       fontSize: '1.25rem',
       fontWeight: '600',
-      color: '#ec4899',
-      margin: '0 0 0.5rem',
+      color: '#9333ea',
+      margin: '0 0 0.75rem',
       lineHeight: '1.3',
+      paddingBottom: '0.5rem',
+      borderBottom: '2px solid #f3f4f6',
       '@media (min-width: 480px)': {
-        fontSize: '1.5rem',
+        fontSize: '1.375rem',
+        marginBottom: '1rem',
       },
       '@media (min-width: 768px)': {
+        fontSize: '1.5rem',
+      },
+      '@media (min-width: 1024px)': {
         fontSize: '1.75rem',
       },
     },
@@ -190,19 +216,25 @@ const HostelAdmissionForm = () => {
       color: '#4b5563',
       margin: '0 0 0.5rem',
       lineHeight: '1.5',
+      maxWidth: '800px',
+      marginLeft: 'auto',
+      marginRight: 'auto',
+      '@media (min-width: 480px)': {
+        fontSize: '1rem',
+      },
       '@media (min-width: 768px)': {
-        fontSize: '1.1rem',
+        fontSize: '1.0625rem',
       },
     },
     formTitle: {
-      fontSize: '1.25rem',
+      fontSize: '1.125rem',
       fontWeight: '600',
-      color: '#9333ea',
-      margin: '0.75rem 0 1rem',
-      lineHeight: '1.3',
+      color: '#7c3aed',
+      margin: '0 0 1rem',
+      paddingBottom: '0.5rem',
+      borderBottom: '1px solid #f3f4f6',
       '@media (min-width: 480px)': {
-        fontSize: '1.35rem',
-        margin: '1rem 0 1.25rem',
+        fontSize: '1.25rem',
       },
       '@media (min-width: 768px)': {
         fontSize: '1.5rem',
@@ -852,21 +884,13 @@ const HostelAdmissionForm = () => {
           <div style={responsiveStyles.photoBox}>
             <span style={responsiveStyles.photoLabel}>पिता/माता का फोटो / Parent Photo</span>
             <div style={responsiveStyles.photoPreview}>
-              {formData.parentPhoto ? (
-                <img src={formData.parentPhoto} alt="Parent" style={responsiveStyles.photoImg} />
-              ) : (
-                <User size={35} color="#9ca3af" />
-              )}
+              <img src={PlaceholderImage} alt="Parent Photo Placeholder" style={responsiveStyles.photoImg} />
             </div>
           </div>
           <div style={responsiveStyles.photoBox}>
             <span style={responsiveStyles.photoLabel}>छात्रा का फोटो / Student Photo</span>
             <div style={responsiveStyles.photoPreview}>
-              {formData.studentPhoto ? (
-                <img src={formData.studentPhoto} alt="Student" style={responsiveStyles.photoImg} />
-              ) : (
-                <User size={35} color="#9ca3af" />
-              )}
+              <img src={PlaceholderImage} alt="Student Photo Placeholder" style={responsiveStyles.photoImg} />
             </div>
           </div>
         </div>
@@ -903,40 +927,86 @@ const HostelAdmissionForm = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={responsiveStyles.card}>
-          {/* Photo Upload Section */}
-          {/* ... */}
-          <div style={responsiveStyles.gridTwo}>
-            <div style={responsiveStyles.formGroup}>
-              <label style={responsiveStyles.label}>
-                <User size={16} style={{display: 'inline', marginRight: '0.5rem'}} />
-                पिता/माता का फोटो / Parent Photo
-              </label>
-              <input
-                type="file"
-                name="parentPhoto"
-                accept="image/*"
-                onChange={handleFileChange}
-                style={responsiveStyles.fileInput}
-              />
-              {formData.parentPhoto && (
-                <img src={formData.parentPhoto} alt="Parent" style={responsiveStyles.photoPreview} />
-              )}
+          {/* Photo Display Section */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'row',
+            gap: '2rem',
+            justifyContent: 'space-between',
+            marginBottom: '1.5rem',
+            flexWrap: 'wrap'
+          }}>
+            <div style={{
+              flex: '1 1 200px',
+              minWidth: '200px',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                ...responsiveStyles.photoPreview,
+                margin: '0 auto',
+                width: '150px',
+                height: '180px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.5rem'
+              }}>
+                <img 
+                  src={PlaceholderImage} 
+                  alt="Parent Photo" 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }} 
+                />
+              </div>
+              <p style={{
+                marginTop: '0.5rem',
+                fontSize: '0.875rem',
+                color: '#4b5563',
+                fontWeight: '500'
+              }}>
+                पिता/माता का फोटो
+              </p>
             </div>
-            <div style={responsiveStyles.formGroup}>
-              <label style={responsiveStyles.label}>
-                <User size={16} style={{display: 'inline', marginRight: '0.5rem'}} />
-                छात्रा का फोटो / Student Photo
-              </label>
-              <input
-                type="file"
-                name="studentPhoto"
-                accept="image/*"
-                onChange={handleFileChange}
-                style={responsiveStyles.fileInput}
-              />
-              {formData.studentPhoto && (
-                <img src={formData.studentPhoto} alt="Student" style={responsiveStyles.photoPreview} />
-              )}
+            <div style={{
+              flex: '1 1 200px',
+              minWidth: '200px',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                ...responsiveStyles.photoPreview,
+                margin: '0 auto',
+                width: '150px',
+                height: '180px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.5rem'
+              }}>
+                <img 
+                  src={PlaceholderImage} 
+                  alt="Student Photo" 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }} 
+                />
+              </div>
+              <p style={{
+                marginTop: '0.5rem',
+                fontSize: '0.875rem',
+                color: '#4b5563',
+                fontWeight: '500'
+              }}>
+                छात्रा का फोटो
+              </p>
             </div>
           </div>
 
@@ -1238,7 +1308,7 @@ const HostelAdmissionForm = () => {
               onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
               <Printer size={24} />
-              Generate PDF / पीडीएफ बनाएं
+              SAVE or Generate PDF / पीडीएफ बनाएं
             </button>
           </div>
         </form>

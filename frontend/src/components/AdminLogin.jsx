@@ -103,62 +103,28 @@ const AdminLogin = () => {
       backgroundColor: '#fef2f2',
       border: '1px solid #fecaca',
     },
-    // Responsive styles
-    '@media (max-width: 1024px)': {
-      form: {
-        padding: '1.75rem',
-        maxWidth: '380px',
-      },
-      title: {
-        fontSize: '1.625rem',
-      },
-    },
-    '@media (max-width: 768px)': {
+    // Responsive overrides for mobile
+    '@media (max-width: 480px)': {
       container: {
-        padding: '0.75rem',
+        padding: '0.5rem',
       },
       form: {
         padding: '1.5rem',
-        margin: '0.75rem',
+        margin: '0.5rem',
         maxWidth: '100%',
+        borderRadius: '0.75rem',
       },
       title: {
         fontSize: '1.5rem',
         marginBottom: '1.25rem',
       },
       input: {
+        fontSize: '1rem',
         padding: '0.75rem',
-        fontSize: '0.9375rem',
       },
       button: {
+        fontSize: '1rem',
         padding: '0.875rem',
-        fontSize: '0.9375rem',
-      },
-    },
-    '@media (max-width: 480px)': {
-      container: {
-        padding: '0.5rem',
-        minHeight: '100vh',
-      },
-      form: {
-        padding: '1.25rem',
-        margin: '0.5rem',
-        borderRadius: '0.75rem',
-      },
-      title: {
-        fontSize: '1.375rem',
-        marginBottom: '1rem',
-      },
-      inputGroup: {
-        marginBottom: '1rem',
-      },
-      input: {
-        padding: '0.75rem',
-        fontSize: '0.9375rem',
-      },
-      button: {
-        padding: '0.875rem',
-        fontSize: '0.9375rem',
       },
     },
   };
@@ -202,18 +168,10 @@ const AdminLogin = () => {
 
   return (
     <div style={styles.container}>
-      <form 
-        style={styles.form} 
-        onSubmit={handleSubmit}
-        aria-label="Admin login form"
-      >
+      <form style={styles.form} onSubmit={handleSubmit}>
         <h1 style={styles.title}>Admin Login</h1>
         
-        {error && (
-          <div style={styles.error} role="alert">
-            {error}
-          </div>
-        )}
+        {error && <div style={styles.error}>{error}</div>}
         
         <div style={styles.inputGroup}>
           <label htmlFor="username" style={styles.label}>
@@ -226,11 +184,10 @@ const AdminLogin = () => {
             value={credentials.username}
             onChange={handleChange}
             style={styles.input}
-            required
-            autoComplete="username"
-            aria-required="true"
-            aria-invalid={error ? 'true' : 'false'}
+            placeholder="Enter username"
             disabled={isSubmitting}
+            autoComplete="username"
+            required
           />
         </div>
         
@@ -245,24 +202,17 @@ const AdminLogin = () => {
             value={credentials.password}
             onChange={handleChange}
             style={styles.input}
-            required
-            autoComplete="current-password"
-            aria-required="true"
-            aria-invalid={error ? 'true' : 'false'}
+            placeholder="Enter password"
             disabled={isSubmitting}
+            autoComplete="current-password"
+            required
           />
         </div>
         
-        <button 
-          type="submit" 
-          style={{
-            ...styles.button,
-            opacity: isSubmitting ? 0.7 : 1,
-            cursor: isSubmitting ? 'not-allowed' : 'pointer',
-          }}
-          disabled={isSubmitting}
-          aria-busy={isSubmitting}
-          aria-live="polite"
+        <button
+          type="submit"
+          style={styles.button}
+          disabled={isSubmitting || !credentials.username || !credentials.password}
         >
           {isSubmitting ? 'Logging in...' : 'Login'}
         </button>
