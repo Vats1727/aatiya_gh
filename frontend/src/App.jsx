@@ -1,11 +1,26 @@
 import React from 'react';
-import StudentForm from "./components/StudentForm"
-import { AlignCenter } from "lucide-react"
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import StudentForm from "./components/StudentForm";
+import AdminLogin from "./components/AdminLogin";
+import AdminDashboard from "./components/AdminDashboard";
 
-export default function App(){
+const PrivateRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem('adminAuthenticated') === 'true';
+  return isAuthenticated ? children : <Navigate to="/admin" />;
+};
+
+export default function App() {
   return (
-    <div >
-      <StudentForm />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<StudentForm />} />
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={
+          <PrivateRoute>
+            <AdminDashboard />
+          </PrivateRoute>
+        } />
+      </Routes>
+    </Router>
   );
 }
