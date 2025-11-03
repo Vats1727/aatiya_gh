@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import StudentForm from "./components/StudentForm";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
@@ -11,16 +11,14 @@ const PrivateRoute = ({ children }) => {
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<StudentForm />} />
-        <Route path="/admin" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={
-          <PrivateRoute>
-            <AdminDashboard />
-          </PrivateRoute>
-        } />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/" element={<StudentForm />} />
+      <Route path="/admin" element={<AdminLogin />} />
+      <Route path="/admin/dashboard" element={
+        <PrivateRoute>
+          <AdminDashboard />
+        </PrivateRoute>
+      } />
+    </Routes>
   );
 }
