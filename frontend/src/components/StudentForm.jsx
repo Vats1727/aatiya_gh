@@ -786,97 +786,7 @@ const HostelAdmissionForm = () => {
     }
   };
 
-  if (showPreview) {
-    return (
-      <div className="print-content">
-        <style>{`
-          @media print {
-            *, *::before, *::after {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-            body, html {
-                margin: 0;
-                padding: 0;
-            }
-            body * {
-              visibility: hidden;
-            }
-            .print-content, .print-content * {
-              visibility: visible;
-            }
-            .print-content {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-            }
-            .no-print {
-              display: none !important;
-            }
-            .page-break {
-                page-break-before: always;
-            }
-          }
-        `}</style>
-
-        {/* PAGE 1: ADMISSION FORM */}
-        <div style={responsiveStyles.printContainer}>
-          {/* Header */}
-          <div style={responsiveStyles.printHeader}>
-            <h1 style={responsiveStyles.printH1}>आतिया गर्ल्स हॉस्टल</h1>
-            <h2 style={responsiveStyles.printH2}>ATIYA GIRLS HOSTEL</h2>
-            <p style={responsiveStyles.printSubtitle}>रामपाड़ा कटिहार / Rampada Katihar</p>
-            <p style={responsiveStyles.printFormTitle}>नामांकन फॉर्म / ADMISSION FORM</p>
-            <div style={responsiveStyles.printDate}>Admission Date: {formatDate(formData.admissionDate)}</div>
-          </div>
-
-          {/* Photos Section */}
-          <div style={responsiveStyles.photoSection}>
-            <div style={responsiveStyles.photoBox}>
-              <span style={responsiveStyles.photoLabel}>पिता/माता का फोटो / Parent Photo</span>
-              <div style={responsiveStyles.photoPreview}>
-                {formData.parentPhoto ? (
-                  <img src={formData.parentPhoto} alt="Parent" style={responsiveStyles.photoImg} />
-                ) : (
-                  <User size={35} color="#9ca3af" />
-                )}
-              </div>
-            </div>
-            <div style={responsiveStyles.photoBox}>
-              <span style={responsiveStyles.photoLabel}>छात्रा का फोटो / Student Photo</span>
-              <div style={responsiveStyles.photoPreview}>
-                {formData.studentPhoto ? (
-                  <img src={formData.studentPhoto} alt="Student" style={responsiveStyles.photoImg} />
-                ) : (
-                  <User size={35} color="#9ca3af" />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Signatures Section */}
-          <div style={{...responsiveStyles.signatureSection, marginTop: '2.5rem'}}>
-            <div style={responsiveStyles.signatureBox}>
-              <div style={{borderTop: '2px solid #9ca3af', paddingTop: '0.5rem', minHeight: '50px'}}>
-                <p style={{...responsiveStyles.signatureName, fontSize: '0.8rem'}}>{formData.parentSignature}</p>
-                <p style={{...responsiveStyles.signatureLabel, fontSize: '0.65rem'}}>पिता / माता का हस्ताक्षर</p>
-              </div>
-            </div>
-            <div style={responsiveStyles.signatureBox}>
-              <div style={{borderTop: '2px solid #9ca3af', paddingTop: '0.5rem', minHeight: '50px'}}>
-                <p style={{...responsiveStyles.signatureName, fontSize: '0.8rem'}}>{formData.studentSignature}</p>
-                <p style={{...responsiveStyles.signatureLabel, fontSize: '0.65rem'}}>छात्रा का हस्ताक्षर</p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    );
-  }
-
-    // Function to render form fields
+  // Function to render form fields
   const renderFormField = (name, label, type = 'text', required = false) => (
     <div style={responsiveStyles.formGroup}>
       <label style={responsiveStyles.label}>
@@ -893,7 +803,92 @@ const HostelAdmissionForm = () => {
     </div>
   );
 
-  return (
+  return showPreview ? (
+    <div className="print-content">
+      <style>{`
+        @media print {
+          *, *::before, *::after {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body, html {
+              margin: 0;
+              padding: 0;
+          }
+          body * {
+            visibility: hidden;
+          }
+          .print-content, .print-content * {
+            visibility: visible;
+          }
+          .print-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .page-break {
+              page-break-before: always;
+          }
+        }
+      `}</style>
+
+      {/* PAGE 1: ADMISSION FORM */}
+      <div style={responsiveStyles.printContainer}>
+        {/* Header */}
+        <div style={responsiveStyles.printHeader}>
+          <h1 style={responsiveStyles.printH1}>आतिया गर्ल्स हॉस्टल</h1>
+          <h2 style={responsiveStyles.printH2}>ATIYA GIRLS HOSTEL</h2>
+          <p style={responsiveStyles.printSubtitle}>रामपाड़ा कटिहार / Rampada Katihar</p>
+          <p style={responsiveStyles.printFormTitle}>नामांकन फॉर्म / ADMISSION FORM</p>
+          <div style={responsiveStyles.printDate}>Admission Date: {formatDate(formData.admissionDate)}</div>
+        </div>
+
+        {/* Photos Section */}
+        <div style={responsiveStyles.photoSection}>
+          <div style={responsiveStyles.photoBox}>
+            <span style={responsiveStyles.photoLabel}>पिता/माता का फोटो / Parent Photo</span>
+            <div style={responsiveStyles.photoPreview}>
+              {formData.parentPhoto ? (
+                <img src={formData.parentPhoto} alt="Parent" style={responsiveStyles.photoImg} />
+              ) : (
+                <User size={35} color="#9ca3af" />
+              )}
+            </div>
+          </div>
+          <div style={responsiveStyles.photoBox}>
+            <span style={responsiveStyles.photoLabel}>छात्रा का फोटो / Student Photo</span>
+            <div style={responsiveStyles.photoPreview}>
+              {formData.studentPhoto ? (
+                <img src={formData.studentPhoto} alt="Student" style={responsiveStyles.photoImg} />
+              ) : (
+                <User size={35} color="#9ca3af" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Signatures Section */}
+        <div style={{...responsiveStyles.signatureSection, marginTop: '2.5rem'}}>
+          <div style={responsiveStyles.signatureBox}>
+            <div style={{borderTop: '2px solid #9ca3af', paddingTop: '0.5rem', minHeight: '50px'}}>
+              <p style={{...responsiveStyles.signatureName, fontSize: '0.8rem'}}>{formData.parentSignature}</p>
+              <p style={{...responsiveStyles.signatureLabel, fontSize: '0.65rem'}}>पिता / माता का हस्ताक्षर</p>
+            </div>
+          </div>
+          <div style={responsiveStyles.signatureBox}>
+            <div style={{borderTop: '2px solid #9ca3af', paddingTop: '0.5rem', minHeight: '50px'}}>
+              <p style={{...responsiveStyles.signatureName, fontSize: '0.8rem'}}>{formData.studentSignature}</p>
+              <p style={{...responsiveStyles.signatureLabel, fontSize: '0.65rem'}}>छात्रा का हस्ताक्षर</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
     <div style={responsiveStyles.container}>
       <div style={responsiveStyles.maxWidth}>
         {/* Header */}
