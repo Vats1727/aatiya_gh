@@ -5,6 +5,7 @@ import admin from 'firebase-admin';
 import bodyParser from 'body-parser';
 import fs from 'fs';
 import path from 'path';
+import morgan from 'morgan';
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '20mb' }));
+app.use(morgan('dev'));
 
 // -----------------------
 // Firebase initialization (support multiple env options)
@@ -70,12 +72,15 @@ const db = admin.firestore ? admin.firestore() : null;
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
 app.post('/api/students', async (req, res) => {
+  console.log('POST /api/students incoming, body size:', req.headers['content-length'] || 'unknown');
+  console.log('Body preview:', JSON.stringify(req.body).slice(0, 1000));
   if (!db) return res.status(500).send('Firestore not initialized');
   try {
     const data = req.body || {};
     data.createdAt = admin.firestore.FieldValue.serverTimestamp();
     const ref = await db.collection('students').add(data);
     const snap = await ref.get();
+    console.log('Student created with id', ref.id);
     res.status(201).json({ id: ref.id, data: snap.data() });
   } catch (err) {
     console.error('POST /api/students error', err);
