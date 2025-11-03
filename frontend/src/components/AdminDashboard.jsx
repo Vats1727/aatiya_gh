@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Edit, Check, X, Trash, Menu } from 'lucide-react';
+import { Download, Edit, Check, X, Trash, Menu, Printer } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -421,6 +423,159 @@ const AdminDashboard = () => {
     }
   };
 
+  // Client-side PDF generation using html2canvas + jsPDF
+  const handlePrint = async (student) => {
+    try {
+      // Build printable HTML similar to StudentForm print layout
+      const container = document.createElement('div');
+      container.style.width = '900px';
+      container.style.padding = '24px';
+      container.style.background = '#fff';
+      container.style.color = '#111827';
+      container.style.fontFamily = 'Arial, Helvetica, sans-serif';
+      container.style.boxSizing = 'border-box';
+
+      const header = `
+        <div style="text-align:center;border-bottom:2px solid #9ca3af;padding-bottom:12px;margin-bottom:16px;">
+          <h1 style="margin:0;font-size:20px;">आतिया गर्ल्स हॉस्टल</h1>
+          <h2 style="margin:0;font-size:14px;color:#374151;">ATIYA GIRLS HOSTEL</h2>
+          <div style="font-size:12px;margin-top:6px;">रामपाड़ा कटिहार / Rampada Katihar</div>
+          <div style="font-weight:700;margin-top:8px;font-size:13px;">नामांकन फॉर्म / ADMISSION FORM</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:6px;">Admission Date: ${student.admissionDate || ''}</div>
+        </div>
+      `;
+
+      const photos = `
+        <div style="display:flex;gap:16px;margin:12px 0;">
+          <div style="flex:1;text-align:center;border:1px solid #e5e7eb;padding:8px;">
+            <div style="font-weight:600;font-size:12px;margin-bottom:8px;">पिता/माता का फोटो / Parent Photo</div>
+            ${student.parentPhoto ? `<img src="${student.parentPhoto}" style="max-width:160px;max-height:160px;object-fit:cover" />` : '<div style="width:160px;height:160px;display:flex;align-items:center;justify-content:center;color:#9ca3af">No Photo</div>'}
+          </div>
+          <div style="flex:1;text-align:center;border:1px solid #e5e7eb;padding:8px;">
+            <div style="font-weight:600;font-size:12px;margin-bottom:8px;">छात्रा का फोटो / Student Photo</div>
+            ${student.studentPhoto ? `<img src="${student.studentPhoto}" style="max-width:160px;max-height:160px;object-fit:cover" />` : '<div style="width:160px;height:160px;display:flex;align-items:center;justify-content:center;color:#9ca3af">No Photo</div>'}
+          </div>
+        </div>
+      `;
+
+      const infoRows = (label, value) => `
+        <div style="display:flex;gap:8px;margin:6px 0;">
+          <div style="width:200px;font-weight:700;color:#4b5563">${label}</div>
+          <div style="flex:1">${value || ''}</div>
+        </div>
+      `;
+
+      const info = `
+        <div style="margin-top:12px;">
+          ${infoRows("छात्रा का नाम / Student Name", student.studentName)}
+          ${infoRows("माता का नाम / Mother's Name", student.motherName)}
+          ${infoRows("पिता का नाम / Father's Name", student.fatherName)}
+          ${infoRows("जन्म तिथि / Date of Birth", student.dob)}
+          ${infoRows("मोबाइल नं (1)", student.mobile1)}
+          ${infoRows("मोबाइल नं (2)", student.mobile2)}
+          ${infoRows("ग्राम / Village", student.village)}
+          ${infoRows("पोस्ट / Post", student.post)}
+          ${infoRows("थाना / Police Station", student.policeStation)}
+          ${infoRows("जिला / District", student.district)}
+          ${infoRows("पिन कोड / PIN Code", student.pinCode)}
+        </div>
+      `;
+
+      const allowed = `
+        <div style="margin-top:12px;">
+          <div style="font-weight:700;margin-bottom:6px;">छात्रा से मिलने वाले का नाम / Names of Persons Allowed to Meet</div>
+          ${[1,2,3,4].map(i => `<div>${i}. ${student[`allowedPerson${i}`] || ''}</div>`).join('')}
+        </div>
+      `;
+
+      const coaching = `
+        <div style="margin-top:12px;">
+          <div style="font-weight:700;margin-bottom:6px;">कोचिंग विवरण / Coaching Details</div>
+          ${[1,2,3,4].map(i => `<div style="margin-bottom:6px;"><strong>कोचिंग ${i}:</strong> ${(student[`coaching${i}Name`]||'')} ${(student[`coaching${i}Address`] ? '- ' + student[`coaching${i}Address`] : '')}</div>`).join('')}
+        </div>
+      `;
+
+      const signatures = `
+        <div style="display:flex;gap:16px;margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;">
+          <div style="flex:1;text-align:center;padding-top:8px;">
+            <div style="border-top:2px solid #9ca3af;padding-top:8px">${student.parentSignature || ''}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:4px">पिता / माता का हस्ताक्षर</div>
+          </div>
+          <div style="flex:1;text-align:center;padding-top:8px;">
+            <div style="border-top:2px solid #9ca3af;padding-top:8px">${student.studentSignature || ''}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:4px">छात्रा का हस्ताक्षर</div>
+          </div>
+        </div>
+      `;
+
+      const rules = `
+        <div style="margin-top:18px;font-size:12px;line-height:1.5">
+          <div style="font-weight:700;margin-bottom:8px;text-align:center">हॉस्टल नियम एवं शर्तें</div>
+          <ol>
+            <li>हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</li>
+            <li>कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है।</li>
+            <li>छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</li>
+            <li>कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा।</li>
+            <li>यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</li>
+            <li>हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है।</li>
+            <li>अभिभावकों से अनुरोध है कि वे अपने बच्चे से केवल रविवार को मिलें; मिलने वालों में माता-पिता और भाई-बहन ही शामिल होंगे।</li>
+            <li>किसी भी विज़िट से पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है; विज़िटर्स को आवासीय क्षेत्रों में प्रवेश की अनुमति नहीं होगी।</li>
+            <li>खिड़कियों के पास खड़ा होना सख्त मना है।</li>
+            <li>खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</li>
+          </ol>
+        </div>
+      `;
+
+      container.innerHTML = header + photos + info + allowed + coaching + signatures + rules;
+      // Make sure it's visible (off-screen) so html2canvas can render styles
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      document.body.appendChild(container);
+
+      // Render to canvas
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: true });
+      const imgData = canvas.toDataURL('image/png');
+
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidthMm = pageWidth;
+      const imgHeightMm = (imgProps.height * imgWidthMm) / imgProps.width;
+
+      if (imgHeightMm <= pageHeight) {
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidthMm, imgHeightMm);
+      } else {
+        // If content is longer than one page, split into multiple pages
+        let remainingHeight = imgHeightMm;
+        let position = 0;
+        const pxPerMm = (canvas.height / imgHeightMm);
+        while (remainingHeight > 0) {
+          const canvasPage = document.createElement('canvas');
+          const pageCanvasHeightPx = Math.floor(pageHeight * pxPerMm);
+          canvasPage.width = canvas.width;
+          canvasPage.height = Math.min(pageCanvasHeightPx, canvas.height - position);
+          const ctx = canvasPage.getContext('2d');
+          ctx.drawImage(canvas, 0, position, canvas.width, canvasPage.height, 0, 0, canvas.width, canvasPage.height);
+          const pageData = canvasPage.toDataURL('image/png');
+          const pageImgProps = pdf.getImageProperties(pageData);
+          const pageImgHeightMm = (pageImgProps.height * imgWidthMm) / pageImgProps.width;
+          pdf.addImage(pageData, 'PNG', 0, 0, imgWidthMm, pageImgHeightMm);
+          remainingHeight -= (pageImgHeightMm);
+          position += canvasPage.height;
+          if (remainingHeight > 0) pdf.addPage();
+        }
+      }
+
+      pdf.save(`student-${student.id || 'export'}.pdf`);
+      document.body.removeChild(container);
+    } catch (err) {
+      console.error('Print error', err);
+      setError(err.message || 'Failed to generate PDF');
+    }
+  };
+
   const handleAddNew = () => {
     navigate('/');
   };
@@ -460,13 +615,13 @@ const AdminDashboard = () => {
   };
 
   // Render action buttons
-  const renderActionButtons = (studentId) => (
+  const renderActionButtons = (student) => (
     <>
       <button
         style={{ ...styles.actionButton, background: '#10b981' }}
         onClick={(e) => {
           e.stopPropagation();
-          handleStatusChange(studentId, 'approved');
+          handleStatusChange(student.id, 'approved');
         }}
         aria-label="Approve"
       >
@@ -476,7 +631,7 @@ const AdminDashboard = () => {
         style={{ ...styles.actionButton, background: '#ef4444' }}
         onClick={(e) => {
           e.stopPropagation();
-          handleStatusChange(studentId, 'rejected');
+          handleStatusChange(student.id, 'rejected');
         }}
         aria-label="Reject"
       >
@@ -486,7 +641,7 @@ const AdminDashboard = () => {
         style={{ ...styles.actionButton, background: '#6366f1' }}
         onClick={(e) => {
           e.stopPropagation();
-          handleEdit(studentId);
+          handleEdit(student.id);
         }}
         aria-label="Edit"
       >
@@ -496,17 +651,27 @@ const AdminDashboard = () => {
         style={{ ...styles.actionButton, background: '#8b5cf6' }}
         onClick={(e) => {
           e.stopPropagation();
-          handleDownload(studentId);
+          handleDownload(student.id);
         }}
         aria-label="Download"
       >
         <Download size={16} color="white" />
       </button>
       <button
+        style={{ ...styles.actionButton, background: '#06b6d4' }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handlePrint(student);
+        }}
+        aria-label="Print"
+      >
+        <Printer size={16} color="white" />
+      </button>
+      <button
         style={{ ...styles.actionButton, background: '#ef4444' }}
         onClick={(e) => {
           e.stopPropagation();
-          handleDelete(studentId);
+          handleDelete(student.id);
         }}
         aria-label="Delete"
       >
@@ -587,7 +752,7 @@ const AdminDashboard = () => {
                   </td>
                   <td style={styles.td}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                      {renderActionButtons(student.id)}
+                      {renderActionButtons(student)}
                     </div>
                   </td>
                 </tr>
@@ -623,7 +788,7 @@ const AdminDashboard = () => {
                 </span>
               </div>
               <div style={styles.mobileActions}>
-                {renderActionButtons(student.id)}
+                {renderActionButtons(student)}
               </div>
             </div>
           ))}
