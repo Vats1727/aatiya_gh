@@ -17,8 +17,11 @@ const AdminDashboard = () => {
   const filterStudents = () => {
     const q = String(searchQuery || '').trim().toLowerCase();
     return allStudents.filter(student => {
-      // Status filter
-      if (statusFilter !== 'all' && student.status !== statusFilter) return false;
+      // Status filter - case insensitive comparison
+      if (statusFilter !== 'all') {
+        const studentStatus = String(student.status || '').toLowerCase();
+        if (studentStatus !== statusFilter.toLowerCase()) return false;
+      }
       
       // If no search query, return all matching status
       if (!q) return true;
