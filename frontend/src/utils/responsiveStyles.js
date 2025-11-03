@@ -1,3 +1,5 @@
+import React from 'react';
+
 // Helper function to apply responsive styles
 export const applyResponsiveStyles = (baseStyles) => {
   const responsiveStyles = { ...baseStyles };
