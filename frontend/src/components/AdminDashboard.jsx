@@ -12,53 +12,8 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' });
   const rowsPerPage = 10;
   const navigate = useNavigate();
-
-  // Sort array by key and direction
-  const sortArray = (array) => {
-    if (!sortConfig.key) return array;
-    
-    return [...array].sort((a, b) => {
-      // Handle different data types for sorting
-      let valueA = a[sortConfig.key];
-      let valueB = b[sortConfig.key];
-      
-      // Convert to string and lowercase for case-insensitive comparison
-      if (typeof valueA === 'string') valueA = valueA.toLowerCase();
-      if (typeof valueB === 'string') valueB = valueB.toLowerCase();
-      
-      // Handle undefined/null values
-      if (valueA == null) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (valueB == null) return sortConfig.direction === 'asc' ? 1 : -1;
-      
-      // Compare values
-      if (valueA < valueB) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (valueA > valueB) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-  };
-
-  // Handle sort request
-  const requestSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-    setCurrentPage(1); // Reset to first page when sorting
-  };
-
-  // Get sort indicator
-  const getSortIndicator = (key) => {
-    if (sortConfig.key !== key) return '↕';
-    return sortConfig.direction === 'asc' ? '↑' : '↓';
-  };
 
   // Filter students based on search query and status
   const filterStudents = () => {
@@ -85,18 +40,18 @@ const AdminDashboard = () => {
   // Get current students for pagination
   const getCurrentStudents = () => {
     const filtered = filterStudents();
-    const sorted = sortArray(filtered);
     
     // Calculate pagination
     const indexOfLastStudent = currentPage * rowsPerPage;
     const indexOfFirstStudent = indexOfLastStudent - rowsPerPage;
     return {
-      currentStudents: sorted.slice(indexOfFirstStudent, indexOfLastStudent),
-      totalPages: Math.ceil(sorted.length / rowsPerPage)
+      currentStudents: filtered.slice(indexOfFirstStudent, indexOfLastStudent),
+      totalPages: Math.ceil(filtered.length / rowsPerPage),
+      totalStudents: filtered.length
     };
   };
   
-  const { currentStudents, totalPages } = getCurrentStudents();
+  const { currentStudents, totalPages, totalStudents } = getCurrentStudents();
   
   // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
@@ -106,13 +61,13 @@ const AdminDashboard = () => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
   
-  // Apply filters whenever search query, status, or sort changes
+  // Apply filters when search query or status changes
   useEffect(() => {
     if (allStudents.length > 0) {
       const filtered = filterStudents();
       setStudents(filtered);
     }
-  }, [searchQuery, statusFilter, allStudents, sortConfig]);
+  }, [searchQuery, statusFilter, allStudents]);
 
   // Fetch students data
   const fetchStudents = async () => {
@@ -417,13 +372,6 @@ const AdminDashboard = () => {
         background: '#f3f4f6',
       },
     },
-    sortableHeader: {
-      cursor: 'pointer',
-      userSelect: 'none',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.25rem',
-    },
     '@media (max-width: 1024px)': {
       container: {
         padding: '1.25rem 0.75rem',
@@ -685,9 +633,87 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {error && (
-          <div style={applyResponsiveStyles(styles.error)}>
-            {error}
+        {/* Pagination Controls - Moved below navbar */}
+        {students.length > 0 && (
+          <div style={{
+            ...styles.pagination,
+            margin: '1rem 0',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '0.75rem 1rem',
+            background: 'white',
+            borderRadius: '0.75rem',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+          }}>
+            <div style={{ color: '#4b5563', fontSize: '0.875rem' }}>
+              Showing {Math.min((currentPage - 1) * rowsPerPage + 1, totalStudents)} to {Math.min(currentPage * rowsPerPage, totalStudents)} of {totalStudents} entries
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => paginate(1)}
+                disabled={currentPage === 1}
+                style={styles.pageButton}
+                type="button"
+                aria-label="First page"
+              >
+                ««
+              </button>
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={styles.pageButton}
+                type="button"
+                aria-label="Previous page"
+              >
+                «
+              </button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                // Show page numbers around current page
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => paginate(pageNum)}
+                    style={{
+                      ...styles.pageButton,
+                      ...(currentPage === pageNum && styles.pageButton.active)
+                    }}
+                    type="button"
+                    aria-label={`Page ${pageNum}`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                style={styles.pageButton}
+                type="button"
+                aria-label="Next page"
+              >
+                »
+              </button>
+              <button
+                onClick={() => paginate(totalPages)}
+                disabled={currentPage === totalPages}
+                style={styles.pageButton}
+                type="button"
+                aria-label="Last page"
+              >
+                »»
+              </button>
+            </div>
           </div>
         )}
 
@@ -699,58 +725,20 @@ const AdminDashboard = () => {
           }}>
             <thead>
               <tr>
-                <th style={styles.th}>
-                  <span 
-                    className="sortable-header" 
-                    onClick={() => requestSort('id')}
-                    style={styles.sortableHeader}
-                  >
-                    # {getSortIndicator('id')}
-                  </span>
-                </th>
-                <th style={styles.th}>
-                  <span 
-                    className="sortable-header" 
-                    onClick={() => requestSort('studentName')}
-                    style={styles.sortableHeader}
-                  >
-                    Name {getSortIndicator('studentName')}
-                  </span>
-                </th>
-                <th style={styles.th}>
-                  <span 
-                    className="sortable-header" 
-                    onClick={() => requestSort('mobile1')}
-                    style={styles.sortableHeader}
-                  >
-                    Contact {getSortIndicator('mobile1')}
-                  </span>
-                </th>
-                <th style={styles.th}>
-                  <span 
-                    className="sortable-header" 
-                    onClick={() => requestSort('district')}
-                    style={styles.sortableHeader}
-                  >
-                    District {getSortIndicator('district')}
-                  </span>
-                </th>
-                <th style={styles.th}>
-                  <span 
-                    className="sortable-header" 
-                    onClick={() => requestSort('status')}
-                    style={styles.sortableHeader}
-                  >
-                    Status {getSortIndicator('status')}
-                  </span>
-                </th>
+                <th style={styles.th}>#</th>
+                <th style={styles.th}>Name</th>
+                <th style={styles.th}>Contact</th>
+                <th style={styles.th}>District</th>
+                <th style={styles.th}>Status</th>
                 <th style={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {currentStudents.map((student, idx) => (
-                <tr key={student.id}>
-                  <td style={styles.td}>{student.id || (currentPage - 1) * rowsPerPage + idx + 1}</td>
+              {currentStudents.map((student, idx) => {
+                const rowNumber = (currentPage - 1) * rowsPerPage + idx + 1;
+                return (
+                <tr key={student.id || idx}>
+                  <td style={styles.td}>{rowNumber}</td>
                   <td style={styles.td}>{student.studentName}</td>
                   <td style={styles.td}>{student.mobile1}</td>
                   <td style={styles.td}>{student.district}</td>
@@ -822,82 +810,10 @@ const AdminDashboard = () => {
                     </button>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {students.length > 0 && (
-            <div style={styles.pagination}>
-              <button
-                onClick={() => paginate(1)}
-                disabled={currentPage === 1}
-                style={styles.pageButton}
-                type="button"
-                aria-label="First page"
-              >
-                ««
-              </button>
-              <button
-                onClick={() => paginate(currentPage - 1)}
-                disabled={currentPage === 1}
-                style={styles.pageButton}
-                type="button"
-                aria-label="Previous page"
-              >
-                «
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                // Calculate page numbers to show (current page in the middle when possible)
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => paginate(pageNum)}
-                    className={currentPage === pageNum ? 'active' : ''}
-                    style={{
-                      ...styles.pageButton,
-                      ...(currentPage === pageNum && styles.pageButton['&.active'])
-                    }}
-                    type="button"
-                    aria-label={`Page ${pageNum}`}
-                    aria-current={currentPage === pageNum ? 'page' : undefined}
-                  >
-                    {pageNum}
-                  </button>
                 );
               })}
-              <span style={styles.pageInfo}>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => paginate(currentPage + 1)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                style={styles.pageButton}
-                type="button"
-                aria-label="Next page"
-              >
-                »
-              </button>
-              <button
-                onClick={() => paginate(totalPages)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                style={styles.pageButton}
-                type="button"
-                aria-label="Last page"
-              >
-                »»
-              </button>
-            </div>
-          )}
+            </tbody>
+          </table>
           {students.length === 0 && (
             <div style={styles.emptyState}>
               No students found matching your criteria.
