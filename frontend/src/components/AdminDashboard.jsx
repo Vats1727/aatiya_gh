@@ -108,6 +108,7 @@ const AdminDashboard = () => {
     fetchStudents();
   }, [navigate]);
 
+  // Add styles for action buttons
   const styles = {
     container: {
       minHeight: '100vh',
@@ -716,27 +717,116 @@ const AdminDashboard = () => {
                     </span>
                   </td>
                   <td style={styles.td}>
-                    <button 
-                      onClick={() => navigate(`/student-form?editId=${student.id}`)}
-                      style={styles.iconButton}
-                      title="Edit"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleDownloadStudentPdf(student)}
-                      style={{...styles.iconButton, color: '#10b981'}}
-                      title="Download PDF"
-                    >
-                      <FileText size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(student.id)}
-                      style={{...styles.iconButton, color: '#ef4444'}}
-                      title="Delete"
-                    >
-                      <Trash size={16} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                      <button 
+                        onClick={() => handleStatusChange(student.id, 'approved')}
+                        style={{
+                          ...styles.actionButton,
+                          backgroundColor: student.status === 'approved' ? '#10b981' : '#e5e7eb',
+                          color: student.status === 'approved' ? 'white' : '#374151',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          padding: '0.25rem 0.5rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          ':hover': {
+                            opacity: 0.9,
+                            transform: 'translateY(-1px)'
+                          }
+                        }}
+                        title="Approve"
+                      >
+                        <Check size={14} />
+                        <span style={{ fontSize: '0.75rem' }}>Accept</span>
+                      </button>
+                      <button 
+                        onClick={() => handleStatusChange(student.id, 'rejected')}
+                        style={{
+                          ...styles.actionButton,
+                          backgroundColor: student.status === 'rejected' ? '#ef4444' : '#e5e7eb',
+                          color: student.status === 'rejected' ? 'white' : '#374151',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          padding: '0.25rem 0.5rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          ':hover': {
+                            opacity: 0.9,
+                            transform: 'translateY(-1px)'
+                          }
+                        }}
+                        title="Reject"
+                      >
+                        <X size={14} />
+                        <span style={{ fontSize: '0.75rem' }}>Reject</span>
+                      </button>
+                      <button 
+                        onClick={() => handleDownloadStudentPdf(student)}
+                        style={{
+                          ...styles.iconButton,
+                          backgroundColor: '#e5e7eb',
+                          color: '#10b981',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          padding: '0.25rem 0.5rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          ':hover': {
+                            opacity: 0.9,
+                            transform: 'translateY(-1px)'
+                          }
+                        }}
+                        title="Download PDF"
+                      >
+                        <FileText size={14} />
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/student-form?editId=${student.id}`)}
+                        style={{
+                          ...styles.iconButton,
+                          backgroundColor: '#e5e7eb',
+                          color: '#3b82f6',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          padding: '0.25rem 0.5rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          ':hover': {
+                            opacity: 0.9,
+                            transform: 'translateY(-1px)'
+                          }
+                        }}
+                        title="Edit"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(student.id)}
+                        style={{
+                          ...styles.iconButton,
+                          backgroundColor: '#e5e7eb',
+                          color: '#ef4444',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          padding: '0.25rem 0.5rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          ':hover': {
+                            opacity: 0.9,
+                            transform: 'translateY(-1px)'
+                          }
+                        }}
+                        title="Delete"
+                      >
+                        <Trash size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
