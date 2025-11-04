@@ -11,7 +11,54 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' });
+  const rowsPerPage = 10;
   const navigate = useNavigate();
+
+  // Sort array by key and direction
+  const sortArray = (array) => {
+    if (!sortConfig.key) return array;
+    
+    return [...array].sort((a, b) => {
+      // Handle different data types for sorting
+      let valueA = a[sortConfig.key];
+      let valueB = b[sortConfig.key];
+      
+      // Convert to string and lowercase for case-insensitive comparison
+      if (typeof valueA === 'string') valueA = valueA.toLowerCase();
+      if (typeof valueB === 'string') valueB = valueB.toLowerCase();
+      
+      // Handle undefined/null values
+      if (valueA == null) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valueB == null) return sortConfig.direction === 'asc' ? 1 : -1;
+      
+      // Compare values
+      if (valueA < valueB) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (valueA > valueB) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
+  // Handle sort request
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  // Get sort indicator
+  const getSortIndicator = (key) => {
+    if (sortConfig.key !== key) return '↕';
+    return sortConfig.direction === 'asc' ? '↑' : '↓';
+  };
 
   // Filter students based on search query and status
   const filterStudents = () => {
@@ -34,14 +81,38 @@ const AdminDashboard = () => {
       return name.includes(q) || mobile1.includes(q) || mobile2.includes(q);
     });
   };
+
+  // Get current students for pagination
+  const getCurrentStudents = () => {
+    const filtered = filterStudents();
+    const sorted = sortArray(filtered);
+    
+    // Calculate pagination
+    const indexOfLastStudent = currentPage * rowsPerPage;
+    const indexOfFirstStudent = indexOfLastStudent - rowsPerPage;
+    return {
+      currentStudents: sorted.slice(indexOfFirstStudent, indexOfLastStudent),
+      totalPages: Math.ceil(sorted.length / rowsPerPage)
+    };
+  };
   
-  // Apply filters whenever search query or status changes
+  const { currentStudents, totalPages } = getCurrentStudents();
+  
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+  
+  // Apply filters whenever search query, status, or sort changes
   useEffect(() => {
     if (allStudents.length > 0) {
       const filtered = filterStudents();
       setStudents(filtered);
     }
-  }, [searchQuery, statusFilter, allStudents]);
+  }, [searchQuery, statusFilter, allStudents, sortConfig]);
 
   // Fetch students data
   const fetchStudents = async () => {
@@ -310,6 +381,49 @@ const AdminDashboard = () => {
       fontSize: '1rem',
       lineHeight: '1.5',
     },
+    pagination: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: '1.5rem',
+      gap: '0.5rem',
+      flexWrap: 'wrap',
+    },
+    pageInfo: {
+      margin: '0 1rem',
+      color: '#4b5563',
+      fontSize: '0.875rem',
+    },
+    pageButton: {
+      padding: '0.5rem 0.75rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '0.375rem',
+      background: 'white',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      minWidth: '2.5rem',
+      textAlign: 'center',
+      '&:hover': {
+        background: '#f3f4f6',
+      },
+      '&.active': {
+        background: '#8b5cf6',
+        color: 'white',
+        borderColor: '#8b5cf6',
+      },
+      '&:disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
+        background: '#f3f4f6',
+      },
+    },
+    sortableHeader: {
+      cursor: 'pointer',
+      userSelect: 'none',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.25rem',
+    },
     '@media (max-width: 1024px)': {
       container: {
         padding: '1.25rem 0.75rem',
@@ -393,7 +507,6 @@ const AdminDashboard = () => {
     },
   };
 
-
   const handleLogout = () => {
     localStorage.removeItem('adminAuthenticated');
     navigate('/admin');
@@ -440,8 +553,8 @@ const AdminDashboard = () => {
       });
       if (!response.ok) throw new Error('Failed to delete record');
       // Remove from local state
-  setStudents(prev => prev.filter(s => s.id !== id));
-  setAllStudents(prev => prev.filter(s => s.id !== id));
+      setStudents(prev => prev.filter(s => s.id !== id));
+      setAllStudents(prev => prev.filter(s => s.id !== id));
     } catch (err) {
       setError(err.message);
     }
@@ -532,44 +645,44 @@ const AdminDashboard = () => {
         <div style={applyResponsiveStyles(styles.header)}>
           <h1 style={applyResponsiveStyles(styles.title)}>Admin Dashboard</h1>
           <div style={applyResponsiveStyles(styles.headerActions)}>
-          <div style={applyResponsiveStyles(styles.searchContainer)}>
-            <input
-              type="text"
-              placeholder="Search by name or mobile..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={applyResponsiveStyles(styles.searchInput)}
-              aria-label="Search students"
-            />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={applyResponsiveStyles(styles.statusFilter)}
-              aria-label="Filter by status"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
+            <div style={applyResponsiveStyles(styles.searchContainer)}>
+              <input
+                type="text"
+                placeholder="Search by name or mobile..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={applyResponsiveStyles(styles.searchInput)}
+                aria-label="Search students"
+              />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={applyResponsiveStyles(styles.statusFilter)}
+                aria-label="Filter by status"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', '@media (max-width: 600px)': { width: '100%' } }}>
+              <button 
+                style={{ ...applyResponsiveStyles(styles.addButton), '@media (max-width: 600px)': { flex: 1 } }} 
+                onClick={handleAddNew}
+                type="button"
+              >
+                Add New
+              </button>
+              <button 
+                style={{ ...applyResponsiveStyles(styles.logoutButton), '@media (max-width: 600px)': { flex: 1 } }} 
+                onClick={handleLogout}
+                type="button"
+              >
+                Logout
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', '@media (max-width: 600px)': { width: '100%' } }}>
-            <button 
-              style={{ ...applyResponsiveStyles(styles.addButton), '@media (max-width: 600px)': { flex: 1 } }} 
-              onClick={handleAddNew}
-              type="button"
-            >
-              Add New
-            </button>
-            <button 
-              style={{ ...applyResponsiveStyles(styles.logoutButton), '@media (max-width: 600px)': { flex: 1 } }} 
-              onClick={handleLogout}
-              type="button"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
         </div>
 
         {error && (
@@ -586,22 +699,62 @@ const AdminDashboard = () => {
           }}>
             <thead>
               <tr>
-                        <th style={styles.th}>#</th>
-                <th style={styles.th}>Name</th>
-                <th style={styles.th}>Contact</th>
-                <th style={styles.th}>District</th>
-                <th style={styles.th}>Status</th>
+                <th style={styles.th}>
+                  <span 
+                    className="sortable-header" 
+                    onClick={() => requestSort('id')}
+                    style={styles.sortableHeader}
+                  >
+                    # {getSortIndicator('id')}
+                  </span>
+                </th>
+                <th style={styles.th}>
+                  <span 
+                    className="sortable-header" 
+                    onClick={() => requestSort('studentName')}
+                    style={styles.sortableHeader}
+                  >
+                    Name {getSortIndicator('studentName')}
+                  </span>
+                </th>
+                <th style={styles.th}>
+                  <span 
+                    className="sortable-header" 
+                    onClick={() => requestSort('mobile1')}
+                    style={styles.sortableHeader}
+                  >
+                    Contact {getSortIndicator('mobile1')}
+                  </span>
+                </th>
+                <th style={styles.th}>
+                  <span 
+                    className="sortable-header" 
+                    onClick={() => requestSort('district')}
+                    style={styles.sortableHeader}
+                  >
+                    District {getSortIndicator('district')}
+                  </span>
+                </th>
+                <th style={styles.th}>
+                  <span 
+                    className="sortable-header" 
+                    onClick={() => requestSort('status')}
+                    style={styles.sortableHeader}
+                  >
+                    Status {getSortIndicator('status')}
+                  </span>
+                </th>
                 <th style={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
-                      {students.map((student, idx) => (
-                        <tr key={student.id}>
-                          <td style={styles.td}>{idx + 1}</td>
-                          <td style={styles.td}>{student.studentName}</td>
-                          <td style={styles.td}>{student.mobile1}</td>
-                          <td style={styles.td}>{student.district}</td>
-                          <td style={styles.td}>
+              {currentStudents.map((student, idx) => (
+                <tr key={student.id}>
+                  <td style={styles.td}>{student.id || (currentPage - 1) * rowsPerPage + idx + 1}</td>
+                  <td style={styles.td}>{student.studentName}</td>
+                  <td style={styles.td}>{student.mobile1}</td>
+                  <td style={styles.td}>{student.district}</td>
+                  <td style={styles.td}>
                     <span style={{
                       ...styles.statusBadge,
                       ...(student.status === 'pending' ? styles.pendingBadge :
@@ -671,10 +824,88 @@ const AdminDashboard = () => {
                 </tr>
               ))}
             </tbody>
-            </table>
-          </div>
+          </table>
+          {students.length > 0 && (
+            <div style={styles.pagination}>
+              <button
+                onClick={() => paginate(1)}
+                disabled={currentPage === 1}
+                style={styles.pageButton}
+                type="button"
+                aria-label="First page"
+              >
+                ««
+              </button>
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={styles.pageButton}
+                type="button"
+                aria-label="Previous page"
+              >
+                «
+              </button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                // Calculate page numbers to show (current page in the middle when possible)
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => paginate(pageNum)}
+                    className={currentPage === pageNum ? 'active' : ''}
+                    style={{
+                      ...styles.pageButton,
+                      ...(currentPage === pageNum && styles.pageButton['&.active'])
+                    }}
+                    type="button"
+                    aria-label={`Page ${pageNum}`}
+                    aria-current={currentPage === pageNum ? 'page' : undefined}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              <span style={styles.pageInfo}>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages || totalPages === 0}
+                style={styles.pageButton}
+                type="button"
+                aria-label="Next page"
+              >
+                »
+              </button>
+              <button
+                onClick={() => paginate(totalPages)}
+                disabled={currentPage === totalPages || totalPages === 0}
+                style={styles.pageButton}
+                type="button"
+                aria-label="Last page"
+              >
+                »»
+              </button>
+            </div>
+          )}
+          {students.length === 0 && (
+            <div style={styles.emptyState}>
+              No students found matching your criteria.
+            </div>
+          )}
         </div>
       </div>
+    </div>
   );
 };
 
