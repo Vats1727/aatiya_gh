@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, Edit, Check, X, Trash } from 'lucide-react';
-import { renderStudentPrintHtml } from '../utils/printTemplate';
-import { generatePdfFromHtmlString } from '../utils/pdf';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -13,59 +11,14 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-<<<<<<< HEAD
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewHtml, setPreviewHtml] = useState('');
-  const [previewFilename, setPreviewFilename] = useState('');
-=======
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' });
+  const [sortConfig] = useState({ key: null, direction: 'asc' });
   const rowsPerPage = 10;
->>>>>>> 7f623830e84802234f22c26499f1a0c608edae3d
   const navigate = useNavigate();
 
-  // Sort array by key and direction
+  // Simple sort function that just returns the array as is
   const sortArray = (array) => {
-    if (!sortConfig.key) return array;
-    
-    return [...array].sort((a, b) => {
-      // Handle different data types for sorting
-      let valueA = a[sortConfig.key];
-      let valueB = b[sortConfig.key];
-      
-      // Convert to string and lowercase for case-insensitive comparison
-      if (typeof valueA === 'string') valueA = valueA.toLowerCase();
-      if (typeof valueB === 'string') valueB = valueB.toLowerCase();
-      
-      // Handle undefined/null values
-      if (valueA == null) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (valueB == null) return sortConfig.direction === 'asc' ? 1 : -1;
-      
-      // Compare values
-      if (valueA < valueB) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (valueA > valueB) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-  };
-
-  // Handle sort request
-  const requestSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-    setCurrentPage(1); // Reset to first page when sorting
-  };
-
-  // Get sort indicator
-  const getSortIndicator = (key) => {
-    if (sortConfig.key !== key) return '↕';
-    return sortConfig.direction === 'asc' ? '↑' : '↓';
+    return [...array]; // Return a copy of the array without sorting
   };
 
   // Filter students based on search query and status
@@ -98,8 +51,15 @@ const AdminDashboard = () => {
     // Calculate pagination
     const indexOfLastStudent = currentPage * rowsPerPage;
     const indexOfFirstStudent = indexOfLastStudent - rowsPerPage;
+    
+    // Add sequential numbers to each student
+    const studentsWithNumbers = sorted.map((student, index) => ({
+      ...student,
+      seqNum: index + 1
+    }));
+    
     return {
-      currentStudents: sorted.slice(indexOfFirstStudent, indexOfLastStudent),
+      currentStudents: studentsWithNumbers.slice(indexOfFirstStudent, indexOfLastStudent),
       totalPages: Math.ceil(sorted.length / rowsPerPage)
     };
   };
@@ -114,13 +74,13 @@ const AdminDashboard = () => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
   
-  // Apply filters whenever search query, status, or sort changes
+  // Apply filters whenever search query or status changes
   useEffect(() => {
     if (allStudents.length > 0) {
       const filtered = filterStudents();
       setStudents(filtered);
     }
-  }, [searchQuery, statusFilter, allStudents, sortConfig]);
+  }, [searchQuery, statusFilter, allStudents]);
 
   // Fetch students data
   const fetchStudents = async () => {
@@ -425,13 +385,7 @@ const AdminDashboard = () => {
         background: '#f3f4f6',
       },
     },
-    sortableHeader: {
-      cursor: 'pointer',
-      userSelect: 'none',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.25rem',
-    },
+    // Removed sortableHeader style as sorting is disabled
     '@media (max-width: 1024px)': {
       container: {
         padding: '1.25rem 0.75rem',
@@ -574,11 +528,22 @@ const AdminDashboard = () => {
       const studentRes = await fetch(`${API_BASE}/api/students/${id}`);
       if (!studentRes.ok) throw new Error('Failed to fetch student data');
       const studentData = await studentRes.json();
-
-  const html = renderStudentPrintHtml(studentData);
-  setPreviewHtml(html);
-  setPreviewFilename(`${(studentData.studentName || 'student').replace(/\s+/g,'_')}-${id}.pdf`);
-  setShowPreview(true);
+      
+      // Then request server-side PDF endpoint which returns a PDF attachment
+      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch PDF from server');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${studentData.studentName || 'student'}-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (err) {
       console.error('Download error:', err);
       setError(err.message || 'Failed to download PDF');
@@ -688,6 +653,51 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Pagination Controls */}
+        {students.length > 0 && (
+          <div style={styles.pagination}>
+            <button
+              onClick={() => paginate(1)}
+              disabled={currentPage === 1}
+              style={styles.pageButton}
+              type="button"
+              aria-label="First page"
+            >
+              ««
+            </button>
+            <button
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={styles.pageButton}
+              type="button"
+              aria-label="Previous page"
+            >
+              «
+            </button>
+            <span style={styles.pageInfo}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => paginate(currentPage + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              style={styles.pageButton}
+              type="button"
+              aria-label="Next page"
+            >
+              »
+            </button>
+            <button
+              onClick={() => paginate(totalPages)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              style={styles.pageButton}
+              type="button"
+              aria-label="Last page"
+            >
+              »»
+            </button>
+          </div>
+        )}
+
         <div style={applyResponsiveStyles(styles.tableContainer)}>
           <table style={{ 
             ...applyResponsiveStyles(styles.table), 
@@ -696,58 +706,18 @@ const AdminDashboard = () => {
           }}>
             <thead>
               <tr>
-                <th style={styles.th}>
-                  <span 
-                    className="sortable-header" 
-                    onClick={() => requestSort('id')}
-                    style={styles.sortableHeader}
-                  >
-                    # {getSortIndicator('id')}
-                  </span>
-                </th>
-                <th style={styles.th}>
-                  <span 
-                    className="sortable-header" 
-                    onClick={() => requestSort('studentName')}
-                    style={styles.sortableHeader}
-                  >
-                    Name {getSortIndicator('studentName')}
-                  </span>
-                </th>
-                <th style={styles.th}>
-                  <span 
-                    className="sortable-header" 
-                    onClick={() => requestSort('mobile1')}
-                    style={styles.sortableHeader}
-                  >
-                    Contact {getSortIndicator('mobile1')}
-                  </span>
-                </th>
-                <th style={styles.th}>
-                  <span 
-                    className="sortable-header" 
-                    onClick={() => requestSort('district')}
-                    style={styles.sortableHeader}
-                  >
-                    District {getSortIndicator('district')}
-                  </span>
-                </th>
-                <th style={styles.th}>
-                  <span 
-                    className="sortable-header" 
-                    onClick={() => requestSort('status')}
-                    style={styles.sortableHeader}
-                  >
-                    Status {getSortIndicator('status')}
-                  </span>
-                </th>
+                <th style={styles.th}>#</th>
+                <th style={styles.th}>Name</th>
+                <th style={styles.th}>Contact</th>
+                <th style={styles.th}>District</th>
+                <th style={styles.th}>Status</th>
                 <th style={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {currentStudents.map((student, idx) => (
                 <tr key={student.id}>
-                  <td style={styles.td}>{student.id || (currentPage - 1) * rowsPerPage + idx + 1}</td>
+                  <td style={styles.td}>{(currentPage - 1) * rowsPerPage + idx + 1}</td>
                   <td style={styles.td}>{student.studentName}</td>
                   <td style={styles.td}>{student.mobile1}</td>
                   <td style={styles.td}>{student.district}</td>
@@ -821,108 +791,12 @@ const AdminDashboard = () => {
                 </tr>
               ))}
             </tbody>
-<<<<<<< HEAD
-            </table>
-          </div>
-        
-          {showPreview && (
-            <div style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'}}>
-              <div style={{width: '100%', maxWidth: '1000px', maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid #eee'}}>
-                  <div style={{fontSize: '1rem', fontWeight: 700}}>Preview</div>
-                  <div style={{display: 'flex', gap: '0.5rem'}}>
-                    <button onClick={() => { generatePdfFromHtmlString(previewHtml || '', previewFilename || 'admission.pdf'); }} style={{background: '#10b981', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Download PDF</button>
-                    <button onClick={() => { setShowPreview(false); setPreviewHtml(''); setPreviewFilename(''); }} style={{background: '#ef4444', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Close</button>
-                  </div>
-                </div>
-                <div style={{padding: '1rem'}}>
-                  <div dangerouslySetInnerHTML={{ __html: previewHtml || '<div>No preview available</div>' }} />
-                </div>
-              </div>
-            </div>
-          )}
-
-=======
           </table>
-          {students.length > 0 && (
-            <div style={styles.pagination}>
-              <button
-                onClick={() => paginate(1)}
-                disabled={currentPage === 1}
-                style={styles.pageButton}
-                type="button"
-                aria-label="First page"
-              >
-                ««
-              </button>
-              <button
-                onClick={() => paginate(currentPage - 1)}
-                disabled={currentPage === 1}
-                style={styles.pageButton}
-                type="button"
-                aria-label="Previous page"
-              >
-                «
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                // Calculate page numbers to show (current page in the middle when possible)
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => paginate(pageNum)}
-                    className={currentPage === pageNum ? 'active' : ''}
-                    style={{
-                      ...styles.pageButton,
-                      ...(currentPage === pageNum && styles.pageButton['&.active'])
-                    }}
-                    type="button"
-                    aria-label={`Page ${pageNum}`}
-                    aria-current={currentPage === pageNum ? 'page' : undefined}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              <span style={styles.pageInfo}>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => paginate(currentPage + 1)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                style={styles.pageButton}
-                type="button"
-                aria-label="Next page"
-              >
-                »
-              </button>
-              <button
-                onClick={() => paginate(totalPages)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                style={styles.pageButton}
-                type="button"
-                aria-label="Last page"
-              >
-                »»
-              </button>
-            </div>
-          )}
           {students.length === 0 && (
             <div style={styles.emptyState}>
               No students found matching your criteria.
             </div>
           )}
->>>>>>> 7f623830e84802234f22c26499f1a0c608edae3d
         </div>
       </div>
     </div>
