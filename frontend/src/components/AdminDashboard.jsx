@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+<<<<<<< HEAD
 import { Download, Edit, Check, X, Trash } from 'lucide-react';
+=======
+import { FileDown, Edit, Check, X, Trash, FileText } from 'lucide-react';
+import { downloadStudentPdf } from '../utils/pdfUtils';
+>>>>>>> 97c7dd9c95d43b36839af09cd525257c86b6509f
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -108,6 +113,50 @@ const AdminDashboard = () => {
   }, [navigate]);
 
   const styles = {
+    // ... existing styles ...
+    editButton: {
+      color: '#3b82f6',
+      '&:hover': {
+        backgroundColor: '#eff6ff',
+        borderColor: '#3b82f6',
+      },
+    },
+    viewButton: {
+      color: '#10b981',
+      '&:hover': {
+        backgroundColor: '#ecfdf5',
+        borderColor: '#10b981',
+      },
+    },
+    deleteButton: {
+      color: '#ef4444',
+      '&:hover': {
+        backgroundColor: '#fef2f2',
+        borderColor: '#ef4444',
+      },
+    },
+    acceptButton: {
+      color: '#10b981',
+      '&:hover': {
+        backgroundColor: '#ecfdf5',
+        borderColor: '#10b981',
+      },
+      '&:disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
+      },
+    },
+    rejectButton: {
+      color: '#f59e0b',
+      '&:hover': {
+        backgroundColor: '#fffbeb',
+        borderColor: '#f59e0b',
+      },
+      '&:disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
+      },
+    },
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
@@ -264,20 +313,29 @@ const AdminDashboard = () => {
       whiteSpace: 'nowrap',
     },
     actionButton: {
-      padding: '0.4rem 0.75rem',
-      border: 'none',
-      borderRadius: '0.375rem',
-      marginRight: '0.5rem',
-      marginBottom: '0.25rem',
-      cursor: 'pointer',
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '0.375rem',
-      fontSize: '0.8125rem',
-      fontWeight: '500',
+      justifyContent: 'center',
+      width: '32px',
+      height: '32px',
+      padding: '0',
+      margin: '0 2px',
+      borderRadius: '4px',
+      border: '1px solid #e5e7eb',
+      backgroundColor: 'white',
+      cursor: 'pointer',
       transition: 'all 0.2s ease',
-      ':hover': {
+      '&:hover': {
+        backgroundColor: '#f9fafb',
+        borderColor: '#d1d5db',
         transform: 'translateY(-1px)',
+      },
+      '&:active': {
+        backgroundColor: '#f3f4f6',
+      },
+      '&:disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
       },
     },
     loading: {
@@ -351,8 +409,8 @@ const AdminDashboard = () => {
     },
     pagination: {
       display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: 'flex-end',
+      alignItems: 'flex-end',
       marginTop: '1.5rem',
       gap: '0.5rem',
       flexWrap: 'wrap',
@@ -506,22 +564,19 @@ const AdminDashboard = () => {
     navigate(`/?editId=${id}`);
   };
 
-  const handleDelete = async (id) => {
+  const handleDownloadStudentPdf = async (student) => {
     try {
-      const ok = window.confirm('Are you sure you want to delete this record? This action cannot be undone.');
-      if (!ok) return;
-      const response = await fetch(`${API_BASE}/api/students/${id}`, {
-        method: 'DELETE'
-      });
-      if (!response.ok) throw new Error('Failed to delete record');
-      // Remove from local state
-      setStudents(prev => prev.filter(s => s.id !== id));
-      setAllStudents(prev => prev.filter(s => s.id !== id));
-    } catch (err) {
-      setError(err.message);
+      const result = await downloadStudentPdf(student);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate PDF');
+      }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Failed to download PDF. Please try again.');
     }
   };
 
+<<<<<<< HEAD
   const handleDownload = async (id) => {
     try {
       // First, get the student data
@@ -544,9 +599,41 @@ const AdminDashboard = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+=======
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this student?')) {
+      try {
+        const response = await fetch(`${API_BASE}/api/students/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete student');
+        fetchStudents(); // Refresh the list
+      } catch (err) {
+        console.error('Error deleting student:', err);
+        alert('Failed to delete student');
+      }
+    }
+  };
+
+  const handleStatusUpdate = async (id, status) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/students/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update status');
+      }
+      
+      // Refresh the student list
+      fetchStudents();
+>>>>>>> 97c7dd9c95d43b36839af09cd525257c86b6509f
     } catch (err) {
-      console.error('Download error:', err);
-      setError(err.message || 'Failed to download PDF');
+      console.error('Error updating status:', err);
+      alert(`Failed to ${status} student: ${err.message}`);
     }
   };
 
@@ -732,61 +819,59 @@ const AdminDashboard = () => {
                     </span>
                   </td>
                   <td style={styles.td}>
-                    <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#10b981' 
-                      }}
-                      onClick={() => handleStatusChange(student.id, 'approved')}
-                      title="Approve"
-                      type="button"
-                      aria-label={`Approve ${student.studentName}`}
-                    >
-                      <Check size={16} color="white" />
-                    </button>
-                    <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#ef4444' 
-                      }}
-                      onClick={() => handleStatusChange(student.id, 'rejected')}
-                      title="Reject"
-                      type="button"
-                      aria-label={`Reject ${student.studentName}`}
-                    >
-                      <X size={16} color="white" />
-                    </button>
-                    <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#6366f1' 
-                      }}
-                      onClick={() => handleEdit(student.id)}
-                      title="Edit"
-                      type="button"
-                      aria-label={`Edit ${student.studentName}`}
-                    >
-                      <Edit size={16} color="white" />
-                    </button>
-                    <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#8b5cf6' 
-                      }}
-                      onClick={() => handleDownload(student.id)}
-                      title="Download"
-                      type="button"
-                      aria-label={`Download ${student.studentName}'s form`}
-                    >
-                      <Download size={16} color="white" />
-                    </button>
-                    <button
-                      style={{ ...styles.actionButton, background: '#ef4444' }}
-                      onClick={() => handleDelete(student.id)}
-                      title="Delete"
-                    >
-                      <Trash size={16} color="white" />
-                    </button>
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      <button 
+                        onClick={() => navigate(`/student-form?editId=${student.id}`)}
+                        style={{ ...styles.actionButton, ...styles.editButton }}
+                        title="Edit"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDownloadStudentPdf(student)}
+                        style={{ ...styles.actionButton, ...styles.viewButton }}
+                        title="View/Download PDF"
+                      >
+                        <FileDown size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleStatusUpdate(student.id, 'approved')}
+                        style={{ 
+                          ...styles.actionButton, 
+                          ...styles.acceptButton,
+                          ...(student.status === 'approved' && { 
+                            backgroundColor: '#ecfdf5',
+                            borderColor: '#10b981'
+                          })
+                        }}
+                        title="Approve Application"
+                        disabled={student.status === 'approved'}
+                      >
+                        <Check size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleStatusUpdate(student.id, 'rejected')}
+                        style={{ 
+                          ...styles.actionButton, 
+                          ...styles.rejectButton,
+                          ...(student.status === 'rejected' && { 
+                            backgroundColor: '#fffbeb',
+                            borderColor: '#f59e0b'
+                          })
+                        }}
+                        title="Reject Application"
+                        disabled={student.status === 'rejected'}
+                      >
+                        <X size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(student.id)}
+                        style={{ ...styles.actionButton, ...styles.deleteButton }}
+                        title="Delete"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

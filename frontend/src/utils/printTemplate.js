@@ -1,16 +1,56 @@
+export const renderRulesHtml = () => {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 210mm; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #4a148c; text-align: center; margin-bottom: 20px;">हॉस्टल नियम एवं शर्तें</h2>
+      <div style="line-height: 1.6; font-size: 14px;">
+        <p><strong>1.</strong> हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</p>
+        <p><strong>2.</strong> कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है।</p>
+        <p><strong>3.</strong> छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</p>
+        <p><strong>4.</strong> कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा।</p>
+        <p><strong>5.</strong> यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</p>
+        <p><strong>6.</strong> हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है।</p>
+        <p><strong>7.</strong> अभिभावकों से अनुरोध है कि वे अपने बच्चे से केवल रविवार को मिलें; मिलने वालों में माता-पिता और भाई-बहन ही शामिल होंगे।</p>
+        <p><strong>8.</strong> किसी भी विज़िट से पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है; विज़िटर्स को आवासीय क्षेत्रों में प्रवेश की अनुमति नहीं होगी।</p>
+        <p><strong>9.</strong> खिड़कियों के पास खड़ा होना सख्त मना है।</p>
+        <p><strong>10.</strong> खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</p>
+        <p><strong>11.</strong> छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
+        <p><strong>12.</strong> किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें।</p>
+        <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह की फीस लागू होगी।</p>
+        <p><strong>14.</strong> हॉस्टल प्रशासन आवश्यकतानुसार नियमों में परिवर्तन करने का अधिकार रखता है।</p>
+      </div>
+    </div>
+  `;
+};
+
 export const renderStudentPrintHtml = (student = {}) => {
   const s = student || {};
   const escapeHtml = (str) => String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-  // Main container mirrors StudentForm printContainer and typography/colors
-  const containerStyle = `max-width:900px;margin:0 auto;background:#fff;padding:24px;box-sizing:border-box;font-family:system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;color:#111827;`;
+  // Main container with exact styling to match reference PDF
+  const containerStyle = `
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 20mm 25mm 20mm 25mm;
+    background: #fff;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    color: #000;
+    line-height: 1.5;
+  `;
 
+  // Header with exact styling to match reference PDF
   const header = `
-    <div style="text-align:center;border-bottom:2px solid #9ca3af;padding-bottom:12px;margin-bottom:16px;">
-      <h1 style="margin:0;font-size:22px;color:#db2777;">आतिया गर्ल्स हॉस्टल</h1>
-      <h2 style="margin:0;font-size:14px;color:#9333ea;letter-spacing:0.02em">ATIYA GIRLS HOSTEL</h2>
-      <div style="font-size:12px;margin-top:6px;color:#374151">रामपाड़ा कटिहार / Rampada Katihar</div>
-      <div style="font-weight:700;margin-top:8px;font-size:13px;color:#111827">नामांकन फॉर्म / ADMISSION FORM</div>
+    <div style="text-align:center;margin-bottom:20px;">
+      <h1 style="margin:0;font-size:24px;color:#000;font-weight:bold;text-decoration:underline;margin-bottom:5px;">
+        आतिया गर्ल्स हॉस्टल / ATIYA GIRLS HOSTEL
+      </h1>
+      <div style="font-size:16px;margin-bottom:5px;">
+        रामपाड़ा कटिहार / Rampada Katihar
+      </div>
+      <div style="font-size:18px;font-weight:bold;margin-bottom:15px;text-decoration:underline">
+        HOSTEL ADMISSION FORM
+      </div>ांकन फॉर्म / ADMISSION FORM</div>
       <div style="font-size:11px;color:#6b7280;margin-top:6px;">Admission Date: ${escapeHtml(s.admissionDate)}</div>
     </div>
   `;
@@ -28,27 +68,72 @@ export const renderStudentPrintHtml = (student = {}) => {
     </div>
   `;
 
-  const infoRows = (label, value) => `
-    <div style="display:flex;gap:12px;margin:8px 0;align-items:flex-start;">
-      <div style="width:220px;font-weight:700;color:#4b5563">${label}</div>
-      <div style="flex:1;color:#111827">${escapeHtml(value)}</div>
-    </div>
+  const formSection = (title, fields) => {
+    return `
+      <div style="margin-bottom:15px;">
+        <h3 style="margin:0 0 10px 0;font-size:16px;color:#000;border-bottom:1px solid #000;padding-bottom:3px;">
+          ${title}
+        </h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(250px, 1fr));gap:10px;">
+          ${fields}
+        </div>
+      </div>
+    `;
+  };
+
+  const formField = (label, value) => {
+    if (!value) return '';
+    return `
+      <div style="margin-bottom:8px;">
+        <div style="font-weight:bold;font-size:14px;">${label}:</div>
+        <div style="border-bottom:1px solid #000;min-height:20px;padding:2px 5px;">${escapeHtml(value)}</div>
+      </div>
+    `;
+  };
+
+  const personalInfo = `
+    ${formField('Name of Student', s.studentName)}
+    ${formField("Father's Name", s.fatherName)}
+    ${formField("Mother's Name", s.motherName)}
+    ${formField('Date of Birth', s.dob)}
+    ${formField('Gender', s.gender)}
+    ${formField('Aadhar Number', s.aadharNumber)}
+  `;
+
+  const contactInfo = `
+    ${formField('Mobile 1', s.mobile1)}
+    ${formField('Mobile 2', s.mobile2 || 'N/A')}
+    ${formField('Email', s.email || 'N/A')}
+    ${formField('Address', `${s.village}, ${s.post}, ${s.policeStation}, ${s.district}, ${s.state || 'Bihar'} - ${s.pinCode}`)}
+  `;
+
+  const academicInfo = `
+    ${formField('Class', s.class)}
+    ${formField('School/College', s.schoolCollege || 'N/A')}
+    ${formField('Course', s.course || 'N/A')}
+    ${formField('Year/Semester', s.yearSemester || 'N/A')}
+  `;
+
+  const emergencyContact = `
+    ${formField('Emergency Contact Name', s.emergencyName || 'N/A')}
+    ${formField('Relation', s.emergencyRelation || 'N/A')}
+    ${formField('Emergency Contact Number', s.emergencyNumber || 'N/A')}
+    ${formField('Emergency Address', s.emergencyAddress || 'N/A')}
+  `;
+
+  const hostelInfo = `
+    ${formField('Room No.', s.roomNumber || 'To be assigned')}
+    ${formField('Admission Date', s.admissionDate || new Date().toLocaleDateString())}
+    ${formField('Hostel Fee', s.hostelFee ? `₹${s.hostelFee}` : 'N/A')}
+    ${formField('Payment Mode', s.paymentMode || 'N/A')}
   `;
 
   const info = `
-    <div style="margin-top:12px;">
-      ${infoRows("छात्रा का नाम / Student Name", s.studentName)}
-      ${infoRows("माता का नाम / Mother's Name", s.motherName)}
-      ${infoRows("पिता का नाम / Father's Name", s.fatherName)}
-      ${infoRows("जन्म तिथि / Date of Birth", s.dob ? s.dob : '')}
-      ${infoRows("मोबाइल नं (1)", s.mobile1)}
-      ${infoRows("मोबाइल नं (2)", s.mobile2)}
-      ${infoRows("ग्राम / Village", s.village)}
-      ${infoRows("पोस्ट / Post", s.post)}
-      ${infoRows("थाना / Police Station", s.policeStation)}
-      ${infoRows("जिला / District", s.district)}
-      ${infoRows("पिन कोड / PIN Code", s.pinCode)}
-    </div>
+    ${formSection('Personal Information', personalInfo)}
+    ${formSection('Contact Information', contactInfo)}
+    ${formSection('Academic Information', academicInfo)}
+    ${formSection('Emergency Contact', emergencyContact)}
+    ${formSection('Hostel Information', hostelInfo)}
   `;
 
   const allowed = `
