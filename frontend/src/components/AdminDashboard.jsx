@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, Edit, Check, X, Trash } from 'lucide-react';
+import { renderStudentPrintHtml } from '../utils/printTemplate';
+import { generatePdfFromHtmlString } from '../utils/pdf';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -11,6 +13,9 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [previewFilename, setPreviewFilename] = useState('');
   const navigate = useNavigate();
 
   // Filter students based on search query and status
@@ -453,22 +458,11 @@ const AdminDashboard = () => {
       const studentRes = await fetch(`${API_BASE}/api/students/${id}`);
       if (!studentRes.ok) throw new Error('Failed to fetch student data');
       const studentData = await studentRes.json();
-      
-      // Then request server-side PDF endpoint which returns a PDF attachment
-      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch PDF from server');
-      }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `${studentData.studentName || 'student'}-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+
+  const html = renderStudentPrintHtml(studentData);
+  setPreviewHtml(html);
+  setPreviewFilename(`${(studentData.studentName || 'student').replace(/\s+/g,'_')}-${id}.pdf`);
+  setShowPreview(true);
     } catch (err) {
       console.error('Download error:', err);
       setError(err.message || 'Failed to download PDF');
@@ -673,6 +667,24 @@ const AdminDashboard = () => {
             </tbody>
             </table>
           </div>
+        
+          {showPreview && (
+            <div style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'}}>
+              <div style={{width: '100%', maxWidth: '1000px', maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid #eee'}}>
+                  <div style={{fontSize: '1rem', fontWeight: 700}}>Preview</div>
+                  <div style={{display: 'flex', gap: '0.5rem'}}>
+                    <button onClick={() => { generatePdfFromHtmlString(previewHtml || '', previewFilename || 'admission.pdf'); }} style={{background: '#10b981', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Download PDF</button>
+                    <button onClick={() => { setShowPreview(false); setPreviewHtml(''); setPreviewFilename(''); }} style={{background: '#ef4444', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Close</button>
+                  </div>
+                </div>
+                <div style={{padding: '1rem'}}>
+                  <div dangerouslySetInnerHTML={{ __html: previewHtml || '<div>No preview available</div>' }} />
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
   );
