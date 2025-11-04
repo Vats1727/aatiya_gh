@@ -87,8 +87,8 @@ app.use(morgan('dev'));
 // Health check route
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
-// Mount auth routes
-app.use('/api/auth', authRouter);
+// Mount auth routes (pass initialized db)
+app.use('/api/auth', authRouter(db));
 
 // Protect /api/users/* endpoints with auth middleware
 app.use('/api/users', authMiddleware);
