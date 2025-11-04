@@ -761,7 +761,7 @@ const HostelAdmissionForm = () => {
 
   const generatePDF = async () => {
     try {
-      // Ensure all required fields are filled
+      // Ensure all required fields are filled (signature fields removed as they'll be added manually to PDF)
       const requiredFields = [
         'studentName', 'motherName', 'fatherName', 'mobile1', 'village',
         'post', 'policeStation', 'district', 'pinCode'
@@ -792,11 +792,10 @@ const HostelAdmissionForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate required fields
+    // Validate required fields (signature fields removed as they'll be added manually to PDF)
     const requiredFields = [
       'studentName', 'motherName', 'fatherName', 'mobile1', 'village',
-      'post', 'policeStation', 'district', 'pinCode',
-      'studentSignature', 'parentSignature'
+      'post', 'policeStation', 'district', 'pinCode'
     ];
     
     const missingFields = requiredFields.filter(field => !formData[field]);
@@ -1071,55 +1070,23 @@ const HostelAdmissionForm = () => {
                 </div>
               </div>
 
-              {/* Signatures */}
+              {/* Signatures - Will be signed manually on printed form */}
               <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginTop: '40px',
-                paddingTop: '20px',
-                borderTop: '1px solid #e5e7eb',
                 position: 'absolute',
                 bottom: '40px',
                 left: '20px',
-                right: '20px'
+                right: '20px',
+                textAlign: 'center',
+                padding: '15px',
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #e5e7eb',
+                borderRadius: '4px',
+                color: '#4b5563',
+                fontStyle: 'italic'
               }}>
-                <div style={{ textAlign: 'center', flex: 1, padding: '0 20px' }}>
-                  <div style={{
-                    borderTop: '1px solid #000',
-                    width: '200px',
-                    margin: '0 auto',
-                    paddingTop: '5px'
-                  }}>
-                    <p style={{ margin: '5px 0', fontSize: '14px', fontWeight: '500' }}>
-                      {formData.parentSignature || 'Parent/Guardian Name'}
-                    </p>
-                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
-                      पिता / माता का हस्ताक्षर / Parent's Signature
-                    </p>
-                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
-                      दिनांक / Date: {new Date().toLocaleDateString('en-IN')}
-                    </p>
-                  </div>
-                </div>
-                
-                <div style={{ textAlign: 'center', flex: 1, padding: '0 20px' }}>
-                  <div style={{
-                    borderTop: '1px solid #000',
-                    width: '200px',
-                    margin: '0 auto',
-                    paddingTop: '5px'
-                  }}>
-                    <p style={{ margin: '5px 0', fontSize: '14px', fontWeight: '500' }}>
-                      {formData.studentSignature || 'Student Name'}
-                    </p>
-                    <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>
-                      छात्रा का हस्ताक्षर / Student's Signature
-                    </p>
-                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
-                      दिनांक / Date: {new Date().toLocaleDateString('en-IN')}
-                    </p>
-                  </div>
-                </div>
+                <p style={{ margin: '0', fontSize: '14px' }}>Signatures will be collected manually on the printed form</p>
+                <p style={{ margin: '5px 0 0', fontSize: '12px' }}>हस्ताक्षर मुद्रित फॉर्म पर मैन्युअल रूप से एकत्र किए जाएंगे</p>
+              </div>
               </div>
             </div>
 
@@ -1180,103 +1147,14 @@ const HostelAdmissionForm = () => {
                     borderTop: '1px solid #000',
                     width: '250px',
                     marginLeft: 'auto',
-                    paddingTop: '5px'
+                    paddingTop: '5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '0.5rem'
                   }}>
-                    <p style={{
-                      margin: '5px 0',
-                      fontSize: '14px',
-                      fontWeight: '500'
-                    }}>हॉस्टल इंचार्ज / Hostel Incharge</p>
-                    <p style={{
-                      margin: '5px 0 0',
-                      fontSize: '12px',
-                      color: '#666'
-                    }}>दिनांक / Date: {new Date().toLocaleDateString('en-IN')}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  ) : (
-    <div style={responsiveStyles.container}>
-      <div style={responsiveStyles.maxWidth}>
-        {/* Header */}
-        <div style={responsiveStyles.card}>
-          <div style={responsiveStyles.header}>
-            <h1 style={responsiveStyles.h1}>आतिया गर्ल्स हॉस्टल</h1>
-            <h2 style={responsiveStyles.h2}>ATIYA GIRLS HOSTEL</h2>
-            <p style={responsiveStyles.subtitle}>रामपाड़ा कटिहार / Rampada Katihar</p>
-            <p style={responsiveStyles.formTitle}>नामांकन फॉर्म / ADMISSION FORM</p>
-          </div>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={responsiveStyles.card}>
-          {/* Photo Display Section */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'row',
-            gap: '2rem',
-            justifyContent: 'space-between',
-            marginBottom: '1.5rem',
-            flexWrap: 'wrap'
-          }}>
-            <div style={{
-              flex: '1 1 200px',
-              minWidth: '200px',
-              textAlign: 'center'
-            }}>
-              <div style={{
-                ...responsiveStyles.photoPreview,
-                margin: '0 auto',
-                width: '150px',
-                height: '180px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                border: '1px solid #e5e7eb',
-                borderRadius: '0.5rem'
-              }}>
-                <img 
-                  src={PlaceholderImage} 
-                  alt="Parent Photo" 
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }} 
-                />
-              </div>
-              <p style={{
-                marginTop: '0.5rem',
-                fontSize: '0.875rem',
-                color: '#4b5563',
-                fontWeight: '500'
-              }}>
-                पिता/माता का फोटो
-              </p>
-            </div>
-            <div style={{
-              flex: '1 1 200px',
-              minWidth: '200px',
-              textAlign: 'center'
-            }}>
-              <div style={{
-                ...responsiveStyles.photoPreview,
-                margin: '0 auto',
-                width: '150px',
-                height: '180px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                border: '1px solid #e5e7eb',
-                borderRadius: '0.5rem'
-              }}>
                 <img 
                   src={PlaceholderImage} 
                   alt="Student Photo" 
@@ -1308,15 +1186,16 @@ const HostelAdmissionForm = () => {
                 <label style={responsiveStyles.label}>
                   छात्रा का नाम / Student Name *
                 </label>
-                <input
-                  type="text"
-                  name="studentName"
-                  value={formData.studentName}
-                  onChange={handleInputChange}
-                  required
-                  style={responsiveStyles.input}
-                  placeholder="Enter student name"
-                />
+                <div style={{
+                  padding: '10px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '4px',
+                  backgroundColor: '#f9fafb',
+                  color: '#6b7280',
+                  fontStyle: 'italic'
+                }}>
+                  Will be signed manually on the printed form
+                </div>
               </div>
 
               <div style={responsiveStyles.formGroup}>
@@ -1338,15 +1217,16 @@ const HostelAdmissionForm = () => {
                 <label style={responsiveStyles.label}>
                   पिता का नाम / Father's Name *
                 </label>
-                <input
-                  type="text"
-                  name="fatherName"
-                  value={formData.fatherName}
-                  onChange={handleInputChange}
-                  required
-                  style={responsiveStyles.input}
-                  placeholder="Enter father's name"
-                />
+                <div style={{
+                  padding: '10px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '4px',
+                  backgroundColor: '#f9fafb',
+                  color: '#6b7280',
+                  fontStyle: 'italic'
+                }}>
+                  Will be signed manually on the printed form
+                </div>
               </div>
 
               <div style={responsiveStyles.formGroup}>
@@ -1606,46 +1486,37 @@ const HostelAdmissionForm = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                backgroundColor: loading ? '#9ca3af' : '#4f46e5',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseOver={(e) => !loading && (e.currentTarget.style.transform = 'scale(1.03)')}
               onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
-              <Printer size={20} />
-              {loading ? 'Saving...' : 'Save & Generate PDF / सेव करें और पीडीएफ बनाएं'}
+              <Printer size={24} />
+              SAVE or Generate PDF / पीडीएफ बनाएं
             </button>
           </div>
         </form>
       </div>
 
-      {/* Rules Section for Display (always shown in Hindi) */}
-      <div style={{...responsiveStyles.card, marginTop: '1rem'}} className="no-print">
-      <h3 style={{...responsiveStyles.rulesTitle, fontSize: '1.5rem', color: '#9333ea', marginBottom: '1rem'}}>हॉस्टल नियम एवं शर्तें</h3>
-      <div style={{fontSize: '0.875rem', lineHeight: '1.8', textAlign: 'justify'}}>
-        <p><strong>1.</strong> हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</p>
-        <p><strong>2.</strong> कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है।</p>
-        <p><strong>3.</strong> छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</p>
-        <p><strong>4.</strong> कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा।</p>
-        <p><strong>5.</strong> यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</p>
-        <p><strong>6.</strong> हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है।</p>
-        <p><strong>7.</strong> अभिभावकों से अनुरोध है कि वे अपने बच्चे से केवल रविवार को मिलें; मिलने वालों में माता-पिता और भाई-बहन ही शामिल होंगे।</p>
-        <p><strong>8.</strong> किसी भी विज़िट से पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है; विज़िटर्स को आवासीय क्षेत्रों में प्रवेश की अनुमति नहीं होगी।</p>
-        <p><strong>9.</strong> खिड़कियों के पास खड़ा होना सख्त मना है।</p>
-        <p><strong>10.</strong> खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</p>
-        <p><strong>11.</strong> छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
-        <p><strong>12.</strong> किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें।</p>
-        <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह की फीस लागू होगी।</p>
-        <p><strong>14.</strong> हॉस्टल प्रशासन आवश्यकतानुसार नियमों में परिवर्तन करने का अधिकार रखता है।</p>
+        {/* Rules Section for Display (always shown in Hindi) */}
+        <div style={{...responsiveStyles.card, marginTop: '1rem'}} className="no-print">
+          <h3 style={{...responsiveStyles.rulesTitle, fontSize: '1.5rem', color: '#9333ea', marginBottom: '1rem'}}>हॉस्टल नियम एवं शर्तें</h3>
+          <div style={{fontSize: '0.875rem', lineHeight: '1.8', textAlign: 'justify'}}>
+            <p><strong>1.</strong> हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</p>
+            <p><strong>2.</strong> कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है।</p>
+            <p><strong>3.</strong> छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</p>
+            <p><strong>4.</strong> कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा।</p>
+            <p><strong>5.</strong> यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</p>
+            <p><strong>6.</strong> हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है।</p>
+            <p><strong>7.</strong> अभिभावकों से अनुरोध है कि वे अपने बच्चे से केवल रविवार को मिलें; मिलने वालों में माता-पिता और भाई-बहन ही शामिल होंगे।</p>
+            <p><strong>8.</strong> किसी भी विज़िट से पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है; विज़िटर्स को आवासीय क्षेत्रों में प्रवेश की अनुमति नहीं होगी।</p>
+            <p><strong>9.</strong> खिड़कियों के पास खड़ा होना सख्त मना है।</p>
+            <p><strong>10.</strong> खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</p>
+            <p><strong>11.</strong> छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
+            <p><strong>12.</strong> किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें।</p>
+            <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह का शुल्क लिया जाएगा।</p>
+            <p><strong>14.</strong> हॉस्टल प्रशासन आवश्यकतानुसार नियमों में परिवर्तन करने का अधिकार रखता है।</p>
+          </div>
+        </div>
       </div>
-      </div>
-    </div>
-  );
-};
+    );
+  };
 
-export default HostelAdmissionForm;
+  export default HostelAdmissionForm;
