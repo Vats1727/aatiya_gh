@@ -798,10 +798,10 @@ const HostelAdmissionForm = () => {
       'post', 'policeStation', 'district', 'pinCode'
     ];
 
-    // Signatures: accept either typed signature or uploaded photo for student/parent
-    const signatureMissing = [];
-    if (!formData.studentSignature && !formData.studentPhoto) signatureMissing.push('studentSignature/studentPhoto');
-    if (!formData.parentSignature && !formData.parentPhoto) signatureMissing.push('parentSignature/parentPhoto');
+  // Signatures: accept either typed signature, uploaded photo, or fallback to name fields
+  const signatureMissing = [];
+  if (!(formData.studentSignature || formData.studentPhoto || formData.studentName)) signatureMissing.push('studentSignature/studentPhoto/studentName');
+  if (!(formData.parentSignature || formData.parentPhoto || formData.fatherName || formData.motherName)) signatureMissing.push('parentSignature/parentPhoto/parentName');
 
     const missingFields = requiredFields.filter(field => !formData[field]).concat(signatureMissing);
     if (missingFields.length > 0) {
