@@ -2,24 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
 
-// Use Vite env or fallback to local backend. Normalize common paste mistakes
-const _rawApiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-let API_BASE = _rawApiBase;
+import { FileText, Download, User, Phone, MapPin, Calendar, Users, GraduationCap, Check } from 'lucide-react';
+import { renderStudentPrintHtml } from '../utils/printTemplate';
+import { downloadStudentPdf } from '../utils/pdfUtils';
+import PlaceholderImage from '../assets/Image.jpg';
+
+// API Base URL setup
+let API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 try {
   // Extract the first http(s) URL if the value accidentally contains the URL twice
-  const m = String(_rawApiBase).match(/https?:\/\/[^\s'"]+/i);
+  const m = String(API_BASE).match(/https?:\/\/[^\s'"]+/i);
   if (m && m[0]) API_BASE = m[0];
   // Trim trailing slash for consistency
   API_BASE = API_BASE.replace(/\/$/, '');
 } catch (e) {
-  API_BASE = _rawApiBase;
+  console.warn('Error processing API_BASE:', e);
 }
-
-import { FileText, Download, User, Phone, MapPin, Calendar, Users, GraduationCap, Printer } from 'lucide-react';
-import { renderStudentPrintHtml } from '../utils/printTemplate';
-import { generatePdfFromHtmlString } from '../utils/pdf';
-import { downloadStudentPdf } from '../utils/pdfUtils';
-import PlaceholderImage from '../assets/Image.jpg';
 
 const HostelAdmissionForm = () => {
   const [formData, setFormData] = useState({
@@ -761,10 +759,31 @@ const HostelAdmissionForm = () => {
     }
   };
 
-  const generatePDF = () => {
-    const html = renderStudentPrintHtml(formData);
-    setPreviewHtml(html);
-    setShowPreview(true);
+  const generatePDF = async () => {
+    try {
+      // Ensure all required fields are filled
+      const requiredFields = [
+        'studentName', 'motherName', 'fatherName', 'mobile1', 'village',
+        'post', 'policeStation', 'district', 'pinCode'
+      ];
+      
+      const missingFields = requiredFields.filter(field => !formData[field]);
+      if (missingFields.length > 0) {
+        alert(`Please fill in all required fields before generating PDF. Missing: ${missingFields.join(', ')}`);
+        return;
+      }
+      
+      setLoading(true);
+      const result = await downloadStudentPdf(formData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate PDF');
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert(`Failed to generate PDF: ${error.message || 'Please try again'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -1221,49 +1240,76 @@ const HostelAdmissionForm = () => {
                 <label style={responsiveStyles.label}>
                   छात्रा का हस्ताक्षर / Student Signature *
                 </label>
-                <input
-                  type="text"
-                  name="studentSignature"
-                  value={formData.studentSignature}
-                  onChange={handleInputChange}
-                  required
-                  style={responsiveStyles.input}
-                  placeholder="Type name as signature"
-                />
+                <div style={{
+                  ...responsiveStyles.input,
+                  padding: '0.5rem',
+                  minHeight: '50px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderBottom: '1px solid #9ca3af',
+                  fontStyle: 'italic',
+                  color: '#4b5563'
+                }}>
+                  {formData.studentName || 'Student Name'}
+                </div>
               </div>
               <div style={responsiveStyles.formGroup}>
                 <label style={responsiveStyles.label}>
                   पिता/माता का हस्ताक्षर / Parent Signature *
                 </label>
-                <input
-                  type="text"
-                  name="parentSignature"
-                  value={formData.parentSignature}
-                  onChange={handleInputChange}
-                  required
-                  style={responsiveStyles.input}
-                  placeholder="Type name as signature"
-                />
+                <div style={{
+                  ...responsiveStyles.input,
+                  padding: '0.5rem',
+                  minHeight: '50px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderBottom: '1px solid #9ca3af',
+                  fontStyle: 'italic',
+                  color: '#4b5563'
+                }}>
+                  {formData.fatherName || formData.motherName || 'Parent Name'}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Submit Button */}
-          <div style={responsiveStyles.buttonCenter}>
+          <div style={{...responsiveStyles.buttonCenter, display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
             <button
               type="submit"
-              style={responsiveStyles.button}
+              style={{...responsiveStyles.button, backgroundColor: '#4f46e5'}}
               onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
               onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
-              <Printer size={24} />
-              SAVE or Generate PDF / पीडीएफ बनाएं
+              <Check size={18} style={{ marginRight: '8px' }} />
+              Save / सहेजें
+            </button>
+            <button
+              type="button"
+              onClick={generatePDF}
+              style={{...responsiveStyles.button, backgroundColor: '#10b981'}}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <Download size={18} style={{ marginRight: '8px' }} />
+              Download PDF / पीडीएफ डाउनलोड करें
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowPreview(!showPreview)}
+              style={{...responsiveStyles.button, backgroundColor: '#6b7280'}}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <FileText size={18} style={{ marginRight: '8px' }} />
+              {showPreview ? 'Hide Preview' : 'Preview Form'}
             </button>
           </div>
         </form>
+      </div>
 
-    {/* Rules Section for Display (always shown in Hindi) */}
-    <div style={{...responsiveStyles.card, marginTop: '1rem'}} className="no-print">
+      {/* Rules Section for Display (always shown in Hindi) */}
+      <div style={{...responsiveStyles.card, marginTop: '1rem'}} className="no-print">
       <h3 style={{...responsiveStyles.rulesTitle, fontSize: '1.5rem', color: '#9333ea', marginBottom: '1rem'}}>हॉस्टल नियम एवं शर्तें</h3>
       <div style={{fontSize: '0.875rem', lineHeight: '1.8', textAlign: 'justify'}}>
         <p><strong>1.</strong> हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</p>
@@ -1278,9 +1324,9 @@ const HostelAdmissionForm = () => {
         <p><strong>10.</strong> खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</p>
         <p><strong>11.</strong> छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
         <p><strong>12.</strong> किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें।</p>
-        <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह का शुल्क लिया जाएगा।</p>
+        <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह की फीस लागू होगी।</p>
+        <p><strong>14.</strong> हॉस्टल प्रशासन आवश्यकतानुसार नियमों में परिवर्तन करने का अधिकार रखता है।</p>
       </div>
-    </div>
       </div>
     </div>
   );
