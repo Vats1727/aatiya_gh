@@ -62,6 +62,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+
 // Delete student
 router.delete('/:id', async (req, res) => {
   if (!db) return res.status(500).send('Firestore not initialized');
