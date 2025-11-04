@@ -839,8 +839,19 @@ const HostelAdmissionForm = () => {
         return;
       }
       alert('Record updated successfully');
-      // After editing, go back to admin dashboard
-      navigate('/admin/dashboard');
+      // If this was an admin editing an existing record, go back to admin dashboard
+      if (editId) {
+        navigate('/admin/dashboard');
+        return;
+      }
+
+      // For student submissions (no editId) do NOT redirect to admin dashboard.
+      // Instead trigger the PDF download so the student can download their copy.
+      try {
+        await downloadStudentPdf(formDataWithStatus);
+      } catch (err) {
+        console.error('Failed to download PDF after save', err);
+      }
       return;
     } catch (err) {
       console.error('Submit error', err);
