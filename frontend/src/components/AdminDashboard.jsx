@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Edit, Check, X, Trash, FileText } from 'lucide-react';
+import { FileDown, Edit, Check, X, Trash, FileText } from 'lucide-react';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -803,7 +803,7 @@ const AdminDashboard = () => {
                         style={{ ...styles.actionButton, ...styles.viewButton }}
                         title="View/Download PDF"
                       >
-                        <FileText size={16} />
+                        <FileDown size={16} />
                       </button>
                       <button 
                         onClick={() => handleStatusUpdate(student.id, 'approved')}
