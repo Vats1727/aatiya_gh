@@ -1,26 +1,4 @@
-export const renderRulesHtml = () => {
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 210mm; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #4a148c; text-align: center; margin-bottom: 20px;">हॉस्टल नियम एवं शर्तें</h2>
-      <div style="line-height: 1.6; font-size: 14px;">
-        <p><strong>1.</strong> हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</p>
-        <p><strong>2.</strong> कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है।</p>
-        <p><strong>3.</strong> छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</p>
-        <p><strong>4.</strong> कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा।</p>
-        <p><strong>5.</strong> यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</p>
-        <p><strong>6.</strong> हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है।</p>
-        <p><strong>7.</strong> अभिभावकों से अनुरोध है कि वे अपने बच्चे से केवल रविवार को मिलें; मिलने वालों में माता-पिता और भाई-बहन ही शामिल होंगे।</p>
-        <p><strong>8.</strong> किसी भी विज़िट से पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है; विज़िटर्स को आवासीय क्षेत्रों में प्रवेश की अनुमति नहीं होगी।</p>
-        <p><strong>9.</strong> खिड़कियों के पास खड़ा होना सख्त मना है।</p>
-        <p><strong>10.</strong> खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</p>
-        <p><strong>11.</strong> छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
-        <p><strong>12.</strong> किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें।</p>
-        <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह की फीस लागू होगी।</p>
-        <p><strong>14.</strong> हॉस्टल प्रशासन आवश्यकतानुसार नियमों में परिवर्तन करने का अधिकार रखता है।</p>
-      </div>
-    </div>
-  `;
-};
+
 
 export const renderStudentPrintHtml = (student = {}) => {
   const s = student || {};
@@ -194,4 +172,35 @@ export const renderStudentPrintHtml = (student = {}) => {
   `;
 
   return full;
+};
+
+export const renderRulesHtml = () => {
+  return `
+    <div style="padding:20px;max-width:210mm;margin:0 auto;background:white;min-height:297mm;box-sizing:border-box;position:relative;">
+      <h2 style="text-align:center;color:#4f46e5;margin-bottom:20px;font-size:22px;padding-bottom:10px;border-bottom:2px solid #4f46e5">हॉस्टल नियम एवं शर्तें / HOSTEL RULES AND REGULATIONS</h2>
+      <div style="font-size:14px;line-height:1.8;text-align:justify;margin-bottom:30px;color:#374151">
+        <p><strong>1.</strong> हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</p>
+        <p><strong>2.</strong> कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है।</p>
+        <p><strong>3.</strong> छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</p>
+        <p><strong>4.</strong> कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा।</p>
+        <p><strong>5.</strong> यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</p>
+        <p><strong>6.</strong> हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है।</p>
+        <p><strong>7.</strong> अभिभावकों से अनुरोध है कि वे अपने बच्चे से केवल रविवार को मिलें; मिलने वालों में माता-पिता और भाई-बहन ही शामिल होंगे।</p>
+        <p><strong>8.</strong> किसी भी विज़िट से पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है; विज़िटर्स को आवासीय क्षेत्रों में प्रवेश की अनुमति नहीं होगी।</p>
+        <p><strong>9.</strong> खिड़कियों के पास खड़ा होना सख्त मना है।</p>
+        <p><strong>10.</strong> खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</p>
+        <p><strong>11.</strong> छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
+        <p><strong>12.</strong> किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें।</p>
+        <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह का शुल्क लिया जाएगा।</p>
+      </div>
+      <div style="position:absolute;bottom:40px;right:40px;text-align:right">
+        <div style="display:inline-block;text-align:center">
+          <div style="border-top:1px solid #000;width:250px;margin-left:auto;padding-top:5px">
+            <p style="margin:5px 0;font-size:14px;font-weight:500">हॉस्टल इंचार्ज / Hostel Incharge</p>
+            <p style="margin:5px 0 0;font-size:12px;color:#666">दिनांक / Date: ${new Date().toLocaleDateString('en-IN')}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 };

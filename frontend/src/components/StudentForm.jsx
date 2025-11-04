@@ -795,11 +795,15 @@ const HostelAdmissionForm = () => {
     // Validate required fields
     const requiredFields = [
       'studentName', 'motherName', 'fatherName', 'mobile1', 'village',
-      'post', 'policeStation', 'district', 'pinCode',
-      'studentSignature', 'parentSignature'
+      'post', 'policeStation', 'district', 'pinCode'
     ];
-    
-    const missingFields = requiredFields.filter(field => !formData[field]);
+
+    // Signatures: accept either typed signature or uploaded photo for student/parent
+    const signatureMissing = [];
+    if (!formData.studentSignature && !formData.studentPhoto) signatureMissing.push('studentSignature/studentPhoto');
+    if (!formData.parentSignature && !formData.parentPhoto) signatureMissing.push('parentSignature/parentPhoto');
+
+    const missingFields = requiredFields.filter(field => !formData[field]).concat(signatureMissing);
     if (missingFields.length > 0) {
       alert(`Please fill in all required fields before submitting. Missing: ${missingFields.join(', ')}`);
       return;
@@ -847,8 +851,8 @@ const HostelAdmissionForm = () => {
   };
 
   const handleDownloadPdf = () => {
-    const html = renderStudentPrintHtml(formData);
-    downloadStudentPdf(html, `admission-${(formData.studentName || 'student').replace(/\s+/g,'_')}.pdf`);
+    // Use the helper which accepts student data and generates combined PDF (form + rules)
+    downloadStudentPdf(formData);
   };
 
   // Function to render form fields
@@ -874,7 +878,7 @@ const HostelAdmissionForm = () => {
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid #eee'}}>
           <div style={{fontSize: '1rem', fontWeight: 700}}>Preview</div>
           <div style={{display: 'flex', gap: '0.5rem'}}>
-            <button onClick={() => { const html = renderStudentPrintHtml(formData); generatePDF(html, `admission-${(formData.studentName || 'student').replace(/\s+/g,'_')}.pdf`); }} style={{background: '#10b981', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Download PDF</button>
+            <button onClick={async () => { try { await downloadStudentPdf(formData); } catch (err) { console.error(err); alert('Failed to generate PDF'); } }} style={{background: '#10b981', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Download PDF</button>
             <button onClick={() => { setShowPreview(false); }} style={{background: '#ef4444', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Close</button>
           </div>
         </div>
