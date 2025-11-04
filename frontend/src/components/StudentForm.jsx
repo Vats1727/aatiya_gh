@@ -53,6 +53,7 @@ const HostelAdmissionForm = () => {
   });
 
   const [showPreview, setShowPreview] = useState(false);
+  const [hostels, setHostels] = useState([]);
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -107,6 +108,26 @@ const HostelAdmissionForm = () => {
     };
     load();
   }, [editId]);
+
+  // If authenticated, load hostels for current user to allow admin additions
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !user) return;
+    const loadHostels = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/users/me/hostels`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setHostels(data);
+      } catch (err) {
+        console.warn('Failed to load hostels', err);
+      }
+    };
+    loadHostels();
+  }, []);
 
   // Responsive styles with mobile-first approach
   const styles = {
@@ -824,19 +845,35 @@ const HostelAdmissionForm = () => {
       };
 
       // Submit form data
-      const endpoint = editId ? `${API_BASE}/api/students/${editId}` : `${API_BASE}/api/students`;
-      const method = editId ? 'PUT' : 'POST';
-      
-      const res = await fetch(endpoint, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formDataWithStatus)
-      });
+      let res;
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      if (!editId && token && formData.hostelDocId) {
+        // Admin creating a student under a hostel - use protected endpoint to get combinedId
+        res = await fetch(`${API_BASE}/api/users/me/hostels/${formData.hostelDocId}/students`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(formDataWithStatus)
+        });
+      } else {
+        const endpoint = editId ? `${API_BASE}/api/students/${editId}` : `${API_BASE}/api/students`;
+        const method = editId ? 'PUT' : 'POST';
+        res = await fetch(endpoint, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formDataWithStatus)
+        });
+      }
       if (!res.ok) {
         const errText = await res.text();
         console.error('Failed to update student', errText);
         alert('Failed to update student. See console for details.');
         return;
+      }
+      // If admin-created student, backend returns combinedId; show to user/admin
+      if (!editId && token && formData.hostelDocId) {
+        const payload = await res.json();
+        alert(`Student created with Application no: ${payload.combinedId}`);
       }
       alert('Record updated successfully');
       // If this was an admin editing an existing record, go back to admin dashboard
@@ -916,6 +953,22 @@ const HostelAdmissionForm = () => {
               </div>
 
               {/* Student Information */}
+              {hostels && hostels.length > 0 && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>Select Hostel (for admin)</label>
+                  <select
+                    name="hostelDocId"
+                    value={formData.hostelDocId || ''}
+                    onChange={handleInputChange}
+                    style={{ padding: '10px', borderRadius: 6, width: '100%', border: '1px solid #e5e7eb' }}
+                  >
+                    <option value="">-- Select hostel --</option>
+                    {hostels.map(h => (
+                      <option key={h.id} value={h.id}>{`${h.hostelId} - ${h.name}`}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div style={{ marginBottom: '20px' }}>
                 <h3 style={{
                   margin: '0 0 15px 0',

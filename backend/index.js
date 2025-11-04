@@ -7,6 +7,9 @@ import fs from 'fs';
 import path from 'path';
 import morgan from 'morgan';
 import PDFDocument from 'pdfkit';
+import createHostelsRouter from './routes/hostels.js';
+import authRouter from './routes/auth.js';
+import { authMiddleware } from './middleware/auth.js';
 
 // Load environment variables
 dotenv.config();
@@ -70,6 +73,7 @@ function initializeFirebase() {
 
 // Initialize Firebase
 initializeFirebase();
+// db is assigned in this module's initializeFirebase and created above
 
 // Create Express app
 const app = express();
@@ -82,6 +86,15 @@ app.use(morgan('dev'));
 
 // Health check route
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
+
+// Mount auth routes
+app.use('/api/auth', authRouter);
+
+// Protect /api/users/* endpoints with auth middleware
+app.use('/api/users', authMiddleware);
+
+// Mount hostels routes (uses the same `db` instance)
+app.use('/api', createHostelsRouter(db));
 
 app.post('/api/students', async (req, res) => {
   console.log('POST /api/students incoming, body size:', req.headers['content-length'] || 'unknown');

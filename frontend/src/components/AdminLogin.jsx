@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({
     username: '',
@@ -188,15 +190,21 @@ const AdminLogin = () => {
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (credentials.username === 'admin' && credentials.password === 'admin123') {
-        localStorage.setItem('adminAuthenticated', 'true');
-        navigate('/admin/dashboard');
-      } else {
-        setError('Invalid username or password');
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setError(err.error || 'Invalid username or password');
+        return;
       }
+      const payload = await res.json();
+      // payload: { user, token }
+      localStorage.setItem('token', payload.token);
+      localStorage.setItem('user', JSON.stringify(payload.user));
+      navigate('/admin/dashboard');
     } catch (err) {
       setError('An error occurred. Please try again.');
       console.error('Login error:', err);
