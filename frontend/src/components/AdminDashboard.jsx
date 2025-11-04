@@ -454,20 +454,11 @@ const AdminDashboard = () => {
       if (!studentRes.ok) throw new Error('Failed to fetch student data');
       const studentData = await studentRes.json();
       
-      // Then generate and download the PDF
-      const response = await fetch(`${API_BASE}/api/generate-pdf`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(studentData),
-      });
-      
+      // Then request server-side PDF endpoint which returns a PDF attachment
+      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to generate PDF');
+        throw new Error('Failed to fetch PDF from server');
       }
-      
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
