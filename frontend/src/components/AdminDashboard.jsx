@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, Edit, Check, X, Trash } from 'lucide-react';
-import { renderStudentPrintHtml } from '../utils/printTemplate';
-import { generatePdfFromHtmlString } from '../utils/pdf';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -13,15 +11,15 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-<<<<<<< HEAD
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewHtml, setPreviewHtml] = useState('');
-  const [previewFilename, setPreviewFilename] = useState('');
-=======
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortConfig] = useState({ key: null, direction: 'asc' });
   const rowsPerPage = 10;
->>>>>>> 7f623830e84802234f22c26499f1a0c608edae3d
   const navigate = useNavigate();
+
+  // Simple sort function that just returns the array as is
+  const sortArray = (array) => {
+    return [...array]; // Return a copy of the array without sorting
+  };
 
   // Filter students based on search query and status
   const filterStudents = () => {
@@ -48,18 +46,25 @@ const AdminDashboard = () => {
   // Get current students for pagination
   const getCurrentStudents = () => {
     const filtered = filterStudents();
+    const sorted = sortArray(filtered);
     
     // Calculate pagination
     const indexOfLastStudent = currentPage * rowsPerPage;
     const indexOfFirstStudent = indexOfLastStudent - rowsPerPage;
+    
+    // Add sequential numbers to each student
+    const studentsWithNumbers = sorted.map((student, index) => ({
+      ...student,
+      seqNum: index + 1
+    }));
+    
     return {
-      currentStudents: filtered.slice(indexOfFirstStudent, indexOfLastStudent),
-      totalPages: Math.ceil(filtered.length / rowsPerPage),
-      totalStudents: filtered.length
+      currentStudents: studentsWithNumbers.slice(indexOfFirstStudent, indexOfLastStudent),
+      totalPages: Math.ceil(sorted.length / rowsPerPage)
     };
   };
   
-  const { currentStudents, totalPages, totalStudents } = getCurrentStudents();
+  const { currentStudents, totalPages } = getCurrentStudents();
   
   // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
@@ -69,7 +74,7 @@ const AdminDashboard = () => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
   
-  // Apply filters when search query or status changes
+  // Apply filters whenever search query or status changes
   useEffect(() => {
     if (allStudents.length > 0) {
       const filtered = filterStudents();
@@ -380,6 +385,7 @@ const AdminDashboard = () => {
         background: '#f3f4f6',
       },
     },
+    // Removed sortableHeader style as sorting is disabled
     '@media (max-width: 1024px)': {
       container: {
         padding: '1.25rem 0.75rem',
@@ -522,11 +528,22 @@ const AdminDashboard = () => {
       const studentRes = await fetch(`${API_BASE}/api/students/${id}`);
       if (!studentRes.ok) throw new Error('Failed to fetch student data');
       const studentData = await studentRes.json();
-
-  const html = renderStudentPrintHtml(studentData);
-  setPreviewHtml(html);
-  setPreviewFilename(`${(studentData.studentName || 'student').replace(/\s+/g,'_')}-${id}.pdf`);
-  setShowPreview(true);
+      
+      // Then request server-side PDF endpoint which returns a PDF attachment
+      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch PDF from server');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${studentData.studentName || 'student'}-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (err) {
       console.error('Download error:', err);
       setError(err.message || 'Failed to download PDF');
@@ -630,87 +647,54 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Pagination Controls - Moved below navbar */}
+        {error && (
+          <div style={applyResponsiveStyles(styles.error)}>
+            {error}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
         {students.length > 0 && (
-          <div style={{
-            ...styles.pagination,
-            margin: '1rem 0',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0.75rem 1rem',
-            background: 'white',
-            borderRadius: '0.75rem',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-          }}>
-            <div style={{ color: '#4b5563', fontSize: '0.875rem' }}>
-              Showing {Math.min((currentPage - 1) * rowsPerPage + 1, totalStudents)} to {Math.min(currentPage * rowsPerPage, totalStudents)} of {totalStudents} entries
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                onClick={() => paginate(1)}
-                disabled={currentPage === 1}
-                style={styles.pageButton}
-                type="button"
-                aria-label="First page"
-              >
-                ««
-              </button>
-              <button
-                onClick={() => paginate(currentPage - 1)}
-                disabled={currentPage === 1}
-                style={styles.pageButton}
-                type="button"
-                aria-label="Previous page"
-              >
-                «
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                // Show page numbers around current page
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => paginate(pageNum)}
-                    style={{
-                      ...styles.pageButton,
-                      ...(currentPage === pageNum && styles.pageButton.active)
-                    }}
-                    type="button"
-                    aria-label={`Page ${pageNum}`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => paginate(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                style={styles.pageButton}
-                type="button"
-                aria-label="Next page"
-              >
-                »
-              </button>
-              <button
-                onClick={() => paginate(totalPages)}
-                disabled={currentPage === totalPages}
-                style={styles.pageButton}
-                type="button"
-                aria-label="Last page"
-              >
-                »»
-              </button>
-            </div>
+          <div style={styles.pagination}>
+            <button
+              onClick={() => paginate(1)}
+              disabled={currentPage === 1}
+              style={styles.pageButton}
+              type="button"
+              aria-label="First page"
+            >
+              ««
+            </button>
+            <button
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={styles.pageButton}
+              type="button"
+              aria-label="Previous page"
+            >
+              «
+            </button>
+            <span style={styles.pageInfo}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => paginate(currentPage + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              style={styles.pageButton}
+              type="button"
+              aria-label="Next page"
+            >
+              »
+            </button>
+            <button
+              onClick={() => paginate(totalPages)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              style={styles.pageButton}
+              type="button"
+              aria-label="Last page"
+            >
+              »»
+            </button>
           </div>
         )}
 
@@ -731,11 +715,9 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {currentStudents.map((student, idx) => {
-                const rowNumber = (currentPage - 1) * rowsPerPage + idx + 1;
-                return (
-                <tr key={student.id || idx}>
-                  <td style={styles.td}>{rowNumber}</td>
+              {currentStudents.map((student, idx) => (
+                <tr key={student.id}>
+                  <td style={styles.td}>{(currentPage - 1) * rowsPerPage + idx + 1}</td>
                   <td style={styles.td}>{student.studentName}</td>
                   <td style={styles.td}>{student.mobile1}</td>
                   <td style={styles.td}>{student.district}</td>
@@ -810,64 +792,11 @@ const AdminDashboard = () => {
               ))}
             </tbody>
           </table>
-          {students.length > 0 && (
-            <div style={styles.pagination}>
-              <button
-                onClick={() => paginate(1)}
-                disabled={currentPage === 1}
-                style={styles.pageButton}
-                type="button"
-                aria-label="First page"
-              >
-                ««
-              </button>
-              <button
-                onClick={() => paginate(currentPage - 1)}
-                disabled={currentPage === 1}
-                style={styles.pageButton}
-                type="button"
-                aria-label="Previous page"
-              >
-                «
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                // Calculate page numbers to show (current page in the middle when possible)
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => paginate(pageNum)}
-                    className={currentPage === pageNum ? 'active' : ''}
-                    style={{
-                      ...styles.pageButton,
-                      ...(currentPage === pageNum && styles.pageButton['&.active'])
-                    }}
-                    type="button"
-                    aria-label={`Page ${pageNum}`}
-                    aria-current={currentPage === pageNum ? 'page' : undefined}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-            </tbody>
-          </table>
           {students.length === 0 && (
             <div style={styles.emptyState}>
               No students found matching your criteria.
             </div>
           )}
->>>>>>> 7f623830e84802234f22c26499f1a0c608edae3d
         </div>
       </div>
     </div>
