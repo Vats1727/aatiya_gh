@@ -22,9 +22,10 @@ const AdminLogin = () => {
       padding: '1rem',
       boxSizing: 'border-box',
       width: '100%',
+      minWidth: '320px', // Ensure minimum width for very small devices
     },
     form: {
-      background: 'white',
+      background: 'rgba(255, 255, 255, 0.95)',
       padding: '2rem',
       borderRadius: '1rem',
       boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
@@ -32,6 +33,7 @@ const AdminLogin = () => {
       maxWidth: '400px',
       margin: '1rem',
       boxSizing: 'border-box',
+      border: '1px solid rgba(0, 0, 0, 0.05)',
     },
     title: {
       textAlign: 'center',
@@ -39,9 +41,10 @@ const AdminLogin = () => {
       fontSize: '1.75rem',
       marginBottom: '1.5rem',
       lineHeight: '1.2',
+      fontWeight: '700',
     },
     inputGroup: {
-      marginBottom: '1.25rem',
+      marginBottom: '1.5rem',
       width: '100%',
     },
     label: {
@@ -53,17 +56,22 @@ const AdminLogin = () => {
     },
     input: {
       width: '100%',
-      padding: '0.75rem 1rem',
-      border: '2px solid #fbcfe8',
-      borderRadius: '0.5rem',
+      padding: '0.875rem 1rem',
+      border: '2px solid #f0f0f0',
+      borderRadius: '0.75rem',
       fontSize: '1rem',
       outline: 'none',
       boxSizing: 'border-box',
       transition: 'all 0.2s ease',
-      minHeight: '48px',
+      minHeight: '52px',
+      backgroundColor: '#f9fafb',
       ':focus': {
         borderColor: '#ec4899',
         boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
+        backgroundColor: '#ffffff',
+      },
+      '::placeholder': {
+        color: '#9ca3af',
       },
     },
     button: {
@@ -72,19 +80,21 @@ const AdminLogin = () => {
       background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
       color: 'white',
       border: 'none',
-      borderRadius: '0.5rem',
-      fontSize: '1rem',
+      borderRadius: '0.75rem',
+      fontSize: '1.05rem',
       fontWeight: 'bold',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
       WebkitTapHighlightColor: 'transparent',
-      minHeight: '48px',
+      minHeight: '52px',
+      marginTop: '0.5rem',
       ':hover': {
         transform: 'translateY(-2px)',
-        boxShadow: '0 4px 12px rgba(147, 51, 234, 0.3)',
+        boxShadow: '0 4px 15px rgba(147, 51, 234, 0.4)',
       },
       ':active': {
         transform: 'translateY(0)',
+        boxShadow: '0 2px 5px rgba(147, 51, 234, 0.3)',
       },
       ':disabled': {
         opacity: 0.7,
@@ -94,25 +104,59 @@ const AdminLogin = () => {
       },
     },
     error: {
-      color: '#ef4444',
-      marginBottom: '1rem',
+      color: '#dc2626',
+      marginBottom: '1.25rem',
       textAlign: 'center',
       fontSize: '0.9375rem',
-      padding: '0.75rem',
-      borderRadius: '0.375rem',
+      padding: '0.875rem',
+      borderRadius: '0.5rem',
       backgroundColor: '#fef2f2',
       border: '1px solid #fecaca',
+      fontWeight: '500',
     },
     // Responsive overrides for mobile
-    '@media (max-width: 480px)': {
+    '@media (max-width: 600px)': {
       container: {
-        padding: '0.5rem',
+        padding: '0.75rem',
+        minHeight: '100%',
+        height: '100%',
+        alignItems: 'flex-start',
+        paddingTop: '2rem',
+        background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 100%)',
       },
       form: {
-        padding: '1.5rem',
+        padding: '1.75rem 1.5rem',
         margin: '0.5rem',
         maxWidth: '100%',
-        borderRadius: '0.75rem',
+        borderRadius: '1rem',
+        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.1)',
+      },
+      title: {
+        fontSize: '1.65rem',
+        marginBottom: '1.5rem',
+      },
+      inputGroup: {
+        marginBottom: '1.25rem',
+      },
+      input: {
+        fontSize: '1.05rem',
+        padding: '0.875rem 1rem',
+        minHeight: '56px',
+      },
+      button: {
+        fontSize: '1.1rem',
+        padding: '1rem',
+        minHeight: '56px',
+      },
+      label: {
+        fontSize: '1rem',
+        marginBottom: '0.625rem',
+      },
+    },
+    // Extra small devices
+    '@media (max-width: 360px)': {
+      form: {
+        padding: '1.5rem 1.25rem',
       },
       title: {
         fontSize: '1.5rem',
@@ -120,11 +164,6 @@ const AdminLogin = () => {
       },
       input: {
         fontSize: '1rem',
-        padding: '0.75rem',
-      },
-      button: {
-        fontSize: '1rem',
-        padding: '0.875rem',
       },
     },
   };
