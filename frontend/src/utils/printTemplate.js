@@ -2,178 +2,95 @@
 
 export const renderStudentPrintHtml = (student = {}) => {
   const s = student || {};
-  const escapeHtml = (str) => String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const escape = (v) => String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-  // Main container with exact styling to match reference PDF
-  const containerStyle = `
-    width: 210mm;
-    min-height: 297mm;
-    margin: 0 auto;
-    padding: 20mm 25mm 20mm 25mm;
-    background: #fff;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-    color: #000;
-    line-height: 1.5;
-  `;
+  // Use the reference styles: two-page HTML (form page + affidavit/rules page).
+  const pageStyle = `max-width:900px;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;`;
 
-  // Header with exact styling to match reference PDF
-  const header = `
-    <div style="text-align:center;margin-bottom:20px;">
-      <h1 style="margin:0;font-size:24px;color:#000;font-weight:bold;text-decoration:underline;margin-bottom:5px;">
-        आतिया गर्ल्स हॉस्टल / ATIYA GIRLS HOSTEL
-      </h1>
-      <div style="font-size:16px;margin-bottom:5px;">
-        रामपाड़ा कटिहार / Rampada Katihar
-      </div>
-      <div style="font-size:18px;font-weight:bold;margin-bottom:15px;text-decoration:underline">
-        HOSTEL ADMISSION FORM
-      </div>ांकन फॉर्म / ADMISSION FORM</div>
-      <div style="font-size:11px;color:#6b7280;margin-top:6px;">Admission Date: ${escapeHtml(s.admissionDate)}</div>
+  const photoBlock = (label, src) => `
+    <div style="text-align:center">
+      <div style="font-weight:600;margin-bottom:6px;font-size:12px;color:#374151">${label}</div>
+      ${src ? `<img src="${src}" style="width:128px;height:128px;object-fit:cover;border-radius:6px;" />` : `<div style="width:128px;height:128px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-radius:6px;color:#9ca3af">No Photo</div>`}
     </div>
   `;
 
-  const photos = `
-    <div style="display:flex;gap:16px;margin:12px 0;flex-wrap:wrap;">
-      <div style="flex:1 1 180px;text-align:center;border:1px solid #e5e7eb;padding:12px;border-radius:6px;background:#fafafa;">
-        <div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#374151">पिता/माता का फोटो / Parent Photo</div>
-        ${s.parentPhoto ? `<img src="${s.parentPhoto}" style="width:150px;height:180px;object-fit:cover;border-radius:4px;" />` : '<div style="width:150px;height:180px;display:flex;align-items:center;justify-content:center;color:#9ca3af">No Photo</div>'}
+  const formHtml = `
+    <div style="${pageStyle}">
+      <div style="text-align:center;border-bottom:3px solid #9ca3af;padding-bottom:8px;margin-bottom:12px;">
+        <h1 style="margin:0;font-size:28px;color:#db2777">आतिया गर्ल्स हॉस्टल</h1>
+        <h2 style="margin:0;font-size:20px;color:#ec4899">ATIYA GIRLS HOSTEL</h2>
+        <p style="margin:6px 0;font-size:14px;color:#4b5563">रामपाड़ा कटिहार / Rampada Katihar</p>
+        <div style="font-weight:700;margin-top:6px;font-size:16px;color:#111827">नामांकन फॉर्म / ADMISSION FORM</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:6px">दिनांक / Date: ${escape(s.admissionDate)}</div>
       </div>
-      <div style="flex:1 1 180px;text-align:center;border:1px solid #e5e7eb;padding:12px;border-radius:6px;background:#fafafa;">
-        <div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#374151">छात्रा का फोटो / Student Photo</div>
-        ${s.studentPhoto ? `<img src="${s.studentPhoto}" style="width:150px;height:180px;object-fit:cover;border-radius:4px;" />` : '<div style="width:150px;height:180px;display:flex;align-items:center;justify-content:center;color:#9ca3af">No Photo</div>'}
-      </div>
-    </div>
-  `;
 
-  const formSection = (title, fields) => {
-    return `
-      <div style="margin-bottom:15px;">
-        <h3 style="margin:0 0 10px 0;font-size:16px;color:#000;border-bottom:1px solid #000;padding-bottom:3px;">
-          ${title}
-        </h3>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(250px, 1fr));gap:10px;">
-          ${fields}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
+        <div>${photoBlock('पिता/माता का फोटो / Parent Photo', s.parentPhoto)}</div>
+        <div>${photoBlock('छात्रा का फोटो / Student Photo', s.studentPhoto)}</div>
+      </div>
+
+      <div style="margin-bottom:10px">
+        <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">व्यक्तिगत जानकारी / Personal Information</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+          <div><strong>छात्रा का नाम:</strong> ${escape(s.studentName)}</div>
+          <div><strong>माता का नाम:</strong> ${escape(s.motherName)}</div>
+          <div><strong>पिता का नाम:</strong> ${escape(s.fatherName)}</div>
+          <div><strong>जन्म तिथि:</strong> ${escape(s.dob)}</div>
         </div>
       </div>
-    `;
-  };
 
-  const formField = (label, value) => {
-    if (!value) return '';
-    return `
-      <div style="margin-bottom:8px;">
-        <div style="font-weight:bold;font-size:14px;">${label}:</div>
-        <div style="border-bottom:1px solid #000;min-height:20px;padding:2px 5px;">${escapeHtml(value)}</div>
+      <div style="margin-bottom:10px">
+        <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">संपर्क जानकारी / Contact Information</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+          <div><strong>मोबाइल नं (1):</strong> ${escape(s.mobile1)}</div>
+          <div><strong>मोबाइल नं (2):</strong> ${escape(s.mobile2) || 'N/A'}</div>
+        </div>
       </div>
-    `;
-  };
 
-  const personalInfo = `
-    ${formField('Name of Student', s.studentName)}
-    ${formField("Father's Name", s.fatherName)}
-    ${formField("Mother's Name", s.motherName)}
-    ${formField('Date of Birth', s.dob)}
-    ${formField('Gender', s.gender)}
-    ${formField('Aadhar Number', s.aadharNumber)}
-  `;
-
-  const contactInfo = `
-    ${formField('Mobile 1', s.mobile1)}
-    ${formField('Mobile 2', s.mobile2 || 'N/A')}
-    ${formField('Email', s.email || 'N/A')}
-    ${formField('Address', `${s.village}, ${s.post}, ${s.policeStation}, ${s.district}, ${s.state || 'Bihar'} - ${s.pinCode}`)}
-  `;
-
-  const academicInfo = `
-    ${formField('Class', s.class)}
-    ${formField('School/College', s.schoolCollege || 'N/A')}
-    ${formField('Course', s.course || 'N/A')}
-    ${formField('Year/Semester', s.yearSemester || 'N/A')}
-  `;
-
-  const emergencyContact = `
-    ${formField('Emergency Contact Name', s.emergencyName || 'N/A')}
-    ${formField('Relation', s.emergencyRelation || 'N/A')}
-    ${formField('Emergency Contact Number', s.emergencyNumber || 'N/A')}
-    ${formField('Emergency Address', s.emergencyAddress || 'N/A')}
-  `;
-
-  const hostelInfo = `
-    ${formField('Room No.', s.roomNumber || 'To be assigned')}
-    ${formField('Admission Date', s.admissionDate || new Date().toLocaleDateString())}
-    ${formField('Hostel Fee', s.hostelFee ? `₹${s.hostelFee}` : 'N/A')}
-    ${formField('Payment Mode', s.paymentMode || 'N/A')}
-  `;
-
-  const info = `
-    ${formSection('Personal Information', personalInfo)}
-    ${formSection('Contact Information', contactInfo)}
-    ${formSection('Academic Information', academicInfo)}
-    ${formSection('Emergency Contact', emergencyContact)}
-    ${formSection('Hostel Information', hostelInfo)}
-  `;
-
-  const allowed = `
-    <div style="margin-top:12px;">
-      <div style="font-weight:700;margin-bottom:6px;color:#4b5563">छात्रा से मिलने वाले का नाम / Names of Persons Allowed to Meet</div>
-      ${[1,2,3,4].map(i => `<div style="margin:4px 0;">${i}. ${escapeHtml(s[`allowedPerson${i}`])}</div>`).join('')}
-    </div>
-  `;
-
-  const coaching = `
-    <div style="margin-top:12px;">
-      <div style="font-weight:700;margin-bottom:6px;color:#4b5563">कोचिंग विवरण / Coaching Details</div>
-      ${[1,2,3,4].map(i => `<div style="margin-bottom:6px;color:#111827"><strong>कोचिंग ${i}:</strong> ${escapeHtml(s[`coaching${i}Name`])} ${s[`coaching${i}Address`] ? '- ' + escapeHtml(s[`coaching${i}Address`]) : ''}</div>`).join('')}
-    </div>
-  `;
-
-  const signatures = `
-    <div style="display:flex;gap:24px;margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;flex-wrap:wrap;">
-      <div style="flex:1 1 300px;text-align:center;padding-top:8px;">
-        <div style="border-top:2px solid #9ca3af;padding-top:12px;min-height:48px;font-weight:700">${escapeHtml(s.parentSignature)}</div>
-        <div style="font-size:12px;color:#6b7280;margin-top:6px">पिता / माता का हस्ताक्षर</div>
+      <div style="margin-bottom:10px">
+        <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">स्थायी पता / Permanent Address</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+          <div><strong>ग्राम:</strong> ${escape(s.village)}</div>
+          <div><strong>पोस्ट:</strong> ${escape(s.post)}</div>
+          <div><strong>थाना:</strong> ${escape(s.policeStation)}</div>
+          <div><strong>जिला:</strong> ${escape(s.district)}</div>
+          <div><strong>पिन कोड:</strong> ${escape(s.pinCode)}</div>
+        </div>
       </div>
-      <div style="flex:1 1 300px;text-align:center;padding-top:8px;">
-        <div style="border-top:2px solid #9ca3af;padding-top:12px;min-height:48px;font-weight:700">${escapeHtml(s.studentSignature)}</div>
-        <div style="font-size:12px;color:#6b7280;margin-top:6px">छात्रा का हस्ताक्षर</div>
+
+      <div style="margin-bottom:10px">
+        <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">छात्रा से मिलने वाले का नाम / Allowed Visitors</h3>
+        <div style="font-size:12px;">
+          ${[1,2,3,4].map(i => `<div>${i}. ${escape(s[`allowedPerson${i}`]) || ''}</div>`).join('')}
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px">
+        <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">कोचिंग विवरण / Coaching Details</h3>
+        <div style="font-size:12px;">
+          ${[1,2,3,4].map(i => {
+            const name = escape(s[`coaching${i}Name`]);
+            const addr = escape(s[`coaching${i}Address`]);
+            return (name || addr) ? `<div style="border-bottom:1px solid #e5e7eb;padding:6px 0;margin-bottom:6px"><strong>कोचिंग ${i}:</strong> ${name ? `नाम एवं समय: ${name}` : ''} ${addr ? ` - पता: ${addr}` : ''}</div>` : '';
+          }).join('')}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
+        <div style="text-align:center">
+          <div style="border-top:2px solid #9ca3af;padding-top:8px;min-height:48px">${escape(s.studentSignature) || ''}</div>
+          <div style="font-size:12px;color:#666;margin-top:4px">छात्रा का हस्ताक्षर / Student Signature</div>
+        </div>
+        <div style="text-align:center">
+          <div style="border-top:2px solid #9ca3af;padding-top:8px;min-height:48px">${escape(s.parentSignature) || ''}</div>
+          <div style="font-size:12px;color:#666;margin-top:4px">पिता/माता का हस्ताक्षर / Parent Signature</div>
+        </div>
       </div>
     </div>
   `;
 
-  const rules = `
-    <div style="margin-top:18px;font-size:13px;line-height:1.6;color:#374151">
-      <div style="font-weight:700;margin-bottom:8px;text-align:center;color:#4b5563">हॉस्टल नियम एवं शर्तें</div>
-      <ol style="margin-left:1rem;">
-        <li>हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</li>
-        <li>कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है।</li>
-        <li>छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</li>
-        <li>कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा।</li>
-        <li>यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</li>
-        <li>हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है।</li>
-        <li>अभिभावकों से अनुरोध है कि वे अपने बच्चे से केवल रविवार को मिलें; मिलने वालों में माता-पिता और भाई-बहन ही शामिल होंगे।</li>
-        <li>किसी भी विज़िट से पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है; विज़िटर्स को आवासीय क्षेत्रों में प्रवेश की अनुमति नहीं होगा।</li>
-        <li>खिड़कियों के पास खड़ा होना सख्त मना है।</li>
-        <li>खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</li>
-      </ol>
-    </div>
-  `;
-
-  const full = `
-    <div style="${containerStyle}">
-      ${header}
-      ${photos}
-      ${info}
-      ${allowed}
-      ${coaching}
-      ${signatures}
-      ${rules}
-    </div>
-  `;
-
-  return full;
+  return formHtml;
 };
-
 export const renderRulesHtml = () => {
   return `
     <div style="padding:20px;max-width:210mm;margin:0 auto;background:white;min-height:297mm;box-sizing:border-box;position:relative;">
