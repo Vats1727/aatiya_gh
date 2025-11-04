@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Edit, Check, X, Trash } from 'lucide-react';
+import { Download, Edit, Check, X, Trash, FileText } from 'lucide-react';
+import { downloadStudentPdf } from '../utils/pdfUtils';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -351,8 +352,8 @@ const AdminDashboard = () => {
     },
     pagination: {
       display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: 'flex-end',
+      alignItems: 'flex-end',
       marginTop: '1.5rem',
       gap: '0.5rem',
       flexWrap: 'wrap',
@@ -506,47 +507,30 @@ const AdminDashboard = () => {
     navigate(`/?editId=${id}`);
   };
 
-  const handleDelete = async (id) => {
+  const handleDownloadStudentPdf = async (student) => {
     try {
-      const ok = window.confirm('Are you sure you want to delete this record? This action cannot be undone.');
-      if (!ok) return;
-      const response = await fetch(`${API_BASE}/api/students/${id}`, {
-        method: 'DELETE'
-      });
-      if (!response.ok) throw new Error('Failed to delete record');
-      // Remove from local state
-      setStudents(prev => prev.filter(s => s.id !== id));
-      setAllStudents(prev => prev.filter(s => s.id !== id));
-    } catch (err) {
-      setError(err.message);
+      const result = await downloadStudentPdf(student);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate PDF');
+      }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Failed to download PDF. Please try again.');
     }
   };
 
-  const handleDownload = async (id) => {
-    try {
-      // First, get the student data
-      const studentRes = await fetch(`${API_BASE}/api/students/${id}`);
-      if (!studentRes.ok) throw new Error('Failed to fetch student data');
-      const studentData = await studentRes.json();
-      
-      // Then request server-side PDF endpoint which returns a PDF attachment
-      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch PDF from server');
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this student?')) {
+      try {
+        const response = await fetch(`${API_BASE}/api/students/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete student');
+        fetchStudents(); // Refresh the list
+      } catch (err) {
+        console.error('Error deleting student:', err);
+        alert('Failed to delete student');
       }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `${studentData.studentName || 'student'}-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err) {
-      console.error('Download error:', err);
-      setError(err.message || 'Failed to download PDF');
     }
   };
 
@@ -732,60 +716,26 @@ const AdminDashboard = () => {
                     </span>
                   </td>
                   <td style={styles.td}>
-                    <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#10b981' 
-                      }}
-                      onClick={() => handleStatusChange(student.id, 'approved')}
-                      title="Approve"
-                      type="button"
-                      aria-label={`Approve ${student.studentName}`}
-                    >
-                      <Check size={16} color="white" />
-                    </button>
-                    <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#ef4444' 
-                      }}
-                      onClick={() => handleStatusChange(student.id, 'rejected')}
-                      title="Reject"
-                      type="button"
-                      aria-label={`Reject ${student.studentName}`}
-                    >
-                      <X size={16} color="white" />
-                    </button>
-                    <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#6366f1' 
-                      }}
-                      onClick={() => handleEdit(student.id)}
+                    <button 
+                      onClick={() => navigate(`/student-form?editId=${student.id}`)}
+                      style={styles.iconButton}
                       title="Edit"
-                      type="button"
-                      aria-label={`Edit ${student.studentName}`}
                     >
-                      <Edit size={16} color="white" />
+                      <Edit size={16} />
                     </button>
-                    <button
-                      style={{ 
-                        ...styles.actionButton, 
-                        background: '#8b5cf6' 
-                      }}
-                      onClick={() => handleDownload(student.id)}
-                      title="Download"
-                      type="button"
-                      aria-label={`Download ${student.studentName}'s form`}
+                    <button 
+                      onClick={() => handleDownloadStudentPdf(student)}
+                      style={{...styles.iconButton, color: '#10b981'}}
+                      title="Download PDF"
                     >
-                      <Download size={16} color="white" />
+                      <FileText size={16} />
                     </button>
-                    <button
-                      style={{ ...styles.actionButton, background: '#ef4444' }}
+                    <button 
                       onClick={() => handleDelete(student.id)}
+                      style={{...styles.iconButton, color: '#ef4444'}}
                       title="Delete"
                     >
-                      <Trash size={16} color="white" />
+                      <Trash size={16} />
                     </button>
                   </td>
                 </tr>

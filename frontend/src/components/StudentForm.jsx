@@ -18,6 +18,7 @@ try {
 import { FileText, Download, User, Phone, MapPin, Calendar, Users, GraduationCap, Printer } from 'lucide-react';
 import { renderStudentPrintHtml } from '../utils/printTemplate';
 import { generatePdfFromHtmlString } from '../utils/pdf';
+import { downloadStudentPdf } from '../utils/pdfUtils';
 import PlaceholderImage from '../assets/Image.jpg';
 
 const HostelAdmissionForm = () => {
@@ -817,6 +818,11 @@ const HostelAdmissionForm = () => {
       console.error('Submit error', err);
       alert('An error occurred while saving. See console for details.');
     }
+  };
+
+  const handleDownloadPdf = () => {
+    const html = renderStudentPrintHtml(formData);
+    downloadStudentPdf(html, `admission-${(formData.studentName || 'student').replace(/\s+/g,'_')}.pdf`);
   };
 
   // Function to render form fields
