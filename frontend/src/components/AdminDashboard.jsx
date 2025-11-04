@@ -792,7 +792,7 @@ const handleDelete = async (id) => {
                   <td style={styles.td}>
                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                       <button 
-                        onClick={() => navigate(`/student-form?editId=${student.id}`)}
+                        onClick={() => handleEdit(student.id)}
                         style={{ ...styles.actionButton, ...styles.editButton }}
                         title="Edit"
                       >
