@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
-import { Download, Edit, Check, X, Trash } from 'lucide-react';
-=======
 import { FileDown, Edit, Check, X, Trash, FileText } from 'lucide-react';
 import { downloadStudentPdf } from '../utils/pdfUtils';
->>>>>>> 97c7dd9c95d43b36839af09cd525257c86b6509f
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -564,43 +560,19 @@ const AdminDashboard = () => {
     navigate(`/?editId=${id}`);
   };
 
-  const handleDownloadStudentPdf = async (student) => {
-    try {
-      const result = await downloadStudentPdf(student);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to generate PDF');
-      }
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      alert('Failed to download PDF. Please try again.');
+const handleDownloadStudentPdf = async (student) => {
+  try {
+    const result = await downloadStudentPdf(student);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to generate PDF');
     }
-  };
+  } catch (error) {
+    console.error('Error downloading PDF:', error);
+    alert('Failed to download PDF. Please try again.');
+  }
+};
 
-<<<<<<< HEAD
-  const handleDownload = async (id) => {
-    try {
-      // First, get the student data
-      const studentRes = await fetch(`${API_BASE}/api/students/${id}`);
-      if (!studentRes.ok) throw new Error('Failed to fetch student data');
-      const studentData = await studentRes.json();
-      
-      // Then request server-side PDF endpoint which returns a PDF attachment
-      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch PDF from server');
-      }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `${studentData.studentName || 'student'}-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-=======
-  const handleDelete = async (id) => {
+const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this student?')) {
       try {
         const response = await fetch(`${API_BASE}/api/students/${id}`, {
@@ -630,7 +602,6 @@ const AdminDashboard = () => {
       
       // Refresh the student list
       fetchStudents();
->>>>>>> 97c7dd9c95d43b36839af09cd525257c86b6509f
     } catch (err) {
       console.error('Error updating status:', err);
       alert(`Failed to ${status} student: ${err.message}`);
