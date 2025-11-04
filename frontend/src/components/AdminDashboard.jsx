@@ -108,8 +108,51 @@ const AdminDashboard = () => {
     fetchStudents();
   }, [navigate]);
 
-  // Add styles for action buttons
   const styles = {
+    // ... existing styles ...
+    editButton: {
+      color: '#3b82f6',
+      '&:hover': {
+        backgroundColor: '#eff6ff',
+        borderColor: '#3b82f6',
+      },
+    },
+    viewButton: {
+      color: '#10b981',
+      '&:hover': {
+        backgroundColor: '#ecfdf5',
+        borderColor: '#10b981',
+      },
+    },
+    deleteButton: {
+      color: '#ef4444',
+      '&:hover': {
+        backgroundColor: '#fef2f2',
+        borderColor: '#ef4444',
+      },
+    },
+    acceptButton: {
+      color: '#10b981',
+      '&:hover': {
+        backgroundColor: '#ecfdf5',
+        borderColor: '#10b981',
+      },
+      '&:disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
+      },
+    },
+    rejectButton: {
+      color: '#f59e0b',
+      '&:hover': {
+        backgroundColor: '#fffbeb',
+        borderColor: '#f59e0b',
+      },
+      '&:disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
+      },
+    },
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
@@ -266,20 +309,29 @@ const AdminDashboard = () => {
       whiteSpace: 'nowrap',
     },
     actionButton: {
-      padding: '0.4rem 0.75rem',
-      border: 'none',
-      borderRadius: '0.375rem',
-      marginRight: '0.5rem',
-      marginBottom: '0.25rem',
-      cursor: 'pointer',
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '0.375rem',
-      fontSize: '0.8125rem',
-      fontWeight: '500',
+      justifyContent: 'center',
+      width: '32px',
+      height: '32px',
+      padding: '0',
+      margin: '0 2px',
+      borderRadius: '4px',
+      border: '1px solid #e5e7eb',
+      backgroundColor: 'white',
+      cursor: 'pointer',
       transition: 'all 0.2s ease',
-      ':hover': {
+      '&:hover': {
+        backgroundColor: '#f9fafb',
+        borderColor: '#d1d5db',
         transform: 'translateY(-1px)',
+      },
+      '&:active': {
+        backgroundColor: '#f3f4f6',
+      },
+      '&:disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
       },
     },
     loading: {
@@ -535,6 +587,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleStatusUpdate = async (id, status) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/students/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update status');
+      }
+      
+      // Refresh the student list
+      fetchStudents();
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert(`Failed to ${status} student: ${err.message}`);
+    }
+  };
+
   const handleAddNew = () => {
     navigate('/');
   };
@@ -717,114 +790,57 @@ const AdminDashboard = () => {
                     </span>
                   </td>
                   <td style={styles.td}>
-                    <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                       <button 
-                        onClick={() => handleStatusChange(student.id, 'approved')}
-                        style={{
-                          ...styles.actionButton,
-                          backgroundColor: student.status === 'approved' ? '#10b981' : '#e5e7eb',
-                          color: student.status === 'approved' ? 'white' : '#374151',
-                          border: 'none',
-                          borderRadius: '0.375rem',
-                          padding: '0.25rem 0.5rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          ':hover': {
-                            opacity: 0.9,
-                            transform: 'translateY(-1px)'
-                          }
-                        }}
-                        title="Approve"
+                        onClick={() => navigate(`/student-form?editId=${student.id}`)}
+                        style={{ ...styles.actionButton, ...styles.editButton }}
+                        title="Edit"
                       >
-                        <Check size={14} />
-                        <span style={{ fontSize: '0.75rem' }}>Accept</span>
-                      </button>
-                      <button 
-                        onClick={() => handleStatusChange(student.id, 'rejected')}
-                        style={{
-                          ...styles.actionButton,
-                          backgroundColor: student.status === 'rejected' ? '#ef4444' : '#e5e7eb',
-                          color: student.status === 'rejected' ? 'white' : '#374151',
-                          border: 'none',
-                          borderRadius: '0.375rem',
-                          padding: '0.25rem 0.5rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          ':hover': {
-                            opacity: 0.9,
-                            transform: 'translateY(-1px)'
-                          }
-                        }}
-                        title="Reject"
-                      >
-                        <X size={14} />
-                        <span style={{ fontSize: '0.75rem' }}>Reject</span>
+                        <Edit size={16} />
                       </button>
                       <button 
                         onClick={() => handleDownloadStudentPdf(student)}
-                        style={{
-                          ...styles.iconButton,
-                          backgroundColor: '#e5e7eb',
-                          color: '#10b981',
-                          border: 'none',
-                          borderRadius: '0.375rem',
-                          padding: '0.25rem 0.5rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          ':hover': {
-                            opacity: 0.9,
-                            transform: 'translateY(-1px)'
-                          }
-                        }}
-                        title="Download PDF"
+                        style={{ ...styles.actionButton, ...styles.viewButton }}
+                        title="View/Download PDF"
                       >
-                        <FileText size={14} />
+                        <FileText size={16} />
                       </button>
                       <button 
-                        onClick={() => navigate(`/student-form?editId=${student.id}`)}
-                        style={{
-                          ...styles.iconButton,
-                          backgroundColor: '#e5e7eb',
-                          color: '#3b82f6',
-                          border: 'none',
-                          borderRadius: '0.375rem',
-                          padding: '0.25rem 0.5rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          ':hover': {
-                            opacity: 0.9,
-                            transform: 'translateY(-1px)'
-                          }
+                        onClick={() => handleStatusUpdate(student.id, 'approved')}
+                        style={{ 
+                          ...styles.actionButton, 
+                          ...styles.acceptButton,
+                          ...(student.status === 'approved' && { 
+                            backgroundColor: '#ecfdf5',
+                            borderColor: '#10b981'
+                          })
                         }}
-                        title="Edit"
+                        title="Approve Application"
+                        disabled={student.status === 'approved'}
                       >
-                        <Edit size={14} />
+                        <Check size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleStatusUpdate(student.id, 'rejected')}
+                        style={{ 
+                          ...styles.actionButton, 
+                          ...styles.rejectButton,
+                          ...(student.status === 'rejected' && { 
+                            backgroundColor: '#fffbeb',
+                            borderColor: '#f59e0b'
+                          })
+                        }}
+                        title="Reject Application"
+                        disabled={student.status === 'rejected'}
+                      >
+                        <X size={16} />
                       </button>
                       <button 
                         onClick={() => handleDelete(student.id)}
-                        style={{
-                          ...styles.iconButton,
-                          backgroundColor: '#e5e7eb',
-                          color: '#ef4444',
-                          border: 'none',
-                          borderRadius: '0.375rem',
-                          padding: '0.25rem 0.5rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          ':hover': {
-                            opacity: 0.9,
-                            transform: 'translateY(-1px)'
-                          }
-                        }}
+                        style={{ ...styles.actionButton, ...styles.deleteButton }}
                         title="Delete"
                       >
-                        <Trash size={14} />
+                        <Trash size={16} />
                       </button>
                     </div>
                   </td>

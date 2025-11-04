@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
 
-// Icons from lucide-react
-import { FileText, Download, User, Phone, MapPin, Calendar, Users, GraduationCap, Check } from 'lucide-react';
-import Printer from 'lucide-react/dist/esm/icons/printer';
+import { Printer, User, Phone, MapPin, Calendar, Users, GraduationCap } from 'lucide-react';
 import { renderStudentPrintHtml } from '../utils/printTemplate';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import PlaceholderImage from '../assets/Image.jpg';
@@ -55,7 +53,6 @@ const HostelAdmissionForm = () => {
   });
 
   const [showPreview, setShowPreview] = useState(false);
-  const [previewHtml, setPreviewHtml] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -762,86 +759,866 @@ const HostelAdmissionForm = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const generatePDF = async () => {
     try {
-      // Validate required fields
+      // Ensure all required fields are filled
       const requiredFields = [
         'studentName', 'motherName', 'fatherName', 'mobile1', 'village',
-        'post', 'policeStation', 'district', 'pinCode', 'studentSignature', 'parentSignature'
+        'post', 'policeStation', 'district', 'pinCode'
       ];
       
       const missingFields = requiredFields.filter(field => !formData[field]);
       if (missingFields.length > 0) {
-        alert(`Please fill in all required fields before submitting. Missing: ${missingFields.join(', ')}`);
+        alert(`Please fill in all required fields before generating PDF. Missing: ${missingFields.join(', ')}`);
         return;
       }
-
-      // Save the form data
-      let response;
-      if (editId) {
-        // Update existing student
-        response = await fetch(`${API_BASE}/api/students/${editId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formData, updatedAt: new Date().toISOString() })
-        });
-      } else {
-        // Create new student
-        response = await fetch(`${API_BASE}/api/students`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
+      
+      setLoading(true);
+      // Add a small delay to ensure the loading state is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const result = await downloadStudentPdf(formData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate PDF');
       }
-      
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(errText || 'Failed to save student');
-      }
-      
-      // Get the saved data
-      const payload = await response.json();
-      const savedData = payload.student || payload;
-      
-      // Update form data with any server-generated fields
-      setFormData(prev => ({
-        ...prev,
-        ...savedData
-      }));
-      
-      // Show success message
-      alert('Form saved successfully! The PDF will now open for printing.');
-      
-      // Show preview and trigger print dialog
-      setShowPreview(true);
-      setTimeout(() => {
-        window.print();
-        // Close preview after a short delay
-        setTimeout(() => setShowPreview(false), 1000);
-      }, 500);
-      
-    } catch (err) {
-      console.error('Submit error', err);
-      alert(`An error occurred while saving: ${err.message || 'Please try again'}`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert(`Failed to generate PDF: ${error.message || 'Please try again'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div style={{...responsiveStyles.container, ...responsiveStyles.maxWidth}}>
-      <div style={responsiveStyles.card}>
-        <form onSubmit={handleSubmit}>
-          {/* ... */}
-          <div style={responsiveStyles.buttonCenter}>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    const requiredFields = [
+      'studentName', 'motherName', 'fatherName', 'mobile1', 'village',
+      'post', 'policeStation', 'district', 'pinCode',
+      'studentSignature', 'parentSignature'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !formData[field]);
+    if (missingFields.length > 0) {
+      alert(`Please fill in all required fields before submitting. Missing: ${missingFields.join(', ')}`);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const submitButton = document.querySelector('button[type="submit"]');
+      const originalButtonText = submitButton.innerHTML;
+      submitButton.disabled = true;
+      submitButton.innerHTML = 'Saving...';
+      
+      // Prepare form data with status and timestamps
+      const formDataWithStatus = {
+        ...formData,
+        status: 'pending',
+        submittedAt: new Date().toISOString()
+      };
+
+      // Submit form data
+      const endpoint = editId ? `${API_BASE}/api/students/${editId}` : `${API_BASE}/api/students`;
+      const method = editId ? 'PUT' : 'POST';
+      
+      const res = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formDataWithStatus)
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('Failed to update student', errText);
+        alert('Failed to update student. See console for details.');
+        return;
+      }
+      alert('Record updated successfully');
+      // After editing, go back to admin dashboard
+      navigate('/admin/dashboard');
+      return;
+    } catch (err) {
+      console.error('Submit error', err);
+      alert('An error occurred while saving. See console for details.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    const html = renderStudentPrintHtml(formData);
+    downloadStudentPdf(html, `admission-${(formData.studentName || 'student').replace(/\s+/g,'_')}.pdf`);
+  };
+
+  // Function to render form fields
+  const renderFormField = (name, label, type = 'text', required = false) => (
+    <div style={responsiveStyles.formGroup}>
+      <label style={responsiveStyles.label}>
+        {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
+      </label>
+      <input
+        type={type}
+        name={name}
+        value={formData[name] || ''}
+        onChange={handleInputChange}
+        style={responsiveStyles.input}
+        required={required}
+      />
+    </div>
+  );
+
+  return showPreview ? (
+    <div style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'}}>
+      <div style={{width: '100%', maxWidth: '1000px', maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)'}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid #eee'}}>
+          <div style={{fontSize: '1rem', fontWeight: 700}}>Preview</div>
+          <div style={{display: 'flex', gap: '0.5rem'}}>
+            <button onClick={() => { const html = renderStudentPrintHtml(formData); generatePDF(html, `admission-${(formData.studentName || 'student').replace(/\s+/g,'_')}.pdf`); }} style={{background: '#10b981', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Download PDF</button>
+            <button onClick={() => { setShowPreview(false); }} style={{background: '#ef4444', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Close</button>
+          </div>
+        </div>
+        <div style={{padding: '1rem'}}>
+          <div className="print-content">
+            <div style={{
+              padding: '20px',
+              maxWidth: '210mm',
+              margin: '0 auto',
+              background: 'white',
+              minHeight: '297mm',
+              boxSizing: 'border-box',
+              position: 'relative'
+            }}>
+              {/* Header */}
+              <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '2px solid #4f46e5', paddingBottom: '10px' }}>
+                <h1 style={{ color: '#4f46e5', margin: '5px 0', fontSize: '28px' }}>आतिया गर्ल्स हॉस्टल</h1>
+                <h2 style={{ color: '#4f46e5', margin: '5px 0', fontSize: '20px' }}>ATIYA GIRLS HOSTEL</h2>
+                <p style={{ margin: '5px 0', fontSize: '16px', color: '#666' }}>रामपाड़ा कटिहार / Rampada Katihar</p>
+                <p style={{ margin: '10px 0', fontSize: '18px', fontWeight: 'bold', color: '#333' }}>नामांकन फॉर्म / ADMISSION FORM</p>
+                <div style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                  Admission Date: {new Date(formData.admissionDate || new Date()).toLocaleDateString('en-IN')}
+                </div>
+              </div>
+
+              {/* Student Information */}
+              <div style={{ marginBottom: '20px' }}>
+                <h3 style={{
+                  margin: '0 0 15px 0',
+                  paddingBottom: '8px',
+                  borderBottom: '1px solid #e5e7eb',
+                  color: '#4f46e5',
+                  fontSize: '18px'
+                }}>छात्रा की जानकारी / Student Information</h3>
+                
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '15px',
+                  marginBottom: '15px'
+                }}>
+                  <div>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>छात्रा का नाम / Student Name</p>
+                    <p style={{
+                      margin: '5px 0',
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      borderBottom: '1px solid #e5e7eb',
+                      paddingBottom: '5px'
+                    }}>{formData.studentName || '-'}</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>पिता का नाम / Father's Name</p>
+                    <p style={{
+                      margin: '5px 0',
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      borderBottom: '1px solid #e5e7eb',
+                      paddingBottom: '5px'
+                    }}>{formData.fatherName || '-'}</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>माता का नाम / Mother's Name</p>
+                    <p style={{
+                      margin: '5px 0',
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      borderBottom: '1px solid #e5e7eb',
+                      paddingBottom: '5px'
+                    }}>{formData.motherName || '-'}</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>मोबाइल नंबर / Mobile Number</p>
+                    <p style={{
+                      margin: '5px 0',
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      borderBottom: '1px solid #e5e7eb',
+                      paddingBottom: '5px'
+                    }}>{formData.mobile1 || '-'}</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>गाँव / Village</p>
+                    <p style={{
+                      margin: '5px 0',
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      borderBottom: '1px solid #e5e7eb',
+                      paddingBottom: '5px'
+                    }}>{formData.village || '-'}</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>डाकघर / Post Office</p>
+                    <p style={{
+                      margin: '5px 0',
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      borderBottom: '1px solid #e5e7eb',
+                      paddingBottom: '5px'
+                    }}>{formData.post || '-'}</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>थाना / Police Station</p>
+                    <p style={{
+                      margin: '5px 0',
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      borderBottom: '1px solid #e5e7eb',
+                      paddingBottom: '5px'
+                    }}>{formData.policeStation || '-'}</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>जिला / District</p>
+                    <p style={{
+                      margin: '5px 0',
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      borderBottom: '1px solid #e5e7eb',
+                      paddingBottom: '5px'
+                    }}>{formData.district || '-'}</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>पिन कोड / PIN Code</p>
+                    <p style={{
+                      margin: '5px 0',
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      borderBottom: '1px solid #e5e7eb',
+                      paddingBottom: '5px'
+                    }}>{formData.pinCode || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Photos Section */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                margin: '20px 0',
+                gap: '20px'
+              }}>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{
+                    border: '1px dashed #9ca3af',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    marginBottom: '5px',
+                    height: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#f9fafb'
+                  }}>
+                    <img 
+                      src={formData.parentPhoto || PlaceholderImage} 
+                      alt="Parent" 
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '100px',
+                        objectFit: 'contain'
+                      }} 
+                    />
+                  </div>
+                  <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
+                    पिता/माता का फोटो / Parent Photo
+                  </p>
+                </div>
+                
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{
+                    border: '1px dashed #9ca3af',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    marginBottom: '5px',
+                    height: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#f9fafb'
+                  }}>
+                    <img 
+                      src={formData.studentPhoto || PlaceholderImage} 
+                      alt="Student" 
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '100px',
+                        objectFit: 'contain'
+                      }} 
+                    />
+                  </div>
+                  <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
+                    छात्रा का फोटो / Student Photo
+                  </p>
+                </div>
+              </div>
+
+              {/* Signatures */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: '40px',
+                paddingTop: '20px',
+                borderTop: '1px solid #e5e7eb',
+                position: 'absolute',
+                bottom: '40px',
+                left: '20px',
+                right: '20px'
+              }}>
+                <div style={{ textAlign: 'center', flex: 1, padding: '0 20px' }}>
+                  <div style={{
+                    borderTop: '1px solid #000',
+                    width: '200px',
+                    margin: '0 auto',
+                    paddingTop: '5px'
+                  }}>
+                    <p style={{ margin: '5px 0', fontSize: '14px', fontWeight: '500' }}>
+                      {formData.parentSignature || 'Parent/Guardian Name'}
+                    </p>
+                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
+                      पिता / माता का हस्ताक्षर / Parent's Signature
+                    </p>
+                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
+                      दिनांक / Date: {new Date().toLocaleDateString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+                
+                <div style={{ textAlign: 'center', flex: 1, padding: '0 20px' }}>
+                  <div style={{
+                    borderTop: '1px solid #000',
+                    width: '200px',
+                    margin: '0 auto',
+                    paddingTop: '5px'
+                  }}>
+                    <p style={{ margin: '5px 0', fontSize: '14px', fontWeight: '500' }}>
+                      {formData.studentSignature || 'Student Name'}
+                    </p>
+                    <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>
+                      छात्रा का हस्ताक्षर / Student's Signature
+                    </p>
+                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
+                      दिनांक / Date: {new Date().toLocaleDateString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Page 2: Rules and Regulations */}
+            <div className="page-break"></div>
+            
+            <div style={{
+              padding: '20px',
+              maxWidth: '210mm',
+              margin: '0 auto',
+              background: 'white',
+              minHeight: '297mm',
+              boxSizing: 'border-box',
+              position: 'relative'
+            }}>
+              <h2 style={{
+                textAlign: 'center',
+                color: '#4f46e5',
+                marginBottom: '20px',
+                fontSize: '22px',
+                paddingBottom: '10px',
+                borderBottom: '2px solid #4f46e5'
+              }}>हॉस्टल नियम एवं शर्तें / HOSTEL RULES AND REGULATIONS</h2>
+              
+              <div style={{
+                fontSize: '14px',
+                lineHeight: '1.8',
+                textAlign: 'justify',
+                marginBottom: '30px'
+              }}>
+                <p><strong>1.</strong> हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</p>
+                <p><strong>2.</strong> कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है।</p>
+                <p><strong>3.</strong> छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</p>
+                <p><strong>4.</strong> कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा।</p>
+                <p><strong>5.</strong> यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</p>
+                <p><strong>6.</strong> हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है।</p>
+                <p><strong>7.</strong> अभिभावकों से अनुरोध है कि वे अपने बच्चे से केवल रविवार को मिलें; मिलने वालों में माता-पिता और भाई-बहन ही शामिल होंगे।</p>
+                <p><strong>8.</strong> किसी भी विज़िट से पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है; विज़िटर्स को आवासीय क्षेत्रों में प्रवेश की अनुमति नहीं होगी।</p>
+                <p><strong>9.</strong> खिड़कियों के पास खड़ा होना सख्त मना है।</p>
+                <p><strong>10.</strong> खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</p>
+                <p><strong>11.</strong> छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
+                <p><strong>12.</strong> किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें।</p>
+                <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह का शुल्क लिया जाएगा।</p>
+              </div>
+              
+              {/* Hostel Incharge Signature */}
+              <div style={{
+                position: 'absolute',
+                bottom: '40px',
+                right: '40px',
+                textAlign: 'right'
+              }}>
+                <div style={{
+                  display: 'inline-block',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    borderTop: '1px solid #000',
+                    width: '250px',
+                    marginLeft: 'auto',
+                    paddingTop: '5px'
+                  }}>
+                    <p style={{
+                      margin: '5px 0',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}>हॉस्टल इंचार्ज / Hostel Incharge</p>
+                    <p style={{
+                      margin: '5px 0 0',
+                      fontSize: '12px',
+                      color: '#666'
+                    }}>दिनांक / Date: {new Date().toLocaleDateString('en-IN')}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div style={responsiveStyles.container}>
+      <div style={responsiveStyles.maxWidth}>
+        {/* Header */}
+        <div style={responsiveStyles.card}>
+          <div style={responsiveStyles.header}>
+            <h1 style={responsiveStyles.h1}>आतिया गर्ल्स हॉस्टल</h1>
+            <h2 style={responsiveStyles.h2}>ATIYA GIRLS HOSTEL</h2>
+            <p style={responsiveStyles.subtitle}>रामपाड़ा कटिहार / Rampada Katihar</p>
+            <p style={responsiveStyles.formTitle}>नामांकन फॉर्म / ADMISSION FORM</p>
+          </div>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={responsiveStyles.card}>
+          {/* Photo Display Section */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'row',
+            gap: '2rem',
+            justifyContent: 'space-between',
+            marginBottom: '1.5rem',
+            flexWrap: 'wrap'
+          }}>
+            <div style={{
+              flex: '1 1 200px',
+              minWidth: '200px',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                ...responsiveStyles.photoPreview,
+                margin: '0 auto',
+                width: '150px',
+                height: '180px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.5rem'
+              }}>
+                <img 
+                  src={PlaceholderImage} 
+                  alt="Parent Photo" 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }} 
+                />
+              </div>
+              <p style={{
+                marginTop: '0.5rem',
+                fontSize: '0.875rem',
+                color: '#4b5563',
+                fontWeight: '500'
+              }}>
+                पिता/माता का फोटो
+              </p>
+            </div>
+            <div style={{
+              flex: '1 1 200px',
+              minWidth: '200px',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                ...responsiveStyles.photoPreview,
+                margin: '0 auto',
+                width: '150px',
+                height: '180px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.5rem'
+              }}>
+                <img 
+                  src={PlaceholderImage} 
+                  alt="Student Photo" 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }} 
+                />
+              </div>
+              <p style={{
+                marginTop: '0.5rem',
+                fontSize: '0.875rem',
+                color: '#4b5563',
+                fontWeight: '500'
+              }}>
+                छात्रा का फोटो
+              </p>
+            </div>
+          </div>
+
+          {/* Personal Information */}
+          <div>
+            <h3 style={responsiveStyles.sectionTitle}>
+              व्यक्तिगत जानकारी / Personal Information
+            </h3>
+            <div style={responsiveStyles.gridTwo}>
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  छात्रा का नाम / Student Name *
+                </label>
+                <input
+                  type="text"
+                  name="studentName"
+                  value={formData.studentName}
+                  onChange={handleInputChange}
+                  required
+                  style={responsiveStyles.input}
+                  placeholder="Enter student name"
+                />
+              </div>
+
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  माता का नाम / Mother's Name *
+                </label>
+                <input
+                  type="text"
+                  name="motherName"
+                  value={formData.motherName}
+                  onChange={handleInputChange}
+                  required
+                  style={responsiveStyles.input}
+                  placeholder="Enter mother's name"
+                />
+              </div>
+
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  पिता का नाम / Father's Name *
+                </label>
+                <input
+                  type="text"
+                  name="fatherName"
+                  value={formData.fatherName}
+                  onChange={handleInputChange}
+                  required
+                  style={responsiveStyles.input}
+                  placeholder="Enter father's name"
+                />
+              </div>
+
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  <Calendar size={16} style={{display: 'inline', marginRight: '0.5rem'}} />
+                  जन्म तिथि / Date of Birth *
+                </label>
+                <input
+                  type="date"
+                  name="dob"
+                  value={formData.dob}
+                  onChange={handleInputChange}
+                  required
+                  style={responsiveStyles.input}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div>
+            <h3 style={responsiveStyles.sectionTitle}>
+              <Phone size={20} style={{display: 'inline', marginRight: '0.5rem'}} />
+              संपर्क जानकारी / Contact Information
+            </h3>
+            <div style={responsiveStyles.gridTwo}>
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  मोबाइल नं (1) / Mobile No. (1) *
+                </label>
+                <input
+                  type="tel"
+                  name="mobile1"
+                  value={formData.mobile1}
+                  onChange={handleInputChange}
+                  required
+                  pattern="[0-9]{10}"
+                  style={responsiveStyles.input}
+                  placeholder="10-digit mobile number"
+                />
+              </div>
+
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  मोबाइल नं (2) / Mobile No. (2)
+                </label>
+                <input
+                  type="tel"
+                  name="mobile2"
+                  value={formData.mobile2}
+                  onChange={handleInputChange}
+                  pattern="[0-9]{10}"
+                  style={responsiveStyles.input}
+                  placeholder="10-digit mobile number (optional)"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Address Information */}
+          <div>
+            <h3 style={responsiveStyles.sectionTitle}>
+              <MapPin size={20} style={{display: 'inline', marginRight: '0.5rem'}} />
+              स्थायी पता / Permanent Address
+            </h3>
+            <div style={responsiveStyles.gridTwo}>
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  ग्राम / Village *
+                </label>
+                <input
+                  type="text"
+                  name="village"
+                  value={formData.village}
+                  onChange={handleInputChange}
+                  required
+                  style={responsiveStyles.input}
+                />
+              </div>
+
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  पोस्ट / Post *
+                </label>
+                <input
+                  type="text"
+                  name="post"
+                  value={formData.post}
+                  onChange={handleInputChange}
+                  required
+                  style={responsiveStyles.input}
+                />
+              </div>
+
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  थाना / Police Station *
+                </label>
+                <input
+                  type="text"
+                  name="policeStation"
+                  value={formData.policeStation}
+                  onChange={handleInputChange}
+                  required
+                  style={responsiveStyles.input}
+                />
+              </div>
+
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  जिला / District *
+                </label>
+                <input
+                  type="text"
+                  name="district"
+                  value={formData.district}
+                  onChange={handleInputChange}
+                  required
+                  style={responsiveStyles.input}
+                />
+              </div>
+
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  पिन कोड / PIN Code *
+                </label>
+                <input
+                  type="text"
+                  name="pinCode"
+                  value={formData.pinCode}
+                  onChange={handleInputChange}
+                  required
+                  pattern="[0-9]{6}"
+                  style={responsiveStyles.input}
+                  placeholder="6-digit PIN code"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Allowed Visitors */}
+          <div>
+            <h3 style={responsiveStyles.sectionTitle}>
+              <Users size={20} style={{display: 'inline', marginRight: '0.5rem'}} />
+              छात्रा से मिलने वाले का नाम / Names of Persons Allowed to Meet
+            </h3>
+            <div style={responsiveStyles.gridTwo}>
+              {[1, 2, 3, 4].map((num) => (
+                <div key={num} style={responsiveStyles.formGroup}>
+                  <label style={responsiveStyles.label}>
+                    व्यक्ति {num} / Person {num}
+                  </label>
+                  <input
+                    type="text"
+                    name={`allowedPerson${num}`}
+                    value={formData[`allowedPerson${num}`]}
+                    onChange={handleInputChange}
+                    style={responsiveStyles.input}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Coaching Details */}
+          <div>
+            <h3 style={responsiveStyles.sectionTitle}>
+              <GraduationCap size={20} style={{display: 'inline', marginRight: '0.5rem'}} />
+              कोचिंग विवरण / Coaching Details
+            </h3>
+            {[1, 2, 3, 4].map((num) => (
+              <div key={num} style={responsiveStyles.coachingCard}>
+                <p style={responsiveStyles.coachingTitle}>कोचिंग {num} / Coaching {num}</p>
+                <div style={responsiveStyles.gridTwo}>
+                  <div style={responsiveStyles.formGroup}>
+                    <label style={responsiveStyles.label}>
+                      नाम एवं समय / Name & Time
+                    </label>
+                    <input
+                      type="text"
+                      name={`coaching${num}Name`}
+                      value={formData[`coaching${num}Name`]}
+                      onChange={handleInputChange}
+                      style={responsiveStyles.input}
+                    />
+                  </div>
+                  <div style={responsiveStyles.formGroup}>
+                    <label style={responsiveStyles.label}>
+                      पता / Address
+                    </label>
+                    <input
+                      type="text"
+                      name={`coaching${num}Address`}
+                      value={formData[`coaching${num}Address`]}
+                      onChange={handleInputChange}
+                      style={responsiveStyles.input}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Signatures */}
+          <div>
+            <h3 style={responsiveStyles.sectionTitle}>
+              हस्ताक्षर / Signatures
+            </h3>
+            <div style={responsiveStyles.gridTwo}>
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  छात्रा का हस्ताक्षर / Student Signature *
+                </label>
+                <div style={{
+                  ...responsiveStyles.input,
+                  padding: '0.5rem',
+                  minHeight: '50px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderBottom: '1px solid #9ca3af',
+                  fontStyle: 'italic',
+                  color: '#4b5563'
+                }}>
+                  {formData.studentName || 'Student Name'}
+                </div>
+              </div>
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>
+                  पिता/माता का हस्ताक्षर / Parent Signature *
+                </label>
+                <div style={{
+                  ...responsiveStyles.input,
+                  padding: '0.5rem',
+                  minHeight: '50px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderBottom: '1px solid #9ca3af',
+                  fontStyle: 'italic',
+                  color: '#4b5563'
+                }}>
+                  {formData.fatherName || formData.motherName || 'Parent Name'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Single Submit Button */}
+          <div style={{...responsiveStyles.buttonCenter, marginTop: '2rem'}}>
             <button
               type="submit"
-              style={responsiveStyles.button}
               disabled={loading}
-              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              style={{
+                ...responsiveStyles.button,
+                padding: '12px 24px',
+                fontSize: '1.1rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                backgroundColor: loading ? '#9ca3af' : '#4f46e5',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseOver={(e) => !loading && (e.currentTarget.style.transform = 'scale(1.03)')}
               onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
-              <FileText size={20} style={{ marginRight: '8px' }} />
-              Save & Print Form / सहेजें और प्रिंट करें
+              <Printer size={20} />
+              {loading ? 'Saving...' : 'Save & Generate PDF / सेव करें और पीडीएफ बनाएं'}
             </button>
           </div>
         </form>
