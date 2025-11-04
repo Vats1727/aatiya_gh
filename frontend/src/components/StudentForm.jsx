@@ -16,6 +16,8 @@ try {
 }
 
 import { FileText, Download, User, Phone, MapPin, Calendar, Users, GraduationCap, Printer } from 'lucide-react';
+import { renderStudentPrintHtml } from '../utils/printTemplate';
+import { generatePdfFromHtmlString } from '../utils/pdf';
 import PlaceholderImage from '../assets/Image.jpg';
 
 const HostelAdmissionForm = () => {
@@ -51,6 +53,7 @@ const HostelAdmissionForm = () => {
   });
 
   const [showPreview, setShowPreview] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -758,10 +761,9 @@ const HostelAdmissionForm = () => {
   };
 
   const generatePDF = () => {
+    const html = renderStudentPrintHtml(formData);
+    setPreviewHtml(html);
     setShowPreview(true);
-    setTimeout(() => {
-      window.print();
-    }, 100);
   };
 
   const handleSubmit = async (e) => {
@@ -808,10 +810,9 @@ const HostelAdmissionForm = () => {
       const payload = await res.json();
       // Show success message
       alert('Form submitted successfully! Waiting for admin approval.');
+      const html = renderStudentPrintHtml(formDataWithStatus);
+      setPreviewHtml(html);
       setShowPreview(true);
-      setTimeout(() => {
-        window.print();
-      }, 100);
     } catch (err) {
       console.error('Submit error', err);
       alert('An error occurred while saving. See console for details.');
@@ -836,79 +837,21 @@ const HostelAdmissionForm = () => {
   );
 
   return showPreview ? (
-    <div className="print-content">
-      <style>{`
-        @media print {
-          *, *::before, *::after {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          body, html {
-              margin: 0;
-              padding: 0;
-          }
-          body * {
-            visibility: hidden;
-          }
-          .print-content, .print-content * {
-            visibility: visible;
-          }
-          .print-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .page-break {
-              page-break-before: always;
-          }
-        }
-      `}</style>
-
-      {/* PAGE 1: ADMISSION FORM */}
-      <div style={responsiveStyles.printContainer}>
-        {/* Header */}
-        <div style={responsiveStyles.printHeader}>
-          <h1 style={responsiveStyles.printH1}>आतिया गर्ल्स हॉस्टल</h1>
-          <h2 style={responsiveStyles.printH2}>ATIYA GIRLS HOSTEL</h2>
-          <p style={responsiveStyles.printSubtitle}>रामपाड़ा कटिहार / Rampada Katihar</p>
-          <p style={responsiveStyles.printFormTitle}>नामांकन फॉर्म / ADMISSION FORM</p>
-          <div style={responsiveStyles.printDate}>Admission Date: {formatDate(formData.admissionDate)}</div>
-        </div>
-
-        {/* Photos Section */}
-        <div style={responsiveStyles.photoSection}>
-          <div style={responsiveStyles.photoBox}>
-            <span style={responsiveStyles.photoLabel}>पिता/माता का फोटो / Parent Photo</span>
-            <div style={responsiveStyles.photoPreview}>
-              <img src={PlaceholderImage} alt="Parent Photo Placeholder" style={responsiveStyles.photoImg} />
-            </div>
-          </div>
-          <div style={responsiveStyles.photoBox}>
-            <span style={responsiveStyles.photoLabel}>छात्रा का फोटो / Student Photo</span>
-            <div style={responsiveStyles.photoPreview}>
-              <img src={PlaceholderImage} alt="Student Photo Placeholder" style={responsiveStyles.photoImg} />
-            </div>
+    <div style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'}}>
+      <div style={{width: '100%', maxWidth: '1000px', maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)'}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid #eee'}}>
+          <div style={{fontSize: '1rem', fontWeight: 700}}>Preview</div>
+          <div style={{display: 'flex', gap: '0.5rem'}}>
+            <button onClick={() => { const html = previewHtml || renderStudentPrintHtml(formData); generatePdfFromHtmlString(html, `admission-${(formData.studentName || 'student').replace(/\s+/g,'_')}.pdf`); }} style={{background: '#10b981', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Download PDF</button>
+            <button onClick={() => { setShowPreview(false); setPreviewHtml(''); }} style={{background: '#ef4444', color: '#fff', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', cursor: 'pointer'}}>Close</button>
           </div>
         </div>
-
-        {/* Signatures Section */}
-        <div style={{...responsiveStyles.signatureSection, marginTop: '2.5rem'}}>
-          <div style={responsiveStyles.signatureBox}>
-            <div style={{borderTop: '2px solid #9ca3af', paddingTop: '0.5rem', minHeight: '50px'}}>
-              <p style={{...responsiveStyles.signatureName, fontSize: '0.8rem'}}>{formData.parentSignature}</p>
-              <p style={{...responsiveStyles.signatureLabel, fontSize: '0.65rem'}}>पिता / माता का हस्ताक्षर</p>
-            </div>
-          </div>
-          <div style={responsiveStyles.signatureBox}>
-            <div style={{borderTop: '2px solid #9ca3af', paddingTop: '0.5rem', minHeight: '50px'}}>
-              <p style={{...responsiveStyles.signatureName, fontSize: '0.8rem'}}>{formData.studentSignature}</p>
-              <p style={{...responsiveStyles.signatureLabel, fontSize: '0.65rem'}}>छात्रा का हस्ताक्षर</p>
-            </div>
-          </div>
+        <div style={{padding: '1rem'}}>
+          {previewHtml ? (
+            <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: renderStudentPrintHtml(formData) }} />
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, Edit, Check, X, Trash } from 'lucide-react';
+import { renderStudentPrintHtml } from '../utils/printTemplate';
+import { generatePdfFromHtmlString } from '../utils/pdf';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -11,8 +13,14 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+<<<<<<< HEAD
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [previewFilename, setPreviewFilename] = useState('');
+=======
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+>>>>>>> 7f623830e84802234f22c26499f1a0c608edae3d
   const navigate = useNavigate();
 
   // Filter students based on search query and status
@@ -514,22 +522,11 @@ const AdminDashboard = () => {
       const studentRes = await fetch(`${API_BASE}/api/students/${id}`);
       if (!studentRes.ok) throw new Error('Failed to fetch student data');
       const studentData = await studentRes.json();
-      
-      // Then request server-side PDF endpoint which returns a PDF attachment
-      const response = await fetch(`${API_BASE}/api/students/${id}/pdf`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch PDF from server');
-      }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `${studentData.studentName || 'student'}-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+
+  const html = renderStudentPrintHtml(studentData);
+  setPreviewHtml(html);
+  setPreviewFilename(`${(studentData.studentName || 'student').replace(/\s+/g,'_')}-${id}.pdf`);
+  setShowPreview(true);
     } catch (err) {
       console.error('Download error:', err);
       setError(err.message || 'Failed to download PDF');
@@ -810,6 +807,57 @@ const AdminDashboard = () => {
                     </button>
                   </td>
                 </tr>
+              ))}
+            </tbody>
+          </table>
+          {students.length > 0 && (
+            <div style={styles.pagination}>
+              <button
+                onClick={() => paginate(1)}
+                disabled={currentPage === 1}
+                style={styles.pageButton}
+                type="button"
+                aria-label="First page"
+              >
+                ««
+              </button>
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={styles.pageButton}
+                type="button"
+                aria-label="Previous page"
+              >
+                «
+              </button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                // Calculate page numbers to show (current page in the middle when possible)
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => paginate(pageNum)}
+                    className={currentPage === pageNum ? 'active' : ''}
+                    style={{
+                      ...styles.pageButton,
+                      ...(currentPage === pageNum && styles.pageButton['&.active'])
+                    }}
+                    type="button"
+                    aria-label={`Page ${pageNum}`}
+                    aria-current={currentPage === pageNum ? 'page' : undefined}
+                  >
+                    {pageNum}
+                  </button>
                 );
               })}
             </tbody>
@@ -819,6 +867,7 @@ const AdminDashboard = () => {
               No students found matching your criteria.
             </div>
           )}
+>>>>>>> 7f623830e84802234f22c26499f1a0c608edae3d
         </div>
       </div>
     </div>
