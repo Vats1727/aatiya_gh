@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
 
+// Icons from lucide-react
 import { FileText, Download, User, Phone, MapPin, Calendar, Users, GraduationCap, Check } from 'lucide-react';
+import Printer from 'lucide-react/dist/esm/icons/printer';
 import { renderStudentPrintHtml } from '../utils/printTemplate';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import PlaceholderImage from '../assets/Image.jpg';
@@ -838,7 +840,7 @@ const HostelAdmissionForm = () => {
               onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
               onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
-              <Printer size={20} style={{ marginRight: '8px' }} />
+              <FileText size={20} style={{ marginRight: '8px' }} />
               Save & Print Form / सहेजें और प्रिंट करें
             </button>
           </div>
