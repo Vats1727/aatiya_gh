@@ -1,104 +1,129 @@
 import express from 'express';
 import admin from 'firebase-admin';
-import { createHostel, createStudent } from '../utils/idGenerator.js';
-import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { db } from '../config/firebase.js';
 
-// Export a router factory that accepts a Firestore `db` instance
-export default function createHostelsRouter(db) {
-  const router = express.Router();
+const router = express.Router();
 
-  // Apply auth middleware to all /users routes
-  router.use('/users', authMiddleware);
+// Apply auth middleware to all routes
+const authMiddleware = (req, res, next) => {
+  // Skip auth for health check
+  if (req.path === '/health') return next();
+  
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized',
+      code: 'UNAUTHORIZED'
+    });
+  }
+  
+  const token = authHeader.split(' ')[1];
+  admin.auth().verifyIdToken(token)
+    .then(decodedToken => {
+      req.user = decodedToken;
+      next();
+    })
+    .catch(error => {
+      console.error('Error verifying token:', error);
+      res.status(401).json({
+        success: false,
+        error: 'Invalid token',
+        code: 'INVALID_TOKEN'
+      });
+    });
+};
 
-  // Create a hostel for a user
-  // POST /api/users/me/hostels
-  router.post('/users/me/hostels', async (req, res) => {
-    if (!db) return res.status(500).send('Firestore not initialized');
-    try {
-      // Get user ID from the authenticated request
-      const userId = req.user.userId;
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-      
-      // Get user data from Firestore to check roles if needed
-      const userDoc = await db.collection('users').doc(userId).get();
-      if (!userDoc.exists) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      
-      const userData = userDoc.data();
-      // Optionally check for specific roles or permissions here
-      // For example, if you want to restrict who can create hostels:
-      // if (userData.role !== 'admin' && userData.role !== 'hostel_owner') {
-      //   return res.status(403).json({ error: 'Insufficient permissions' });
-      // }
-      const data = req.body || {};
-      const result = await createHostel(db, userId, data);
-      res.status(201).json({ id: result.id, hostelId: result.hostelId, name: result.name, address: result.address });
-    } catch (err) {
-      console.error('POST /api/users/:userId/hostels error', err);
-      res.status(500).json({ error: String(err) });
+router.use(authMiddleware);
+
+// Create a new hostel
+router.post('/hostels', async (req, res) => {
+  try {
+    const { name, address } = req.body;
+    const userId = req.user.uid;
+
+    if (!name || !address) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name and address are required',
+        code: 'VALIDATION_ERROR'
+      });
     }
-  });
 
-  // List hostels for a user
-  // GET /api/users/:userId/hostels
-  router.get('/users/:userId/hostels', async (req, res) => {
-    if (!db) return res.status(500).send('Firestore not initialized');
-    try {
-      let { userId } = req.params;
-      if (!userId || userId === 'me') userId = req.user.userId;
-      // if requesting another user's hostels, require superadmin
-      if (req.user.userId !== userId && req.user.role !== 'superadmin') {
-        return res.status(403).json({ error: 'Forbidden' });
+    const hostelData = {
+      name,
+      address,
+      ownerId: userId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    const docRef = await db.collection('hostels').add(hostelData);
+    
+    // Update user's hostels array
+    await db.collection('users').doc(userId).update({
+      hostels: admin.firestore.FieldValue.arrayUnion(docRef.id),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        id: docRef.id,
+        ...hostelData
       }
-      const snap = await db.collection('users').doc(userId).collection('hostels').orderBy('createdAt', 'desc').get();
-      const hostels = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      res.json(hostels);
-    } catch (err) {
-      console.error('GET /api/users/:userId/hostels error', err);
-      res.status(500).json({ error: String(err) });
-    }
-  });
+    });
 
-  // Create a student under a hostel (and mirror to top-level students collection)
-  // POST /api/users/:userId/hostels/:hostelDocId/students
-  router.post('/users/:userId/hostels/:hostelDocId/students', async (req, res) => {
-    if (!db) return res.status(500).send('Firestore not initialized');
-    try {
-      let { userId, hostelDocId } = req.params;
-      if (!userId || userId === 'me') userId = req.user.userId;
-      if (req.user.userId !== userId && req.user.role !== 'superadmin') {
-        return res.status(403).json({ error: 'Forbidden' });
-      }
-      const data = req.body || {};
-      const result = await createStudent(db, userId, hostelDocId, data);
-      res.status(201).json({ combinedId: result.combinedId, studentPath: result.studentRef.path, mirroredPath: result.topRef.path });
-    } catch (err) {
-      console.error('POST /api/users/:userId/hostels/:hostelDocId/students error', err);
-      res.status(500).json({ error: String(err) });
-    }
-  });
+  } catch (error) {
+    console.error('Error creating hostel:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create hostel',
+      code: 'INTERNAL_SERVER_ERROR',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 
-  // List students under a hostel
-  // GET /api/users/:userId/hostels/:hostelDocId/students
-  router.get('/users/:userId/hostels/:hostelDocId/students', async (req, res) => {
-    if (!db) return res.status(500).send('Firestore not initialized');
-    try {
-      let { userId, hostelDocId } = req.params;
-      if (!userId || userId === 'me') userId = req.user.userId;
-      if (req.user.userId !== userId && req.user.role !== 'superadmin') {
-        return res.status(403).json({ error: 'Forbidden' });
-      }
-      const snap = await db.collection('users').doc(userId).collection('hostels').doc(hostelDocId).collection('students').orderBy('createdAt', 'desc').get();
-      const students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      res.json(students);
-    } catch (err) {
-      console.error('GET /api/users/:userId/hostels/:hostelDocId/students error', err);
-      res.status(500).json({ error: String(err) });
+// Get all hostels for the authenticated user
+router.get('/hostels', async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const userDoc = await db.collection('users').doc(userId).get();
+    
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
     }
-  });
 
-  return router;
-}
+    const userData = userDoc.data();
+    const hostels = userData.hostels || [];
+    
+    // Get detailed hostel information
+    const hostelPromises = hostels.map(hostelId => 
+      db.collection('hostels').doc(hostelId).get()
+        .then(doc => doc.exists ? { id: doc.id, ...doc.data() } : null)
+    );
+    
+    const hostelData = (await Promise.all(hostelPromises)).filter(Boolean);
+    
+    res.json({
+      success: true,
+      data: hostelData
+    });
+
+  } catch (error) {
+    console.error('Error fetching hostels:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch hostels',
+      code: 'INTERNAL_SERVER_ERROR',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+export default router;

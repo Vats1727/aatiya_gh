@@ -3,92 +3,86 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-let firebaseInitialized = false;
-// Exported `db` will be assigned after successful initialization to avoid
-// calling admin.firestore() at module import time (which requires an app).
-export let db = null;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let firebaseApp = null;
+let db = null;
 
 const initializeFirebase = () => {
-  // If an app already exists, reuse it instead of initializing again.
-  try {
-    if (admin.apps && admin.apps.length > 0) {
-      firebaseInitialized = true;
-      db = admin.firestore();
-      console.log('Firebase already initialized - reusing existing app');
-      return true;
-    }
-  } catch (e) {
-    // ignore and continue to initialization path
+  // If already initialized, return existing instances
+  if (firebaseApp && db) {
+    return { firebaseApp, db };
+  }
+
+  // Check for existing app instance
+  if (admin.apps.length > 0) {
+    firebaseApp = admin.app();
+    db = admin.firestore();
+    console.log('Reusing existing Firebase app instance');
+    return { firebaseApp, db };
   }
   try {
+    // Try to load service account from environment variables or file
+    let serviceAccount;
+    
     if (process.env.GOOGLE_SERVICE_ACCOUNT_BASE64) {
-      console.log('GOOGLE_SERVICE_ACCOUNT_BASE64 found — initializing Firebase');
+      console.log('Initializing Firebase with GOOGLE_SERVICE_ACCOUNT_BASE64');
       const buf = Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_BASE64, 'base64');
-      const serviceAccount = JSON.parse(buf.toString('utf8'));
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-      firebaseInitialized = true;
+      serviceAccount = JSON.parse(buf.toString('utf8'));
     } else if (process.env.GOOGLE_SERVICE_ACCOUNT) {
-      console.log('GOOGLE_SERVICE_ACCOUNT found — initializing Firebase');
-      const serviceAccount = typeof process.env.GOOGLE_SERVICE_ACCOUNT === 'string'
+      console.log('Initializing Firebase with GOOGLE_SERVICE_ACCOUNT');
+      serviceAccount = typeof process.env.GOOGLE_SERVICE_ACCOUNT === 'string'
         ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT)
         : process.env.GOOGLE_SERVICE_ACCOUNT;
-      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-      firebaseInitialized = true;
     } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      console.log('GOOGLE_APPLICATION_CREDENTIALS set — initializing Firebase using ADC');
-      admin.initializeApp();
-      firebaseInitialized = true;
+      console.log('Initializing Firebase with Application Default Credentials');
+      firebaseApp = admin.initializeApp();
     } else {
-      // try local file (development)
-      // Check several likely locations relative to repo and this file so scripts run regardless of CWD
-      const __filename = fileURLToPath(import.meta.url);
-      const __dirname = path.dirname(__filename);
+      // Try to find service account file in common locations
+      const possiblePaths = [
+        path.resolve(__dirname, '../serviceAccountKey.json'),
+        path.resolve(process.cwd(), 'serviceAccountKey.json'),
+        path.resolve(process.cwd(), 'backend/serviceAccountKey.json'),
+        path.resolve(__dirname, '../../serviceAccountKey.json')
+      ];
 
-      // 1) backend/serviceAccountKey.json relative to repo root when running from repo root
-      const localPath1 = path.resolve('./backend/serviceAccountKey.json');
-      // 2) serviceAccountKey.json in repo root
-      const localPath2 = path.resolve('./serviceAccountKey.json');
-      // 3) serviceAccountKey.json located next to this config file (backend/config/../serviceAccountKey.json)
-      const localPath3 = path.resolve(__dirname, '..', 'serviceAccountKey.json');
-      // 4) serviceAccountKey.json in the backend directory (one level up from config)
-      const localPath4 = path.resolve(__dirname, '..', '..', 'serviceAccountKey.json');
-
-      const candidates = [localPath1, localPath2, localPath3, localPath4];
-      let found = null;
-      for (const p of candidates) {
-        if (fs.existsSync(p)) {
-          found = p;
+      for (const filePath of possiblePaths) {
+        if (fs.existsSync(filePath)) {
+          console.log(`Found service account file at: ${filePath}`);
+          serviceAccount = JSON.parse(fs.readFileSync(filePath, 'utf8'));
           break;
         }
       }
-
-      if (found) {
-        console.log(`Local serviceAccountKey.json found — initializing Firebase (dev) at ${found}`);
-        const serviceAccount = JSON.parse(fs.readFileSync(found, 'utf8'));
-        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-        firebaseInitialized = true;
-      }
     }
-  } catch (err) {
-    console.error('Failed to initialize Firebase Admin SDK:', err);
-  }
 
-  if (!firebaseInitialized) {
-    console.error('Firebase Admin SDK was not initialized. Set GOOGLE_SERVICE_ACCOUNT_BASE64 or GOOGLE_APPLICATION_CREDENTIALS or place serviceAccountKey.json in backend/');
-    return false;
-  }
+    if (!firebaseApp) {
+      if (!serviceAccount) {
+        throw new Error('No Firebase service account found. Please set up your Firebase credentials.');
+      }
+      
+      // Initialize Firebase with the service account
+      firebaseApp = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+    }
 
-  try {
-    // assign exported db after successful initialization
+    // Initialize Firestore with settings
     db = admin.firestore();
-    console.log('Firestore initialized');
-  } catch (err) {
-    console.error('Failed to get Firestore instance:', err);
-    return false;
+    db.settings({ ignoreUndefinedProperties: true });
+    
+    console.log('Firebase Admin SDK and Firestore initialized successfully');
+    
+    return { firebaseApp, db };
+  } catch (error) {
+    console.error('Failed to initialize Firebase:', error);
+    throw new Error(`Firebase initialization failed: ${error.message}`);
   }
-
-  return true;
 };
 
-export const isInitialized = () => firebaseInitialized;
-export default initializeFirebase;
+// Initialize immediately when this module is imported
+const { firebaseApp: initializedApp, db: firestoreDb } = initializeFirebase();
+
+// Export the initialized instances
+export { initializedApp as firebaseApp, firestoreDb as db };
+export default { firebaseApp: initializedApp, db: firestoreDb };
