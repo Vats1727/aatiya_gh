@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 
 const AdminLogin = () => {
@@ -12,8 +12,7 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Base styles for the component
-  const baseStyles = {
+  const styles = {
     container: {
       minHeight: '100vh',
       display: 'flex',
@@ -115,88 +114,8 @@ const AdminLogin = () => {
       border: '1px solid #fecaca',
       fontWeight: '500',
     },
-    // Responsive overrides for mobile
-    '@media (max-width: 600px)': {
-      container: {
-        padding: '0.75rem',
-        minHeight: '100%',
-        height: '100%',
-        alignItems: 'flex-start',
-        paddingTop: '2rem',
-        background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 100%)',
-      },
-      form: {
-        padding: '1.75rem 1.5rem',
-        margin: '0.5rem',
-        maxWidth: '100%',
-        borderRadius: '1rem',
-        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.1)',
-      },
-      title: {
-        fontSize: '1.65rem',
-        marginBottom: '1.5rem',
-      },
-      inputGroup: {
-        marginBottom: '1.25rem',
-      },
-      input: {
-        fontSize: '1.05rem',
-        padding: '0.875rem 1rem',
-        minHeight: '56px',
-      },
-      button: {
-        fontSize: '1.1rem',
-        padding: '1rem',
-        minHeight: '56px',
-      },
-      label: {
-        fontSize: '1rem',
-        marginBottom: '0.625rem',
-      },
-    },
-    // Extra small devices
-    '@media (max-width: 360px)': {
-      form: {
-        padding: '1.5rem 1.25rem',
-      },
-      title: {
-        fontSize: '1.5rem',
-        marginBottom: '1.25rem',
-      },
-      input: {
-        fontSize: '1rem',
-      },
-    },
   };
 
-  const applyResponsiveStyles = (styleObj) => {
-    if (!styleObj) return {};
-    
-    const appliedStyles = { ...styleObj };
-    
-    // Handle nested media queries
-    if (window.innerWidth <= 768 && styleObj['@media (max-width: 768px)']) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 768px)']);
-    }
-    if (window.innerWidth <= 480 && styleObj['@media (max-width: 480px)']) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 480px)']);
-    }
-    
-    // Remove media query keys to prevent React warnings
-    const { '@media (max-width: 768px)': mq768, '@media (max-width: 480px)': mq480, ...cleanStyles } = appliedStyles;
-    
-    return cleanStyles;
-  };
-
-  // Add keyframes for loading spinner
-  const keyframes = `
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-  `;
-
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCredentials(prev => ({
@@ -207,26 +126,33 @@ const AdminLogin = () => {
     if (error) setError('');
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     if (!credentials.username || !credentials.password) {
+      setIsLoading(false);
       return setError('Please enter both username and password');
     }
 
-    setIsLoading(true);
-
     try {
-      await signInWithEmailAndPassword(auth, credentials.username, credentials.password);
+      await signInWithEmailAndPassword(
+        auth,
+        credentials.username,
+        credentials.password
+      );
+
       // On successful login, redirect to hostel registration
       navigate('/hostel/register');
     } catch (err) {
       console.error('Login error:', err);
-      
+
       // Handle different Firebase auth errors
       switch (err.code) {
+        case 'auth/invalid-email':
+          setError('Please enter a valid email address');
+          break;
         case 'auth/user-not-found':
         case 'auth/wrong-password':
           setError('Invalid email or password');
@@ -238,7 +164,7 @@ const AdminLogin = () => {
           setError('This account has been disabled. Please contact support.');
           break;
         default:
-          setError('Failed to sign in. Please try again.');
+          setError('Failed to sign in. Please check your credentials and try again.');
       }
     } finally {
       setIsLoading(false);
@@ -246,103 +172,85 @@ const AdminLogin = () => {
   };
 
   return (
-    <>
-      <style>{keyframes}</style>
-      <div style={applyResponsiveStyles(baseStyles.container)}>
-        <form style={applyResponsiveStyles(baseStyles.form)} onSubmit={handleSubmit}>
-          <h1 style={applyResponsiveStyles(baseStyles.title)}>Admin Login</h1>
-          
-          {error && (
-            <div style={{
-              ...applyResponsiveStyles(baseStyles.error),
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '0.5rem',
-              padding: '0.75rem',
-              marginBottom: '1rem',
-              color: '#dc2626',
-              fontSize: '0.875rem'
-            }}>
-              {error}
-            </div>
-          )}
-          
-          <div style={applyResponsiveStyles(baseStyles.inputGroup)}>
-            <label style={applyResponsiveStyles(baseStyles.label)}>Email</label>
-            <input
-              type="email"
-              name="email"
-              value={credentials.email}
-              onChange={handleChange}
-              style={applyResponsiveStyles(baseStyles.input)}
-              required
-              autoComplete="email"
-              inputMode="email"
-              autoCapitalize="off"
-            />
+    <div style={styles.container}>
+      <form style={styles.form} onSubmit={handleSubmit}>
+        <h1 style={styles.title}>Admin Login</h1>
+        
+        {error && (
+          <div style={styles.error}>
+            {error}
           </div>
-          
-          <div style={applyResponsiveStyles(baseStyles.inputGroup)}>
-            <label style={applyResponsiveStyles(baseStyles.label)}>Password</label>
-            <input
-              type="password"
-              name="password"
-              value={credentials.password}
-              onChange={handleChange}
-              style={applyResponsiveStyles(baseStyles.input)}
-              placeholder="Enter password"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-          
-          <button
-            type="submit"
+        )}
+        
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Email</label>
+          <input
+            type="email"
+            name="username"
+            value={credentials.username}
+            onChange={handleChange}
+            style={styles.input}
+            required
+            autoComplete="email"
+            inputMode="email"
+            autoCapitalize="off"
+          />
+        </div>
+        
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Password</label>
+          <input
+            type="password"
+            name="password"
+            value={credentials.password}
+            onChange={handleChange}
+            style={styles.input}
+            placeholder="Enter password"
+            required
+            autoComplete="current-password"
+          />
+        </div>
+        
+        <button
+          type="submit"
+          disabled={isLoading}
+          style={{
+            ...styles.button,
+            opacity: isLoading ? 0.7 : 1,
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            ':active': {
+              transform: isLoading ? 'scale(1)' : 'scale(0.98)',
+            },
+            ':hover': {
+              transform: isLoading ? 'scale(1)' : 'scale(1.02)',
+            },
+          }}
+          onMouseOver={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(1.02)')}
+          onMouseOut={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(1)')}
+          onTouchStart={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(0.98)')}
+          onTouchEnd={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(1)')}
+        >
+          {isLoading ? 'Signing in...' : 'Login'}
+        </button>
+        
+        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+          <span style={{ color: '#6b7280' }}>Don't have an account? </span>
+          <Link 
+            to="/register" 
             style={{
-              ...applyResponsiveStyles(baseStyles.button),
-              opacity: isLoading ? 0.7 : 1,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              position: 'relative'
+              color: '#9333ea',
+              textDecoration: 'none',
+              fontWeight: '600',
+              ':hover': {
+                textDecoration: 'underline',
+              },
             }}
-            disabled={isLoading || !credentials.email || !credentials.password}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-            {isLoading && (
-              <span style={{
-                position: 'absolute',
-                right: '1rem',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '1rem',
-                height: '1rem',
-                border: '2px solid rgba(255,255,255,0.3)',
-                borderTopColor: 'white',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                display: 'inline-block'
-              }}></span>
-            )}
-          </button>
-          
-          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-            <span style={{ color: '#6b7280' }}>Don't have an account? </span>
-            <Link 
-              to="/register" 
-              style={{
-                color: '#9333ea',
-                textDecoration: 'none',
-                fontWeight: '600',
-                ':hover': {
-                  textDecoration: 'underline',
-                },
-              }}
-            >
-              Sign up
-            </Link>
-          </div>
-        </form>
-      </div>
-    </>
+            Sign up
+          </Link>
+        </div>
+      </form>
+    </div>
   );
 };
 
