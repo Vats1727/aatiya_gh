@@ -13,32 +13,36 @@ const StudentsPage = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchHostelAndStudents = async () => {
+    const fetchStudents = async () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
         
-        // Fetch hostel details
-        const hostelResponse = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}`, {
+        if (!token) {
+          navigate('/admin');
+          return;
+        }
+        
+        // Fetch students for this hostel using the correct endpoint
+        const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
-        if (!hostelResponse.ok) throw new Error('Failed to fetch hostel details');
-        const hostelData = await hostelResponse.json();
-        setHostel(hostelData.data);
+        if (!response.ok) throw new Error('Failed to fetch students');
         
-        // Fetch students for this hostel
-        const studentsResponse = await fetch(`${API_BASE}/api/hostels/${hostelId}/students`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const data = await response.json();
+        setStudents(data.data || []);
         
-        if (!studentsResponse.ok) throw new Error('Failed to fetch students');
-        const studentsData = await studentsResponse.json();
-        setStudents(studentsData.data || []);
+        // If we have students, we can get hostel details from the first student or set a default
+        if (data.data && data.data.length > 0) {
+          setHostel({
+            id: hostelId,
+            name: data.data[0].hostelName || 'Hostel',
+            address: data.data[0].hostelAddress || ''
+          });
+        }
         
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -48,7 +52,7 @@ const StudentsPage = () => {
       }
     };
 
-    fetchHostelAndStudents();
+    fetchStudents();
   }, [hostelId]);
 
   const handleAddStudent = () => {
