@@ -16,7 +16,7 @@ const AdminLogin = () => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       if (user) {
-        navigate('/dashboard');
+        navigate('/hostel-register');
       }
     });
     return () => unsubscribe();
@@ -230,7 +230,8 @@ const AdminLogin = () => {
 
     try {
       await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
-      // On successful login, the auth state change will trigger navigation
+      // On successful login, redirect to hostel registration
+      navigate('/hostel-register');
     } catch (err) {
       console.error('Login error:', err);
       

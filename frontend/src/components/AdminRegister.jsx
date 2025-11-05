@@ -286,9 +286,9 @@ const AdminRegister = () => {
       });
       
       console.log('User document created, registration complete');
-      setSuccess('Registration successful! Redirecting to dashboard...');
-      
-      // Redirect to dashboard after a short delay
+      setSuccess('Registration successful! Redirecting to login...');
+
+      // Redirect to login page after a short delay
       setTimeout(() => {
         navigate('/admin');
       }, 1500);
