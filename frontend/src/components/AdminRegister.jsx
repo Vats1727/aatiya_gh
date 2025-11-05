@@ -1,19 +1,33 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const AdminRegister = () => {
-  const [form, setForm] = useState({ 
-    fullName: '', 
-    email: '', 
-    password: '', 
-    confirmPassword: '' 
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect if already logged in
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        navigate('/dashboard');
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
 
   // Base styles for the component
   const baseStyles = {
@@ -224,49 +238,71 @@ const AdminRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     
-    // Basic validation
+    // Validation
     if (!form.fullName || !form.email || !form.password) {
       return setError('All fields are required');
-    }
-    
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
-      return setError('Please enter a valid email address');
     }
     
     if (form.password !== form.confirmPassword) {
       return setError('Passwords do not match');
     }
     
+    if (form.password.length < 6) {
+      return setError('Password must be at least 6 characters');
+    }
+    
     setIsSubmitting(true);
     
     try {
-      const res = await fetch(`${API_BASE}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          fullName: form.fullName, 
-          email: form.email, 
-          password: form.password, 
-          role: 'admin' 
-        })
+      // Create user with email and password
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      );
+      
+      // Update user profile with display name
+      await updateProfile(userCredential.user, {
+        displayName: form.fullName
       });
       
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Registration failed. Please try again.');
-      }
+      // Create user document in Firestore
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      await setDoc(userDocRef, {
+        uid: userCredential.user.uid,
+        email: form.email,
+        displayName: form.fullName,
+        role: 'admin',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
       
-      const payload = await res.json();
-      localStorage.setItem('token', payload.token);
-      localStorage.setItem('user', JSON.stringify(payload.user));
-      navigate('/admin/dashboard');
+      setSuccess('Registration successful! Redirecting to dashboard...');
+      
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
       
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.message || 'An error occurred during registration');
+      
+      // Handle specific Firebase auth errors
+      switch (err.code) {
+        case 'auth/email-already-in-use':
+          setError('This email is already registered. Please use a different email or login.');
+          break;
+        case 'auth/invalid-email':
+          setError('Please enter a valid email address.');
+          break;
+        case 'auth/weak-password':
+          setError('Password is too weak. Please use a stronger password.');
+          break;
+        default:
+          setError(err.message || 'Registration failed. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -278,8 +314,30 @@ const AdminRegister = () => {
         <h2 style={styles.title}>Admin Registration</h2>
         
         {error && (
-          <div style={styles.error}>
+          <div style={{
+            ...styles.error,
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '0.5rem',
+            padding: '0.75rem',
+            marginBottom: '1rem',
+            color: '#dc2626',
+            fontSize: '0.875rem'
+          }}>
             {error}
+          </div>
+        )}
+        {success && (
+          <div style={{
+            backgroundColor: '#ecfdf5',
+            border: '1px solid #a7f3d0',
+            borderRadius: '0.5rem',
+            padding: '0.75rem',
+            marginBottom: '1rem',
+            color: '#065f46',
+            fontSize: '0.875rem'
+          }}>
+            {success}
           </div>
         )}
         
@@ -296,14 +354,9 @@ const AdminRegister = () => {
               onChange={handleChange}
               placeholder="Enter your full name"
               required
-              style={{
-                ...styles.input,
-                ':focus': {
-                  borderColor: '#ec4899',
-                  boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
-                  backgroundColor: '#ffffff',
-                },
-              }}
+              style={styles.input}
+              disabled={isSubmitting}
+              autoComplete="name"
             />
           </div>
           
@@ -319,23 +372,17 @@ const AdminRegister = () => {
               onChange={handleChange}
               placeholder="Enter your email address"
               required
-              style={{
-                ...styles.input,
-                ':focus': {
-                  borderColor: '#ec4899',
-                  boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
-                  backgroundColor: '#ffffff',
-                },
-              }}
+              style={styles.input}
               disabled={isSubmitting}
               inputMode="email"
               autoComplete="email"
+              autoCapitalize="off"
             />
           </div>
           
           <div style={styles.inputGroup}>
             <label style={styles.label} htmlFor="password">
-              Password
+              Password (min 6 characters)
             </label>
             <input
               type="password"
@@ -343,18 +390,12 @@ const AdminRegister = () => {
               name="password"
               value={form.password}
               onChange={handleChange}
-              placeholder="••••••••"
+              placeholder="Create a password (min 6 characters)"
               required
-              minLength={6}
-              style={{
-                ...styles.input,
-                ':focus': {
-                  borderColor: '#ec4899',
-                  boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
-                  backgroundColor: '#ffffff',
-                },
-              }}
+              minLength="6"
+              style={styles.input}
               disabled={isSubmitting}
+              autoComplete="new-password"
             />
           </div>
           
@@ -368,16 +409,9 @@ const AdminRegister = () => {
               name="confirmPassword"
               value={form.confirmPassword}
               onChange={handleChange}
-              placeholder="••••••••"
+              placeholder="Confirm your password"
               required
-              style={{
-                ...styles.input,
-                ':focus': {
-                  borderColor: '#ec4899',
-                  boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
-                  backgroundColor: '#ffffff',
-                },
-              }}
+              style={styles.input}
               disabled={isSubmitting}
             />
           </div>
@@ -387,14 +421,11 @@ const AdminRegister = () => {
             style={{
               ...styles.button,
               opacity: isSubmitting ? 0.7 : 1,
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              ':hover': !isSubmitting ? {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 15px rgba(147, 51, 234, 0.4)',
-              } : {},
+              cursor: isSubmitting ? 'not-allowed' : 'pointer'
             }}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !form.fullName || !form.email || !form.password || !form.confirmPassword}
           >
+            {isSubmitting ? 'Creating Account...' : 'Create Account'}
             {isSubmitting ? (
               <>
                 <svg 
