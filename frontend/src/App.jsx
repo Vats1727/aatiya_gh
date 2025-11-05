@@ -16,7 +16,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<StudentForm />} />
-  <Route path="/admin" element={<AdminLogin />} />
+  <Route path="/admin/" element={<AdminLogin />} />
   <Route path="/admin/register" element={<AdminRegister />} />
   <Route path="/hostel/register" element={<HostelRegister />} />
       <Route path="/admin/dashboard" element={

@@ -20,8 +20,11 @@ const AdminRegister = () => {
   useEffect(() => {
     // Redirect if already logged in
     const unsubscribe = auth.onAuthStateChanged(user => {
+      // Only redirect to /admin if we have a stored token as well.
+      // This avoids redirecting when Firebase has a persisted user but app token is missing.
       if (user) {
-        navigate('/admin');
+        const token = localStorage.getItem('token');
+        if (token) navigate('/admin');
       }
     });
     return () => unsubscribe();
