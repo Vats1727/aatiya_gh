@@ -19,7 +19,7 @@ try {
   console.warn('Error processing API_BASE:', e);
 }
 
-const HostelAdmissionForm = ({ hostelId: propHostelId, isAdminFlow = false }) => {
+const HostelAdmissionForm = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     studentName: '',
@@ -54,6 +54,7 @@ const HostelAdmissionForm = ({ hostelId: propHostelId, isAdminFlow = false }) =>
 
   const [showPreview, setShowPreview] = useState(false);
   const [hostels, setHostels] = useState([]);
+  const [noHostels, setNoHostels] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -61,15 +62,6 @@ const HostelAdmissionForm = ({ hostelId: propHostelId, isAdminFlow = false }) =>
   const preHostelId = params.get('hostelDocId');
   const preOwnerUserId = params.get('ownerUserId');
   const [fixedHostel, setFixedHostel] = useState(false);
-
-  // If this component is mounted via the admin route wrapper with a hostelId prop,
-  // preselect and lock that hostel immediately.
-  useEffect(() => {
-    if (propHostelId) {
-      setFormData(prev => ({ ...prev, hostelDocId: propHostelId }));
-      setFixedHostel(true);
-    }
-  }, [propHostelId]);
 
   // If editId present, load student data to edit
   useEffect(() => {
@@ -123,23 +115,36 @@ const HostelAdmissionForm = ({ hostelId: propHostelId, isAdminFlow = false }) =>
 
   // If authenticated, load hostels for current user to allow admin additions
   useEffect(() => {
+    // Load hostels when a token exists. Don't rely on localStorage.user being present.
     const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    if (!token || !user) return;
+    if (!token) return;
     const loadHostels = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/users/me/hostels`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!res.ok) return;
+        if (res.status === 401) {
+          // token expired or invalid - clear and optionally redirect to login
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setHostels([]);
+          setNoHostels(false);
+          return;
+        }
+        if (!res.ok) {
+          console.warn('Failed to load hostels, status:', res.status);
+          setHostels([]);
+          setNoHostels(true);
+          return;
+        }
         const data = await res.json();
         // API returns { success: true, data: [...] }
         const list = Array.isArray(data) ? data : (data && data.data) || [];
-        setHostels(list);
-        // If a hostel was provided via query param or via route prop, preselect it and lock the selection
-        const selected = preHostelId || propHostelId;
-        if (selected) {
-          setFormData(prev => ({ ...prev, hostelDocId: selected }));
+        setHostels(list || []);
+        setNoHostels(!list || list.length === 0);
+        // If a hostel was provided via query param, preselect it and lock the selection
+        if (preHostelId) {
+          setFormData(prev => ({ ...prev, hostelDocId: preHostelId }));
           setFixedHostel(true);
         }
         // If admin has exactly one hostel, preselect and lock it for convenience
@@ -150,6 +155,8 @@ const HostelAdmissionForm = ({ hostelId: propHostelId, isAdminFlow = false }) =>
         }
       } catch (err) {
         console.warn('Failed to load hostels', err);
+        setHostels([]);
+        setNoHostels(true);
       }
     };
     loadHostels();
@@ -877,7 +884,11 @@ const HostelAdmissionForm = ({ hostelId: propHostelId, isAdminFlow = false }) =>
       // If user is authenticated (admin) we require selecting a hostel so we don't
       // accidentally submit to the top-level `students` collection.
       if (!editId && token && !formData.hostelDocId) {
-        alert('You are signed in as an admin — please select the hostel to add this student to (or create a hostel first).');
+        if (noHostels) {
+          alert('You are signed in as an admin but no hostels were found. Please create a hostel first in the Admin Dashboard.');
+        } else {
+          alert('You are signed in as an admin — please select the hostel to add this student to (or create a hostel first).');
+        }
         submitButton.disabled = false;
         submitButton.innerHTML = originalButtonText;
         setLoading(false);
