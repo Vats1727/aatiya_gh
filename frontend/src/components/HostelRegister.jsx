@@ -295,34 +295,61 @@ const HostelRegister = () => {
     setIsSubmitting(true);
     
     try {
+      if (!user) {
+        throw new Error('No authenticated user found. Please log in again.');
+      }
+
       // Force refresh the token to ensure it's current
       const idToken = await user.getIdToken(true);
-      localStorage.setItem('token', idToken);
       
-      console.log('Sending request with token:', idToken); // Debug log
+      console.log('Sending request with fresh token'); // Debug log
       
-      const res = await fetch(`${API_BASE}/api/users/me/hostels`, {
+      const response = await fetch(`${API_BASE}/api/users/me/hostels`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`,
-          'Accept': 'application/json'
+          'Authorization': `Bearer ${idToken}`
         },
-        // Remove credentials: 'include' since backend is not configured for it
         body: JSON.stringify({
           name: form.name.trim(),
           address: form.address.trim()
         })
       });
       
-      // Log the response headers for debugging
-      console.log('Response headers:', [...res.headers.entries()]);
+      const responseData = await response.json().catch(() => ({}));
       
-      console.log('Response status:', res.status); // Debug log
+      console.log('Response status:', response.status);
       
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to create hostel');
+      if (!response.ok) {
+        // If unauthorized, try to refresh the token once
+        if (response.status === 401) {
+          console.log('Token expired, attempting to refresh...');
+          const newToken = await user.getIdToken(true);
+          
+          const retryResponse = await fetch(`${API_BASE}/api/users/me/hostels`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${newToken}`
+            },
+            body: JSON.stringify({
+              name: form.name.trim(),
+              address: form.address.trim()
+            })
+          });
+          
+          if (!retryResponse.ok) {
+            const errorData = await retryResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Authentication failed after token refresh');
+          }
+          
+          // If retry was successful, use the retry response
+          const payload = await retryResponse.json();
+          setError('');
+          return payload;
+        }
+        
+        throw new Error(responseData.error || 'Failed to create hostel');
       }
       
       const payload = await res.json();
