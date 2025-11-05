@@ -597,7 +597,7 @@ const AdminDashboard = () => {
                 New Hostel
               </button>
               <button 
-                onClick={() => navigate('/')}
+                onClick={() => navigate(`/?hostelDocId=${selectedHostel ? selectedHostel.id : ''}&ownerUserId=me`)}
                 style={{
                   ...applyResponsiveStyles(styles.addButton),
                   background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -638,6 +638,7 @@ const AdminDashboard = () => {
               <tr>
                 <th style={styles.th}>Hostel Name</th>
                 <th style={styles.th}>Number of Students</th>
+                <th style={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -670,6 +671,7 @@ const AdminDashboard = () => {
               <thead>
                 <tr>
                   <th style={styles.th}>Student Name</th>
+                  <th style={styles.th}>Application No</th>
                   <th style={styles.th}>Contact</th>
                   <th style={styles.th}>District</th>
                 </tr>
@@ -678,6 +680,7 @@ const AdminDashboard = () => {
                 {students.map((student, idx) => (
                   <tr key={student.id}>
                     <td style={styles.td}>{student.studentName}</td>
+                    <td style={styles.td}>{student.combinedId || '-'}</td>
                     <td style={styles.td}>{student.mobile1}</td>
                     <td style={styles.td}>{student.district}</td>
                   </tr>

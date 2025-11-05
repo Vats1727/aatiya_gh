@@ -58,6 +58,9 @@ const HostelAdmissionForm = () => {
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const editId = params.get('editId');
+  const preHostelId = params.get('hostelDocId');
+  const preOwnerUserId = params.get('ownerUserId');
+  const [fixedHostel, setFixedHostel] = useState(false);
 
   // If editId present, load student data to edit
   useEffect(() => {
@@ -120,9 +123,15 @@ const HostelAdmissionForm = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) return;
-  const data = await res.json();
-  // API returns { success: true, data: [...] }
-  setHostels(Array.isArray(data) ? data : (data && data.data) || []);
+        const data = await res.json();
+        // API returns { success: true, data: [...] }
+        const list = Array.isArray(data) ? data : (data && data.data) || [];
+        setHostels(list);
+        // If a hostel was provided via query param, preselect it and lock the selection
+        if (preHostelId) {
+          setFormData(prev => ({ ...prev, hostelDocId: preHostelId }));
+          setFixedHostel(true);
+        }
       } catch (err) {
         console.warn('Failed to load hostels', err);
       }
@@ -963,6 +972,7 @@ const HostelAdmissionForm = () => {
                     name="hostelDocId"
                     value={formData.hostelDocId || ''}
                     onChange={handleInputChange}
+                    disabled={fixedHostel}
                     style={{ padding: '10px', borderRadius: 6, width: '100%', border: '1px solid #e5e7eb' }}
                   >
                     <option value="">-- Select hostel --</option>
