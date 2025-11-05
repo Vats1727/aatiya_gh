@@ -5,22 +5,12 @@ import { auth } from '../firebase';
 
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({
-    email: '',
+    username: '',
     password: '',
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
-  // Check if user is already logged in
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user) {
-        navigate('/hostel-register');
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
 
   // Base styles for the component
   const baseStyles = {
@@ -221,15 +211,15 @@ const AdminLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
-    if (!credentials.email || !credentials.password) {
-      return setError('Please enter both email and password');
+
+    if (!credentials.username || !credentials.password) {
+      return setError('Please enter both username and password');
     }
 
     setIsLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
+      await signInWithEmailAndPassword(auth, credentials.username, credentials.password);
       // On successful login, redirect to hostel registration
       navigate('/hostel/register');
     } catch (err) {
