@@ -16,21 +16,37 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
   const navigate = useNavigate();
 
+  // Helper to get Authorization header value. Accepts tokens stored as
+  // either raw JWT or prefixed with "Bearer ".
+  const getAuthHeader = () => {
+    const raw = localStorage.getItem('token');
+    if (!raw) return null;
+    return raw.startsWith('Bearer ') ? raw : `Bearer ${raw}`;
+  };
+
+  // Helper to get raw JWT without Bearer prefix (for basic validation)
+  const getRawToken = () => {
+    const raw = localStorage.getItem('token');
+    if (!raw) return null;
+    return raw.startsWith('Bearer ') ? raw.slice(7) : raw;
+  };
+
 // Fetch user profile function
 const fetchUserProfile = async () => {
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/admin');
-      return;
-    }
-
-    const response = await fetch(`${API_BASE}/api/auth/me`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    try {
+      const authHeader = getAuthHeader();
+      const rawToken = getRawToken();
+      if (!authHeader || !rawToken) {
+        navigate('/admin');
+        return;
       }
-    });
+
+      const response = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        }
+      });
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -57,18 +73,19 @@ const fetchUserProfile = async () => {
 const fetchHostels = async () => {
   try {
     setLoading(true);
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/admin');
-      return;
-    }
-
-    const response = await fetch(`${API_BASE}/api/hostels`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+      const authHeader = getAuthHeader();
+      const rawToken = getRawToken();
+      if (!authHeader || !rawToken) {
+        navigate('/admin');
+        return;
       }
-    });
+
+      const response = await fetch(`${API_BASE}/api/hostels`, {
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        }
+      });
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -120,10 +137,16 @@ useEffect(() => {
   const fetchStudents = async (hostelId) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const authHeader = getAuthHeader();
+      if (!authHeader) {
+        localStorage.removeItem('token');
+        navigate('/admin');
+        return;
+      }
+
       const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json'
         }
       });
@@ -166,12 +189,18 @@ useEffect(() => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const authHeader = getAuthHeader();
+      if (!authHeader) {
+        setError('Authentication required');
+        navigate('/admin');
+        return;
+      }
+
       const response = await fetch(`${API_BASE}/api/hostels`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': authHeader
         },
         body: JSON.stringify(newHostel)
       });
@@ -208,13 +237,14 @@ useEffect(() => {
         setLoading(true);
         setError('');
 
-        const token = localStorage.getItem('token');
-        if (!token) {
+        const rawToken = getRawToken();
+        const authHeader = getAuthHeader();
+        if (!rawToken || !authHeader) {
           throw new Error('No token found');
         }
 
         // Basic token format validation (JWT should have 3 parts)
-        const tokenParts = token.split('.');
+        const tokenParts = rawToken.split('.');
         if (tokenParts.length !== 3) {
           throw new Error('Invalid token format');
         }

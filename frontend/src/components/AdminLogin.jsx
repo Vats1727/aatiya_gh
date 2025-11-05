@@ -137,11 +137,11 @@ const AdminLogin = () => {
         credentials.password
       );
       
-      // Get the ID token
-      const idToken = await userCredential.user.getIdToken();
-      
-      // Store the token in localStorage with 'Bearer ' prefix
-      localStorage.setItem('token', `Bearer ${idToken}`);
+  // Get the ID token
+  const idToken = await userCredential.user.getIdToken();
+
+  // Store the raw token (no 'Bearer ' prefix)
+  localStorage.setItem('token', idToken);
       
       // Navigate after successful login
       navigate('/dashboard');
