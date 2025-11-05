@@ -16,10 +16,20 @@ export async function createHostel(db, userId, data = {}) {
 
   return db.runTransaction(async (tx) => {
     const userSnap = await tx.get(userRef);
-    if (!userSnap.exists) throw new Error('User not found: ' + userId);
+    // If user doc doesn't exist, create a minimal one so hostels can be created.
+    if (!userSnap.exists) {
+      // create a minimal user profile inside the same transaction
+      tx.set(userRef, {
+        fullName: data.ownerName || 'Hostel Admin',
+        username: `user_${userId}`,
+        role: 'admin',
+        nextHostelSeq: 1,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
 
     // read nextHostelSeq from user doc (default to 1)
-    const nextHostelSeq = (userSnap.get('nextHostelSeq') || 1);
+    const nextHostelSeq = (userSnap.exists ? (userSnap.get('nextHostelSeq') || 1) : 1);
     const hostelId = formatHostelId(nextHostelSeq);
 
     const newHostelRef = hostelsRef.doc();
