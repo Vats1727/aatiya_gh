@@ -19,7 +19,7 @@ try {
   console.warn('Error processing API_BASE:', e);
 }
 
-const HostelAdmissionForm = () => {
+const HostelAdmissionForm = ({ hostelId: propHostelId, isAdminFlow = false }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     studentName: '',
@@ -61,6 +61,15 @@ const HostelAdmissionForm = () => {
   const preHostelId = params.get('hostelDocId');
   const preOwnerUserId = params.get('ownerUserId');
   const [fixedHostel, setFixedHostel] = useState(false);
+
+  // If this component is mounted via the admin route wrapper with a hostelId prop,
+  // preselect and lock that hostel immediately.
+  useEffect(() => {
+    if (propHostelId) {
+      setFormData(prev => ({ ...prev, hostelDocId: propHostelId }));
+      setFixedHostel(true);
+    }
+  }, [propHostelId]);
 
   // If editId present, load student data to edit
   useEffect(() => {
@@ -127,9 +136,10 @@ const HostelAdmissionForm = () => {
         // API returns { success: true, data: [...] }
         const list = Array.isArray(data) ? data : (data && data.data) || [];
         setHostels(list);
-        // If a hostel was provided via query param, preselect it and lock the selection
-        if (preHostelId) {
-          setFormData(prev => ({ ...prev, hostelDocId: preHostelId }));
+        // If a hostel was provided via query param or via route prop, preselect it and lock the selection
+        const selected = preHostelId || propHostelId;
+        if (selected) {
+          setFormData(prev => ({ ...prev, hostelDocId: selected }));
           setFixedHostel(true);
         }
         // If admin has exactly one hostel, preselect and lock it for convenience
