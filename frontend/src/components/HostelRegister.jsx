@@ -299,12 +299,22 @@ const HostelRegister = () => {
         throw new Error('No authenticated user found. Please log in again.');
       }
 
+      // Log user and token info for debugging
+      console.log('Current user:', {
+        uid: user.uid,
+        email: user.email,
+        isAnonymous: user.isAnonymous
+      });
+
       // Force refresh the token to ensure it's current
       const idToken = await user.getIdToken(true);
+      console.log('Token length:', idToken.length);
       
-      console.log('Sending request with fresh token'); // Debug log
+      // Log the API endpoint being called
+      const endpoint = `${API_BASE}/api/users/me/hostels`;
+      console.log('Calling API:', endpoint);
       
-      const response = await fetch(`${API_BASE}/api/users/me/hostels`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -316,40 +326,63 @@ const HostelRegister = () => {
         })
       });
       
-      const responseData = await response.json().catch(() => ({}));
+      // Log response details
+      const responseText = await response.text();
+      let responseData;
+      try {
+        responseData = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        console.error('Failed to parse response as JSON:', responseText);
+        throw new Error('Invalid response from server');
+      }
       
       console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
       
       if (!response.ok) {
+        console.error('API Error:', responseData);
+        
         // If unauthorized, try to refresh the token once
         if (response.status === 401) {
           console.log('Token expired, attempting to refresh...');
-          const newToken = await user.getIdToken(true);
-          
-          const retryResponse = await fetch(`${API_BASE}/api/users/me/hostels`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${newToken}`
-            },
-            body: JSON.stringify({
-              name: form.name.trim(),
-              address: form.address.trim()
-            })
-          });
-          
-          if (!retryResponse.ok) {
-            const errorData = await retryResponse.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Authentication failed after token refresh');
+          try {
+            const newToken = await user.getIdToken(true);
+            console.log('Got new token, length:', newToken.length);
+            
+            const retryEndpoint = `${API_BASE}/api/users/me/hostels`;
+            console.log('Retrying API call to:', retryEndpoint);
+            
+            const retryResponse = await fetch(retryEndpoint, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${newToken}`
+              },
+              body: JSON.stringify({
+                name: form.name.trim(),
+                address: form.address.trim()
+              })
+            });
+            
+            const retryData = await retryResponse.json().catch(() => ({}));
+            
+            if (!retryResponse.ok) {
+              console.error('Retry failed with status:', retryResponse.status);
+              console.error('Retry error:', retryData);
+              throw new Error(retryData.error || 'Authentication failed after token refresh');
+            }
+            
+            return retryData;
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
+            // If refresh fails, force reauthentication
+            await auth.signOut();
+            navigate('/admin');
+            throw new Error('Session expired. Please log in again.');
           }
-          
-          // If retry was successful, use the retry response
-          const payload = await retryResponse.json();
-          setError('');
-          return payload;
         }
         
-        throw new Error(responseData.error || 'Failed to create hostel');
+        throw new Error(responseData.error || `Server error: ${response.status}`);
       }
       
       const payload = await res.json();

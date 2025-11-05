@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import admin from 'firebase-admin';
 import initializeFirebase, { db } from '../config/firebase.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'please-change-this-secret-in-prod';
@@ -17,18 +18,60 @@ export function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
-// Express middleware to verify Bearer token and attach user info to req.user
+// Import the Firebase Admin SDK
+import admin from 'firebase-admin';
+
+// Initialize Firebase Admin if not already done
+if (!admin.apps.length) {
+  initializeFirebase();
+}
+
+// Express middleware to verify Firebase ID token and attach user info to req.user
 export async function authMiddleware(req, res, next) {
   const auth = req.headers.authorization || '';
-  if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
-  const token = auth.slice(7).trim();
+  if (!auth.startsWith('Bearer ')) {
+    return res.status(401).json({ 
+      error: 'Unauthorized',
+      message: 'No authorization token provided',
+      code: 'auth/no-token'
+    });
+  }
+  
+  const idToken = auth.split('Bearer ')[1].trim();
+  
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    // Attach basic user info to request
-    req.user = decoded;
+    // Verify the ID token using Firebase Admin SDK
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    
+    // Attach user info to request
+    req.user = {
+      userId: decodedToken.uid,
+      email: decodedToken.email,
+      email_verified: decodedToken.email_verified,
+      // Add any additional claims you need
+      role: decodedToken.role || 'user' // Default role if not specified
+    };
+    
     return next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+  } catch (error) {
+    console.error('Error verifying Firebase ID token:', error);
+    
+    // Handle different types of errors
+    let errorMessage = 'Invalid or expired token';
+    let errorCode = 'auth/invalid-token';
+    
+    if (error.code === 'auth/id-token-expired') {
+      errorMessage = 'Token has expired';
+      errorCode = 'auth/token-expired';
+    } else if (error.code === 'auth/argument-error') {
+      errorMessage = 'Invalid token format';
+      errorCode = 'auth/invalid-token-format';
+    }
+    
+    return res.status(401).json({ 
+      error: errorMessage,
+      code: errorCode
+    });
   }
 }
 
