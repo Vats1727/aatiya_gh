@@ -304,15 +304,19 @@ const HostelRegister = () => {
       const res = await fetch(`${API_BASE}/api/users/me/hostels`, {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${idToken}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+          'Accept': 'application/json'
         },
-        credentials: 'include', // Important for cookies if using them
+        // Remove credentials: 'include' since backend is not configured for it
         body: JSON.stringify({
           name: form.name.trim(),
           address: form.address.trim()
         })
       });
+      
+      // Log the response headers for debugging
+      console.log('Response headers:', [...res.headers.entries()]);
       
       console.log('Response status:', res.status); // Debug log
       
