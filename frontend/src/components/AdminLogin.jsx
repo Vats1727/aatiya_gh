@@ -144,13 +144,10 @@ const AdminLogin = () => {
       const idToken = await userCredential.user.getIdToken(true);
       
       // Store the token in localStorage
-      localStorage.setItem('token', idToken);
-      
-      // Wait a bit to ensure token is saved
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // On successful login, redirect to hostel registration
-      navigate('/hostel/register');
+      if (idToken) {
+        localStorage.setItem('token', idToken);
+        navigate('/dashboard');
+      }
     } catch (err) {
       console.error('Login error:', err);
 

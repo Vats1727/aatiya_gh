@@ -92,6 +92,16 @@ const AdminDashboard = () => {
     fetchStudents(hostel.id);
   };
 
+  // Handle view students for a hostel
+  const handleViewStudents = (hostelId) => {
+    navigate(`/hostel/${hostelId}/students`);
+  };
+
+  // Handle add new student
+  const handleAddStudent = (hostelId) => {
+    navigate(`/hostel/${hostelId}/add-student`);
+  };
+
   // Fetch data on component mount
   useEffect(() => {
     const loadData = async () => {
