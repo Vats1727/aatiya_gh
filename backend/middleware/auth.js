@@ -18,6 +18,24 @@ export function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
+// Verify token either as Firebase ID token or as our JWT fallback
+export async function verifyAnyToken(token) {
+  // try Firebase ID token first
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    return { provider: 'firebase', decoded };
+  } catch (fbErr) {
+    // not a firebase token — try JWT
+    try {
+      const decodedJwt = jwt.verify(token, JWT_SECRET);
+      return { provider: 'jwt', decoded: decodedJwt };
+    } catch (jwtErr) {
+      // rethrow original firebase error for logging
+      throw fbErr;
+    }
+  }
+}
+
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
   initializeFirebase();
@@ -33,42 +51,31 @@ export async function authMiddleware(req, res, next) {
       code: 'auth/no-token'
     });
   }
-  
-  const idToken = auth.split('Bearer ')[1].trim();
-  
+
+  const token = auth.split('Bearer ')[1].trim();
   try {
-    // Verify the ID token using Firebase Admin SDK
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    
-    // Attach user info to request
-    req.user = {
-      userId: decodedToken.uid,
-      email: decodedToken.email,
-      email_verified: decodedToken.email_verified,
-      // Add any additional claims you need
-      role: decodedToken.role || 'user' // Default role if not specified
-    };
-    
+    const { provider, decoded } = await verifyAnyToken(token);
+    if (provider === 'firebase') {
+      req.user = {
+        userId: decoded.uid,
+        uid: decoded.uid,
+        email: decoded.email,
+        email_verified: decoded.email_verified,
+        role: decoded.role || 'user'
+      };
+    } else {
+      // jwt payload
+      req.user = {
+        userId: decoded.userId || decoded.uid,
+        uid: decoded.userId || decoded.uid,
+        email: decoded.email,
+        role: decoded.role || 'user'
+      };
+    }
     return next();
   } catch (error) {
-    console.error('Error verifying Firebase ID token:', error);
-    
-    // Handle different types of errors
-    let errorMessage = 'Invalid or expired token';
-    let errorCode = 'auth/invalid-token';
-    
-    if (error.code === 'auth/id-token-expired') {
-      errorMessage = 'Token has expired';
-      errorCode = 'auth/token-expired';
-    } else if (error.code === 'auth/argument-error') {
-      errorMessage = 'Invalid token format';
-      errorCode = 'auth/invalid-token-format';
-    }
-    
-    return res.status(401).json({ 
-      error: errorMessage,
-      code: errorCode
-    });
+    console.error('Error verifying token (authMiddleware):', error);
+    return res.status(401).json({ error: 'Invalid or expired token', code: 'auth/invalid-token' });
   }
 }
 

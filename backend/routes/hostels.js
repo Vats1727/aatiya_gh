@@ -1,42 +1,48 @@
 import express from 'express';
 import admin from 'firebase-admin';
+import { verifyAnyToken } from '../middleware/auth.js';
 import { db } from '../config/firebase.js';
 
 const router = express.Router();
 
 // Apply auth middleware to all routes
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   // Skip auth for health check
   if (req.path === '/health') return next();
-  
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      success: false,
-      error: 'Unauthorized',
-      code: 'UNAUTHORIZED'
-    });
+    return res.status(401).json({ success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' });
   }
-  
+
   const token = authHeader.split(' ')[1];
-  admin.auth().verifyIdToken(token)
-    .then(decodedToken => {
-      req.user = decodedToken;
-      next();
-    })
-    .catch(error => {
-      console.error('Error verifying token:', error);
-      res.status(401).json({
-        success: false,
-        error: 'Invalid token',
-        code: 'INVALID_TOKEN'
-      });
-    });
+  try {
+    const { provider, decoded } = await verifyAnyToken(token);
+    if (provider === 'firebase') {
+      req.user = {
+        uid: decoded.uid,
+        email: decoded.email,
+        role: decoded.role || 'user'
+      };
+    } else {
+      // JWT payload expected to contain userId and role
+      req.user = {
+        uid: decoded.userId || decoded.uid,
+        email: decoded.email,
+        role: decoded.role || 'user'
+      };
+    }
+    return next();
+  } catch (err) {
+    console.error('Error verifying token (any):', err);
+    return res.status(401).json({ success: false, error: 'Invalid token', code: 'INVALID_TOKEN' });
+  }
 };
 
 router.use(authMiddleware);
 
 // Create a new hostel
+// Create a new hostel (legacy path: /api/hostels)
 router.post('/hostels', async (req, res) => {
   try {
     const { name, address } = req.body;
@@ -85,6 +91,46 @@ router.post('/hostels', async (req, res) => {
   }
 });
 
+// Create a hostel for a specific user: POST /api/users/:userId/hostels
+router.post('/users/:userId/hostels', async (req, res) => {
+  try {
+    const { name, address } = req.body;
+    let userId = req.params.userId;
+
+    if (userId === 'me') userId = req.user && req.user.uid;
+    // only allow creating for self or superadmin
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'Invalid userId' });
+    }
+    if (req.user.uid !== userId && req.user.role !== 'superadmin') {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    if (!name || !address) {
+      return res.status(400).json({ success: false, error: 'Name and address are required' });
+    }
+
+    const hostelData = {
+      name,
+      address,
+      ownerId: userId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    const docRef = await db.collection('hostels').add(hostelData);
+    await db.collection('users').doc(userId).update({
+      hostels: admin.firestore.FieldValue.arrayUnion(docRef.id),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.status(201).json({ success: true, data: { id: docRef.id, ...hostelData } });
+  } catch (error) {
+    console.error('Error creating hostel for user:', error);
+    res.status(500).json({ success: false, error: 'Failed to create hostel', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
+  }
+});
+
 // Get all hostels for the authenticated user
 router.get('/hostels', async (req, res) => {
   try {
@@ -123,6 +169,30 @@ router.get('/hostels', async (req, res) => {
       code: 'INTERNAL_SERVER_ERROR',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+});
+
+// Get hostels for a specific user: GET /api/users/:userId/hostels
+router.get('/users/:userId/hostels', async (req, res) => {
+  try {
+    let userId = req.params.userId;
+    if (userId === 'me') userId = req.user && req.user.uid;
+    if (!userId) return res.status(400).json({ success: false, error: 'Invalid userId' });
+    // allow only self or superadmin
+    if (req.user.uid !== userId && req.user.role !== 'superadmin') {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) return res.status(404).json({ success: false, error: 'User not found' });
+    const userData = userDoc.data();
+    const hostels = userData.hostels || [];
+    const hostelPromises = hostels.map(hostelId => db.collection('hostels').doc(hostelId).get().then(doc => doc.exists ? { id: doc.id, ...doc.data() } : null));
+    const hostelData = (await Promise.all(hostelPromises)).filter(Boolean);
+    res.json({ success: true, data: hostelData });
+  } catch (error) {
+    console.error('Error fetching hostels for user:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch hostels', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
   }
 });
 
