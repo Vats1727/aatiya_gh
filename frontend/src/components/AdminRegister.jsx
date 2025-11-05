@@ -23,7 +23,7 @@ const AdminRegister = () => {
     // Redirect if already logged in
     const unsubscribe = auth.onAuthStateChanged(user => {
       if (user) {
-        navigate('/dashboard');
+        navigate('/admin/login');
       }
     });
     return () => unsubscribe();
@@ -290,7 +290,7 @@ const AdminRegister = () => {
       
       // Redirect to dashboard after a short delay
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/admin/login');
       }, 1500);
       
     } catch (err) {
