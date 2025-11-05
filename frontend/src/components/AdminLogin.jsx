@@ -143,10 +143,27 @@ const AdminLogin = () => {
       // Get a fresh ID token
       const idToken = await userCredential.user.getIdToken(true);
       
-      // Store the token in localStorage
+      // Verify token with backend
       if (idToken) {
-        localStorage.setItem('token', idToken);
-        navigate('/dashboard');
+        try {
+          const verifyResponse = await fetch(`${API_BASE}/api/auth/verify`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}`
+            }
+          });
+
+          if (!verifyResponse.ok) {
+            throw new Error('Failed to verify token');
+          }
+
+          localStorage.setItem('token', idToken);
+          navigate('/admin/dashboard');
+        } catch (verifyError) {
+          console.error('Token verification error:', verifyError);
+          throw new Error('Failed to verify authentication');
+        }
       }
     } catch (err) {
       console.error('Login error:', err);

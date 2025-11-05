@@ -17,15 +17,16 @@ const AdminDashboard = () => {
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/api/users/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
       
-      // Use auth/me endpoint which returns the user object
-      const altResponse = await fetch(`${API_BASE}/api/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       if (!altResponse.ok) throw new Error('Failed to fetch user profile');
       const userObj = await altResponse.json();
@@ -41,9 +42,15 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/api/users/me/hostels`, {
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`${API_BASE}/api/hostels`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
@@ -148,6 +155,22 @@ const AdminDashboard = () => {
       navigate('/admin');
       return;
     }
+
+    // Fetch initial data
+    const fetchData = async () => {
+      try {
+        await fetchUserProfile();
+        await fetchHostels();
+      } catch (error) {
+        if (error.message === 'No authentication token found' || error.response?.status === 401) {
+          localStorage.removeItem('token'); // Clear invalid token
+          navigate('/admin'); // Redirect to login
+        }
+        setError('Failed to load data. Please try logging in again.');
+      }
+    };
+
+    fetchData();
   }, [navigate]);
 
   const styles = {
