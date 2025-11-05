@@ -231,7 +231,7 @@ const AdminLogin = () => {
     try {
       await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
       // On successful login, redirect to hostel registration
-      navigate('/hostel-register');
+      navigate('/hostel/register');
     } catch (err) {
       console.error('Login error:', err);
       
