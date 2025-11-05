@@ -132,6 +132,12 @@ const HostelAdmissionForm = () => {
           setFormData(prev => ({ ...prev, hostelDocId: preHostelId }));
           setFixedHostel(true);
         }
+        // If admin has exactly one hostel, preselect and lock it for convenience
+        if (!preHostelId && Array.isArray(list) && list.length === 1) {
+          const only = list[0];
+          setFormData(prev => ({ ...prev, hostelDocId: only.id }));
+          setFixedHostel(true);
+        }
       } catch (err) {
         console.warn('Failed to load hostels', err);
       }
@@ -858,6 +864,15 @@ const HostelAdmissionForm = () => {
       let res;
       const token = localStorage.getItem('token');
       const user = JSON.parse(localStorage.getItem('user') || 'null');
+      // If admin token exists and hostels are available, require selecting a hostel
+      if (!editId && token && hostels && hostels.length > 0 && !formData.hostelDocId) {
+        alert('Please select a hostel from the dropdown before saving (you have admin access).');
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonText;
+        setLoading(false);
+        return;
+      }
+
       if (!editId && token && formData.hostelDocId) {
         // Admin creating a student under a hostel - use protected endpoint to get combinedId
         res = await fetch(`${API_BASE}/api/users/me/hostels/${formData.hostelDocId}/students`, {
