@@ -309,9 +309,27 @@ const AdminDashboard = () => {
     loadData();
   }, []);
 
+  // Apply responsive styles function
+  const applyResponsiveStyles = (styleObj) => {
+    if (!styleObj) return {};
+    
+    const appliedStyles = { ...styleObj };
+    
+    if (window.innerWidth <= 768) {
+      Object.assign(appliedStyles, styleObj['@media (max-width: 768px)'] || {});
+    }
+    if (window.innerWidth <= 480) {
+      Object.assign(appliedStyles, styleObj['@media (max-width: 480px)'] || {});
+    }
+
+    // Remove media query keys from the final style object
+    const { '@media (max-width: 768px)': mq768, '@media (max-width: 480px)': mq480, ...cleanStyles } = appliedStyles;
+    return cleanStyles;
+  };
+
   if (loading && hostels.length === 0) {
     return (
-      <div style={styles.container}>
+      <div style={applyResponsiveStyles(styles.container)}>
         <div style={styles.loading}>
           <p>Loading dashboard...</p>
         </div>
@@ -321,8 +339,8 @@ const AdminDashboard = () => {
 
   if (error) {
     return (
-      <div style={styles.container}>
-        <div style={styles.error}>
+      <div style={applyResponsiveStyles(styles.container)}>
+        <div style={applyResponsiveStyles(styles.error)}>
           <strong>Error:</strong> {error}
         </div>
         <button 
