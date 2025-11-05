@@ -137,11 +137,17 @@ const AdminLogin = () => {
     }
 
     try {
-      await signInWithEmailAndPassword(
+      const userCredential = await signInWithEmailAndPassword(
         auth,
         credentials.username,
         credentials.password
       );
+
+      // Get the ID token
+      const idToken = await userCredential.user.getIdToken();
+      
+      // Store the token in localStorage
+      localStorage.setItem('token', idToken);
 
       // On successful login, redirect to hostel registration
       navigate('/hostel/register');
