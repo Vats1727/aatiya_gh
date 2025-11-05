@@ -10,7 +10,26 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+
+  // Fetch user profile
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/users/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch user profile');
+      const data = await response.json();
+      setUser(data.data);
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+    }
+  };
 
   // Fetch hostels for the current user
   const fetchHostels = async () => {
@@ -68,9 +87,13 @@ const AdminDashboard = () => {
     fetchStudents(hostel.id);
   };
 
-  // Fetch hostels on component mount
+  // Fetch data on component mount
   useEffect(() => {
-    fetchHostels();
+    const loadData = async () => {
+      await fetchUserProfile();
+      await fetchHostels();
+    };
+    loadData();
   }, []);
 
   // Format date to display
@@ -510,22 +533,89 @@ const AdminDashboard = () => {
   return (
     <div style={applyResponsiveStyles(styles.container)}>
       <div style={applyResponsiveStyles(styles.content)}>
-        <div style={applyResponsiveStyles(styles.header)}>
-          <h1 style={applyResponsiveStyles(styles.title)}>Admin Dashboard</h1>
-          <div style={applyResponsiveStyles(styles.headerActions)}>
-            <div style={{ display: 'flex', gap: '0.75rem', '@media (max-width: 600px)': { width: '100%' } }}>
+          {/* User Profile Section */}
+          <div style={{
+            background: 'white',
+            borderRadius: '0.75rem',
+            padding: '1.5rem',
+            marginBottom: '1.5rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              marginBottom: '1rem'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                backgroundColor: '#8b5cf6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '1.5rem',
+                fontWeight: 'bold'
+              }}>
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <div>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  color: '#1f2937'
+                }}>
+                  {user?.name || 'User'}
+                </h2>
+                <p style={{
+                  margin: '0.25rem 0 0',
+                  color: '#6b7280',
+                  fontSize: '0.9375rem'
+                }}>
+                  {user?.email || ''}
+                </p>
+              </div>
+            </div>
+            <div style={{
+              display: 'flex',
+              gap: '0.75rem',
+              flexWrap: 'wrap'
+            }}>
               <button 
-                style={{ ...applyResponsiveStyles(styles.addButton), '@media (max-width: 600px)': { flex: 1 } }} 
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/hostel/register')}
+                style={{
+                  ...applyResponsiveStyles(styles.addButton),
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  '@media (max-width: 600px)': { flex: 1 }
+                }}
                 type="button"
               >
-                Add New
+                <Home size={18} className="mr-2" />
+                New Hostel
               </button>
               <button 
-                style={{ ...applyResponsiveStyles(styles.logoutButton), '@media (max-width: 600px)': { flex: 1 } }} 
+                onClick={() => navigate('/student/register')}
+                style={{
+                  ...applyResponsiveStyles(styles.addButton),
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  '@media (max-width: 600px)': { flex: 1 }
+                }}
+                type="button"
+              >
+                <UserPlus size={18} className="mr-2" />
+                New Student
+              </button>
+              <button 
                 onClick={() => {
                   localStorage.removeItem('token');
                   navigate('/admin');
+                }}
+                style={{
+                  ...applyResponsiveStyles(styles.logoutButton),
+                  '@media (max-width: 600px)': { flex: 1 }
                 }}
                 type="button"
               >
@@ -533,7 +623,10 @@ const AdminDashboard = () => {
               </button>
             </div>
           </div>
-        </div>
+
+          <div style={applyResponsiveStyles(styles.header)}>
+            <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
+          </div>
 
         <div style={applyResponsiveStyles(styles.tableContainer)}>
           <table style={{ 

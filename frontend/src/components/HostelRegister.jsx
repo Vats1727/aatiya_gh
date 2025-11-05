@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
+import { ArrowLeft } from 'lucide-react';
 import { auth } from '../firebase';
 import { onAuthStateChanged } from '../firebase';
 
@@ -386,15 +387,21 @@ const HostelRegister = () => {
         throw new Error(responseData.error || `Server error: ${response.status}`);
       }
       
-  // responseData already contains parsed JSON from the server
-  const payload = responseData;
-  setError('');
-  // Show success message (backend returns { success: true, data: { name, ... } })
-  const createdName = (payload && payload.data && payload.data.name) || payload.name || '';
-  setError(`Successfully created hostel: ${createdName}`);
+      // responseData already contains parsed JSON from the server
+      const payload = responseData;
+      setError('');
       
-      // Reset form
+      // Show success message (backend returns { success: true, data: { name, ... } })
+      const createdName = (payload && payload.data && payload.data.name) || payload.name || '';
+      setError(`Successfully created hostel: ${createdName}`);
+      
+      // Reset form and navigate to dashboard after a short delay
       setForm({ name: '', address: '' });
+      
+      // Navigate to admin dashboard after 1.5 seconds
+      setTimeout(() => {
+        navigate('/admin/dashboard');
+      }, 1500);
       
     } catch (err) {
       console.error('Hostel creation error:', err);
@@ -411,8 +418,31 @@ const HostelRegister = () => {
 
   return (
     <div style={styles.container}>
-      <div style={styles.form}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h2 style={styles.title}>Register New Hostel</h2>
+        <button
+          onClick={() => navigate('/admin/dashboard')}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#f3f4f6',
+            color: '#4b5563',
+            border: '1px solid #e5e7eb',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            transition: 'all 0.2s',
+            ':hover': {
+              backgroundColor: '#e5e7eb',
+            },
+          }}
+          type="button"
+        >
+          <ArrowLeft size={18} />
+          Back to Dashboard
+        </button>
+      </div>
         
         {error && (
           <div style={error.startsWith('Successfully') ? styles.success : styles.error}>
@@ -527,7 +557,6 @@ const HostelRegister = () => {
           </div>
         </form>
       </div>
-    </div>
   );
 };
 
