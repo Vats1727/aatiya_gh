@@ -5,7 +5,7 @@ export const downloadStudentPdf = async (studentData) => {
   try {
   // Generate the HTML for the form and rules and combine
   const formHtml = renderStudentPrintHtml(studentData) || '';
-  const rulesHtml = renderRulesHtml ? renderRulesHtml() : '';
+  const rulesHtml = renderRulesHtml ? renderRulesHtml(studentData) : '';
 
   // Combine into a single HTML string so the PDF generator renders both pages
   const combinedHtml = `${formHtml}<div style="page-break-before: always;"></div>${rulesHtml}`;
