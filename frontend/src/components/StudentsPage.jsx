@@ -102,7 +102,7 @@ const StudentsPage = () => {
           style={styles.addButton}
         >
           <UserPlus size={16} style={{ marginRight: '8px' }} />
-          New Student
+          Add Student
         </button>
       </div>
       
@@ -183,7 +183,9 @@ const styles = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '20px',
+    padding: '1.5rem 1rem',
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
   },
   tableContainer: {
     backgroundColor: 'white',
@@ -261,53 +263,62 @@ const styles = {
     fontWeight: '500',
   },
   header: {
+    background: 'white',
+    padding: '1.25rem',
+    borderRadius: '1rem',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    marginBottom: '1.5rem',
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '20px',
+    flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: '15px',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '1rem',
   },
   backButton: {
     display: 'flex',
     alignItems: 'center',
-    padding: '8px 16px',
-    backgroundColor: '#f1f5f9',
-    border: '1px solid #e2e8f0',
-    borderRadius: '6px',
+    background: '#f3f4f6',
+    border: 'none',
+    padding: '0.6rem 1.25rem',
+    borderRadius: '0.5rem',
     cursor: 'pointer',
-    fontSize: '14px',
-    color: '#334155',
-    transition: 'all 0.2s',
+    color: '#4b5563',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
     '&:hover': {
-      backgroundColor: '#e2e8f0',
+      background: '#e5e7eb',
+      transform: 'translateY(-1px)',
     },
   },
   title: {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: '#6b21a8',
     margin: 0,
-    fontSize: '24px',
-    fontWeight: '600',
-    color: '#1e293b',
-  },
-  address: {
-    color: '#64748b',
-    marginBottom: '30px',
+    flex: 1,
+    textAlign: 'center',
   },
   addButton: {
     display: 'flex',
     alignItems: 'center',
-    padding: '8px 16px',
-    backgroundColor: '#3b82f6',
+    background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
     color: 'white',
     border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
+    padding: '0.6rem 1.25rem',
+    borderRadius: '0.5rem',
     fontWeight: '500',
-    transition: 'all 0.2s',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
     '&:hover': {
-      backgroundColor: '#2563eb',
+      opacity: 0.9,
+      transform: 'translateY(-1px)',
+      boxShadow: '0 4px 12px rgba(147, 51, 234, 0.3)',
     },
+  },
+  address: {
+    color: '#64748b',
+    marginBottom: '30px',
   },
   emptyState: {
     textAlign: 'center',

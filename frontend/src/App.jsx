@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import StudentForm from "./components/StudentForm";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
@@ -8,13 +8,25 @@ import StudentsPage from "./components/StudentsPage";
 // Authentication wrapper
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/admin" />;
+  const location = useLocation();
+  
+  if (!token) {
+    // Redirect to login with the current location to redirect back after login
+    return <Navigate to="/admin" state={{ from: location }} replace />;
+  }
+  return children;
 };
 
 // Public route wrapper
 const PublicRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  return !token ? children : <Navigate to="/dashboard" />;
+  const location = useLocation();
+  
+  if (token) {
+    // Redirect to dashboard if already logged in
+    return <Navigate to="/admin/dashboard" state={{ from: location }} replace />;
+  }
+  return children;
 };
 
 export default function App() {
@@ -34,7 +46,7 @@ export default function App() {
       } />
 
       {/* Protected routes */}
-      <Route path="/dashboard" element={
+      <Route path="/admin/dashboard" element={
         <PrivateRoute>
           <AdminDashboard />
         </PrivateRoute>

@@ -1,67 +1,105 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, PlusCircle } from 'lucide-react';
+import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const AdminDashboard = () => {
   const [hostels, setHostels] = useState([]);
+  const [showAddHostel, setShowAddHostel] = useState(false);
+  const [newHostel, setNewHostel] = useState({ name: '', location: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showAddHostelForm, setShowAddHostelForm] = useState(false);
-  const [newHostel, setNewHostel] = useState({ name: '', address: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   // Fetch user profile
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/api/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch(`${API_BASE}/api/users/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
-      if (!response.ok) throw new Error('Failed to fetch user profile');
-      return await response.json();
+      // Use auth/me endpoint which returns the user object
+      const altResponse = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!altResponse.ok) throw new Error('Failed to fetch user profile');
+      const userObj = await altResponse.json();
+      // auth/me returns the user object directly; use it or fallback to previous shape
+      setUser(userObj || {});
     } catch (err) {
       console.error('Error fetching user profile:', err);
-      throw err;
     }
   };
 
   // Fetch hostels for the current user
   const fetchHostels = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/api/users/me/hostels`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       if (!response.ok) throw new Error('Failed to fetch hostels');
+      
       const data = await response.json();
-      setHostels(data);
-      setLoading(false);
+      setHostels(data.data || []);
+      
+      // If there are hostels, select the first one by default
+      if (data.data && data.data.length > 0) {
+        setSelectedHostel(data.data[0]);
+        fetchStudents(data.data[0].id);
+      }
     } catch (err) {
-      setError(err.message || 'Failed to load hostels');
+      setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
 
-  // Handle new hostel input change
-  const handleHostelInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewHostel(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  // Fetch students for a specific hostel
+  const fetchStudents = async (hostelId) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch students');
+      
+      const data = await response.json();
+      setStudents(data.data || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle hostel selection
+  const handleHostelSelect = (hostel) => {
+    setSelectedHostel(hostel);
+    fetchStudents(hostel.id);
+  };
+
+  // Handle view students for a hostel
+  const handleViewStudents = (hostelId) => {
+    navigate(`/hostel/${hostelId}/students`);
   };
 
   // Handle add new hostel
   const handleAddHostel = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError('');
-    
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/api/hostels`, {
@@ -72,317 +110,657 @@ const AdminDashboard = () => {
         },
         body: JSON.stringify(newHostel)
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add hostel');
-      }
-
+      
+      if (!response.ok) throw new Error('Failed to add hostel');
+      
+      setShowAddHostel(false);
+      setNewHostel({ name: '', location: '' });
       await fetchHostels();
-      setNewHostel({ name: '', address: '' });
-      setShowAddHostelForm(false);
     } catch (err) {
-      setError(err.message || 'Failed to add hostel');
-      console.error('Error adding hostel:', err);
-    } finally {
-      setIsSubmitting(false);
+      setError(err.message);
     }
   };
 
-  // Handle view students for a hostel
-  const handleViewStudents = (hostelId) => {
-    navigate(`/hostel/${hostelId}/students`);
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/admin');
   };
 
-  // Load data on component mount
+  // Fetch data on component mount
   useEffect(() => {
     const loadData = async () => {
-      try {
-        await fetchUserProfile();
-        await fetchHostels();
-      } catch (err) {
-        navigate('/admin');
-      }
+      await fetchUserProfile();
+      await fetchHostels();
     };
-
     loadData();
+  }, []);
+
+  // Format date to display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Check authentication and fetch data on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/admin');
+      return;
+    }
   }, [navigate]);
 
-  // Styles
   const styles = {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-      padding: '2rem',
+      padding: '1.5rem 1rem',
+      boxSizing: 'border-box',
+      width: '100%',
+      overflowX: 'hidden',
+    },
+    content: {
       maxWidth: '1200px',
       margin: '0 auto',
-      boxSizing: 'border-box'
+      width: '100%',
+      boxSizing: 'border-box',
     },
     header: {
+      background: 'white',
+      padding: '1.25rem',
+      borderRadius: '1rem',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      marginBottom: '1.5rem',
       display: 'flex',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: '2rem',
-      flexWrap: 'wrap',
-      gap: '1rem'
+      gap: '1rem',
     },
     title: {
-      fontSize: '1.8rem',
-      fontWeight: '600',
-      color: '#1a1a1a',
-      margin: 0
+      color: '#db2777',
+      fontSize: '1.5rem',
+      fontWeight: 'bold',
+      margin: 0,
+      lineHeight: '1.3',
     },
-    addButton: {
+    headerActions: {
       display: 'flex',
+      gap: '0.75rem',
+      flexWrap: 'wrap',
       alignItems: 'center',
-      gap: '0.5rem',
+      '@media (max-width: 600px)': {
+        width: '100%',
+        flexDirection: 'column',
+        gap: '0.5rem',
+      },
+    },
+    searchContainer: {
+      display: 'flex',
+      gap: '0.75rem',
+      flexWrap: 'wrap',
+      marginBottom: '1.5rem',
+      '@media (max-width: 600px)': {
+        flexDirection: 'column',
+        gap: '0.5rem',
+        width: '100%',
+      },
+    },
+    searchInput: {
+      flex: 1,
+      minWidth: '200px',
       padding: '0.5rem 1rem',
-      backgroundColor: '#4CAF50',
-      color: 'white',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      fontSize: '0.9rem',
-      fontWeight: '500',
-      transition: 'background-color 0.2s',
-      ':hover': {
-        backgroundColor: '#45a049'
-      }
+      border: '1px solid #e5e7eb',
+      borderRadius: '0.5rem',
+      fontSize: '0.9375rem',
+      '&:focus': {
+        outline: 'none',
+        borderColor: '#8b5cf6',
+        boxShadow: '0 0 0 2px rgba(168, 85, 247, 0.2)',
+      },
+      '@media (max-width: 600px)': {
+        width: '100%',
+      },
     },
-    hostelForm: {
-      backgroundColor: '#f8f9fa',
+    card: {
+      background: 'white',
+      borderRadius: '0.75rem',
       padding: '1.5rem',
-      borderRadius: '8px',
-      marginBottom: '2rem',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      marginBottom: '1.5rem',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
     },
-    formGroup: {
-      marginBottom: '1rem'
-    },
-    label: {
-      display: 'block',
-      marginBottom: '0.5rem',
-      fontWeight: '500',
-      color: '#333'
+    form: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1rem',
+      marginTop: '1rem',
     },
     input: {
-      width: '100%',
-      padding: '0.5rem',
-      border: '1px solid #ddd',
-      borderRadius: '4px',
-      fontSize: '1rem',
-      boxSizing: 'border-box'
-    },
-    buttonGroup: {
-      display: 'flex',
-      gap: '1rem',
-      marginTop: '1rem'
+      padding: '0.75rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '0.5rem',
+      fontSize: '0.9375rem',
+      '&:focus': {
+        outline: 'none',
+        borderColor: '#8b5cf6',
+        boxShadow: '0 0 0 2px rgba(168, 85, 247, 0.2)',
+      },
     },
     submitButton: {
-      padding: '0.5rem 1rem',
-      backgroundColor: '#4CAF50',
+      background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
       color: 'white',
       border: 'none',
-      borderRadius: '4px',
+      padding: '0.75rem',
+      borderRadius: '0.5rem',
+      fontWeight: '600',
       cursor: 'pointer',
-      ':disabled': {
-        backgroundColor: '#cccccc',
-        cursor: 'not-allowed'
-      }
+      fontSize: '1rem',
+      marginTop: '0.5rem',
+      '&:hover': {
+        opacity: 0.95,
+      },
     },
-    cancelButton: {
-      padding: '0.5rem 1rem',
-      backgroundColor: '#f44336',
-      color: 'white',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer'
-    },
-    error: {
-      color: '#f44336',
-      marginTop: '1rem',
-      padding: '0.5rem',
-      backgroundColor: '#ffebee',
-      borderRadius: '4px'
-    },
-    hostelList: {
+    hostelGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-      gap: '1.5rem',
-      marginTop: '1.5rem'
+      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+      gap: '1.25rem',
+      marginTop: '1.5rem',
     },
     hostelCard: {
-      backgroundColor: 'white',
-      borderRadius: '8px',
-      padding: '1.5rem',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      transition: 'transform 0.2s, box-shadow 0.2s',
-      cursor: 'pointer',
-      ':hover': {
+      background: '#f9fafb',
+      padding: '1.25rem',
+      borderRadius: '0.75rem',
+      border: '1px solid #e5e7eb',
+      transition: 'all 0.2s ease',
+      '&:hover': {
         transform: 'translateY(-2px)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-      }
-    },
-    hostelName: {
-      fontSize: '1.2rem',
-      fontWeight: '600',
-      margin: '0 0 0.5rem 0',
-      color: '#1a1a1a'
-    },
-    hostelAddress: {
-      color: '#666',
-      margin: '0 0 1rem 0',
-      fontSize: '0.9rem'
+        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+      },
     },
     viewButton: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.5rem 1rem',
-      backgroundColor: '#2196F3',
+      background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
       color: 'white',
       border: 'none',
-      borderRadius: '4px',
+      padding: '0.5rem 1rem',
+      borderRadius: '0.5rem',
       cursor: 'pointer',
-      fontSize: '0.9rem',
-      textDecoration: 'none',
-      width: 'fit-content',
+      marginTop: '1rem',
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '0.5rem',
+      '&:hover': {
+        opacity: 0.9,
+      },
+    },
+    logoutButton: {
+      background: '#4b5563',
+      color: 'white',
+      border: 'none',
+      padding: '0.5rem 1rem',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      fontSize: '0.9375rem',
+      fontWeight: '500',
+      transition: 'all 0.2s ease',
+      whiteSpace: 'nowrap',
       ':hover': {
-        backgroundColor: '#1976D2'
+        opacity: 0.9,
+        transform: 'translateY(-1px)',
+      },
+    },
+    addButton: {
+      background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
+      color: 'white',
+      border: 'none',
+      padding: '0.625rem 1.25rem',
+      borderRadius: '0.5rem',
+      fontWeight: '600',
+      cursor: 'pointer',
+      fontSize: '0.9375rem',
+      transition: 'all 0.2s ease',
+      whiteSpace: 'nowrap',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      ':hover': {
+        transform: 'translateY(-1px)',
+        boxShadow: '0 4px 12px rgba(147, 51, 234, 0.3)',
+      },
+    },
+    tableContainer: {
+      width: '100%',
+      overflowX: 'auto',
+      WebkitOverflowScrolling: 'touch',
+      msOverflowStyle: '-ms-autohiding-scrollbar',
+      borderRadius: '1rem',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      background: 'white',
+      marginBottom: '2rem',
+    },
+    table: {
+      width: '100%',
+      minWidth: '800px',
+      borderCollapse: 'separate',
+      borderSpacing: 0,
+    },
+    th: {
+      background: '#f3e8ff',
+      padding: '0.875rem 1rem',
+      textAlign: 'left',
+      color: '#6b21a8',
+      fontWeight: '600',
+      fontSize: '0.875rem',
+      whiteSpace: 'nowrap',
+    },
+    td: {
+      padding: '0.875rem 1rem',
+      borderTop: '1px solid #e5e7eb',
+      verticalAlign: 'middle',
+      fontSize: '0.875rem',
+      lineHeight: '1.5',
+    },
+    actionCell: {
+      whiteSpace: 'nowrap',
+    },
+    actionButton: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '32px',
+      height: '32px',
+      padding: '0',
+      margin: '0 2px',
+      borderRadius: '4px',
+      border: '1px solid #e5e7eb',
+      backgroundColor: 'white',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        backgroundColor: '#f9fafb',
+        borderColor: '#d1d5db',
+        transform: 'translateY(-1px)',
+      },
+      '&:active': {
+        backgroundColor: '#f3f4f6',
+      },
+      '&:disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
+      },
+    },
+    loading: {
+      textAlign: 'center',
+      padding: '2rem',
+      color: '#6b21a8',
+      fontSize: '1.1rem',
+      fontWeight: '500',
+    },
+    toolbar: {
+      display: 'flex',
+      gap: '0.5rem',
+      alignItems: 'center',
+      margin: '0 0 1rem 0',
+      '& input[type="search"]': {
+        padding: '0.5rem 0.75rem',
+        borderRadius: '0.5rem',
+        border: '1px solid #e5e7eb',
+        minWidth: '220px',
+        fontSize: '0.875rem',
+        '&:focus': {
+          outline: 'none',
+          borderColor: '#8b5cf6',
+          boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.2)'
+        }
       }
+    },
+    filterSelect: {
+      padding: '0.5rem 0.75rem',
+      borderRadius: '0.5rem',
+      border: '1px solid #e5e7eb'
+    },
+    error: {
+      background: '#fee2e2',
+      color: '#b91c1c',
+      padding: '1rem',
+      borderRadius: '0.5rem',
+      marginBottom: '1.5rem',
+      borderLeft: '4px solid #dc2626',
+      fontSize: '0.9375rem',
+      lineHeight: '1.5',
+    },
+    statusBadge: {
+      padding: '0.25rem 0.75rem',
+      borderRadius: '9999px',
+      fontSize: '0.8125rem',
+      fontWeight: '500',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      whiteSpace: 'nowrap',
+    },
+    pendingBadge: {
+      background: '#fef3c7',
+      color: '#92400e',
+    },
+    approvedBadge: {
+      background: '#dcfce7',
+      color: '#166534',
+    },
+    rejectedBadge: {
+      background: '#fee2e2',
+      color: '#991b1b',
     },
     emptyState: {
       textAlign: 'center',
       padding: '3rem 1rem',
-      color: '#666',
-      backgroundColor: '#f8f9fa',
-      borderRadius: '8px',
-      marginTop: '2rem'
+      color: '#6b7280',
+      fontSize: '1rem',
+      lineHeight: '1.5',
     },
-    loading: {
+    pagination: {
       display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '200px'
+      justifyContent: 'flex-end',
+      alignItems: 'flex-end',
+      marginTop: '1.5rem',
+      gap: '0.5rem',
+      flexWrap: 'wrap',
+    },
+    pageInfo: {
+      margin: '0 1rem',
+      color: '#4b5563',
+      fontSize: '0.875rem',
+    },
+    pageButton: {
+      padding: '0.5rem 0.75rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '0.375rem',
+      background: 'white',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      minWidth: '2.5rem',
+      textAlign: 'center',
+      '&:hover': {
+        background: '#f3f4f6',
+      },
+      '&.active': {
+        background: '#8b5cf6',
+        color: 'white',
+        borderColor: '#8b5cf6',
+      },
+      '&:disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
+        background: '#f3f4f6',
+      },
+    },
+    // Removed sortableHeader style as sorting is disabled
+    '@media (max-width: 1024px)': {
+      container: {
+        padding: '1.25rem 0.75rem',
+      },
+      header: {
+        padding: '1rem',
+        marginBottom: '1.25rem',
+      },
+      title: {
+        fontSize: '1.375rem',
+      },
     },
     '@media (max-width: 768px)': {
       container: {
-        padding: '1rem'
+        padding: '1rem 0.5rem',
       },
       header: {
         flexDirection: 'column',
         alignItems: 'flex-start',
-        gap: '1rem'
+        gap: '0.75rem',
+        padding: '1rem',
       },
       title: {
-        fontSize: '1.5rem'
+        fontSize: '1.25rem',
       },
-      hostelList: {
-        gridTemplateColumns: '1fr'
-      }
+      headerActions: {
+        width: '100%',
+        justifyContent: 'space-between',
+      },
+      th: {
+        padding: '0.75rem 0.5rem',
+        fontSize: '0.8125rem',
+      },
+      td: {
+        padding: '0.75rem 0.5rem',
+        fontSize: '0.8125rem',
+      },
+    },
+    '@media (max-width: 480px)': {
+      container: {
+        padding: '0.75rem 0.25rem',
+      },
+      header: {
+        padding: '0.875rem',
+        borderRadius: '0.75rem',
+        marginBottom: '1rem',
+      },
+      title: {
+        fontSize: '1.25rem',
+      },
+      logoutButton: {
+        padding: '0.5rem 0.75rem',
+        fontSize: '0.875rem',
+      },
+      addButton: {
+        padding: '0.5rem 1rem',
+        fontSize: '0.875rem',
+      },
+      tableContainer: {
+        borderRadius: '0.75rem',
+        marginBottom: '1.5rem',
+      },
+      th: {
+        padding: '0.625rem 0.5rem',
+        fontSize: '0.75rem',
+      },
+      td: {
+        padding: '0.625rem 0.5rem',
+        fontSize: '0.75rem',
+      },
+      actionButton: {
+        padding: '0.35rem 0.5rem',
+        fontSize: '0.75rem',
+        marginRight: '0.25rem',
+        marginBottom: '0.25rem',
+      },
+      statusBadge: {
+        padding: '0.2rem 0.5rem',
+        fontSize: '0.75rem',
+      },
+    },
+  };
+
+  const applyResponsiveStyles = (styleObj) => {
+    const appliedStyles = { ...styleObj };
+    
+    // Handle media query styles
+    if (window.innerWidth <= 1024) {
+      Object.assign(appliedStyles, styleObj['@media (max-width: 1024px)']);
     }
+    if (window.innerWidth <= 768) {
+      Object.assign(appliedStyles, styleObj['@media (max-width: 768px)']);
+    }
+    if (window.innerWidth <= 480) {
+      Object.assign(appliedStyles, styleObj['@media (max-width: 480px)']);
+    }
+    
+    // Remove media query keys
+    const { 
+      '@media (max-width: 1024px)': mq1024, 
+      '@media (max-width: 768px)': mq768, 
+      '@media (max-width: 480px)': mq480, 
+      ...cleanStyles 
+    } = appliedStyles;
+    
+    return cleanStyles;
   };
 
   if (loading) {
     return (
-      <div style={styles.loading}>
-        <p>Loading...</p>
+      <div style={applyResponsiveStyles(styles.container)}>
+        <div style={applyResponsiveStyles(styles.content)}>
+          <div style={applyResponsiveStyles(styles.loading)}>Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={applyResponsiveStyles(styles.container)}>
+        <div style={applyResponsiveStyles(styles.content)}>
+          <div style={applyResponsiveStyles(styles.error)}>
+            <strong>Error:</strong> {error}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Hostel Management</h1>
-        <button 
-          onClick={() => setShowAddHostelForm(!showAddHostelForm)}
-          style={styles.addButton}
-        >
-          <PlusCircle size={18} />
-          {showAddHostelForm ? 'Cancel' : 'Add New Hostel'}
-        </button>
-      </div>
-
-      {error && <div style={styles.error}>{error}</div>}
-
-      {showAddHostelForm && (
-        <div style={styles.hostelForm}>
-          <h3>Add New Hostel</h3>
-          <form onSubmit={handleAddHostel}>
-            <div style={styles.formGroup}>
-              <label htmlFor="name" style={styles.label}>
-                Hostel Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={newHostel.name}
-                onChange={handleHostelInputChange}
-                required
-                style={styles.input}
-                placeholder="Enter hostel name"
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label htmlFor="address" style={styles.label}>
-                Address
-              </label>
-              <input
-                type="text"
-                id="address"
-                name="address"
-                value={newHostel.address}
-                onChange={handleHostelInputChange}
-                required
-                style={styles.input}
-                placeholder="Enter hostel address"
-              />
-            </div>
-            <div style={styles.buttonGroup}>
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                style={styles.submitButton}
-              >
-                {isSubmitting ? 'Adding...' : 'Add Hostel'}
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setShowAddHostelForm(false)}
-                style={styles.cancelButton}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div>
-        <h2>Your Hostels</h2>
-        {hostels.length === 0 ? (
-          <div style={styles.emptyState}>
-            <p>No hostels found. Add your first hostel to get started.</p>
-          </div>
-        ) : (
-          <div style={styles.hostelList}>
-            {hostels.map(hostel => (
-              <div key={hostel._id} style={styles.hostelCard}>
-                <h3 style={styles.hostelName}>{hostel.name}</h3>
-                <p style={styles.hostelAddress}>
-                  {hostel.address || 'No address provided'}
-                </p>
-                <button 
-                  onClick={() => handleViewStudents(hostel._id)}
-                  style={styles.viewButton}
-                >
-                  <Users size={16} />
-                  View Students
-                </button>
+    <div style={applyResponsiveStyles(styles.container)}>
+      <div style={applyResponsiveStyles(styles.content)}>
+          {/* User Profile Section */}
+          <div style={{
+            background: 'white',
+            borderRadius: '0.75rem',
+            padding: '1.5rem',
+            marginBottom: '1.5rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              marginBottom: '1rem'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                backgroundColor: '#8b5cf6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '1.5rem',
+                fontWeight: 'bold'
+              }}>
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
-            ))}
+              <div>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  color: '#1f2937'
+                }}>
+                  {user?.name || 'User'}
+                </h2>
+                <p style={{
+                  margin: '0.25rem 0 0',
+                  color: '#6b7280',
+                  fontSize: '0.9375rem'
+                }}>
+                  {user?.email || ''}
+                </p>
+              </div>
+            </div>
+            <div style={{
+              display: 'flex',
+              gap: '0.75rem',
+              flexWrap: 'wrap'
+            }}>
+              <button 
+                onClick={() => navigate('/hostel/register')}
+                style={{
+                  ...applyResponsiveStyles(styles.addButton),
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  '@media (max-width: 600px)': { flex: 1 }
+                }}
+                type="button"
+              >
+                <Home size={18} className="mr-2" />
+                New Hostel
+              </button>
+            </div>
+          </div>
+
+          <div style={applyResponsiveStyles(styles.header)}>
+            <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
+          </div>
+
+        <div style={applyResponsiveStyles(styles.tableContainer)}>
+          <table style={{ 
+            ...applyResponsiveStyles(styles.table), 
+            width: '100%', 
+            borderCollapse: 'collapse' 
+          }}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Hostel Name</th>
+                <th style={styles.th}>Number of Students</th>
+                <th style={styles.th}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hostels.map((hostel, idx) => (
+                <tr key={hostel.id}>
+                  <td style={styles.td}>{hostel.name}</td>
+                  <td style={styles.td}>{hostel.studentsCount}</td>
+                  <td style={styles.td}>
+                    <button 
+                      onClick={() => handleHostelSelect(hostel)}
+                      style={{ ...styles.actionButton, ...styles.editButton }}
+                      title="View Students"
+                    >
+                      <ArrowRight size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {selectedHostel && (
+          <div style={applyResponsiveStyles(styles.tableContainer)}>
+            <table style={{ 
+              ...applyResponsiveStyles(styles.table), 
+              width: '100%', 
+              borderCollapse: 'collapse' 
+            }}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Student Name</th>
+                  <th style={styles.th}>Application No</th>
+                  <th style={styles.th}>Contact</th>
+                  <th style={styles.th}>District</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((student, idx) => (
+                  <tr key={student.id}>
+                    <td style={styles.td}>{student.studentName}</td>
+                    <td style={styles.td}>{student.combinedId || '-'}</td>
+                    <td style={styles.td}>{student.mobile1}</td>
+                    <td style={styles.td}>{student.district}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
