@@ -17,9 +17,10 @@ const AdminDashboard = () => {
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem('token');
-      
+
       if (!token) {
-        throw new Error('No authentication token found');
+        navigate('/admin');
+        return;
       }
 
       const response = await fetch(`${API_BASE}/api/auth/me`, {
@@ -28,12 +29,25 @@ const AdminDashboard = () => {
           'Content-Type': 'application/json'
         }
       });
-      if (!altResponse.ok) throw new Error('Failed to fetch user profile');
-      const userObj = await altResponse.json();
-      // auth/me returns the user object directly; use it or fallback to previous shape
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/admin');
+          return;
+        }
+        throw new Error('Failed to fetch user profile');
+      }
+
+      const userObj = await response.json();
       setUser(userObj || {});
     } catch (err) {
       console.error('Error fetching user profile:', err);
+      if (err.message.includes('401') || err.message.includes('unauthorized')) {
+        localStorage.removeItem('token');
+        navigate('/admin');
+      }
+      setError(err.message);
     }
   };
 
@@ -42,9 +56,10 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      
+
       if (!token) {
-        throw new Error('No authentication token found');
+        navigate('/admin');
+        return;
       }
 
       const response = await fetch(`${API_BASE}/api/hostels`, {
@@ -53,24 +68,25 @@ const AdminDashboard = () => {
           'Content-Type': 'application/json'
         }
       });
-      
-      if (!response.ok) throw new Error('Failed to fetch hostels');
-      
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add hostel');
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/admin');
+          return;
+        }
+        throw new Error('Failed to fetch hostels');
       }
 
       const data = await response.json();
       setHostels(data.data || []);
-      
-      // If there are hostels, select the first one by default
-      if (data.data && data.data.length > 0) {
-        setSelectedHostel(data.data[0]);
-        fetchStudents(data.data[0].id);
-      }
     } catch (err) {
+      console.error('Error fetching hostels:', err);
       setError(err.message);
+      if (err.message.includes('401') || err.message.includes('unauthorized')) {
+        localStorage.removeItem('token');
+        navigate('/admin');
+      }
     } finally {
       setLoading(false);
     }
@@ -87,9 +103,9 @@ const AdminDashboard = () => {
           'Content-Type': 'application/json'
         }
       });
-      
-      if (!response.ok) throw new Error('Failed to fetch students');      if (!response.ok) throw new Error('Failed to fetch students');
-      
+
+      if (!response.ok) throw new Error('Failed to fetch students'); if (!response.ok) throw new Error('Failed to fetch students');
+
       const data = await response.json();
       setStudents(data.data || []);
     } catch (err) {
@@ -110,7 +126,7 @@ const AdminDashboard = () => {
     navigate(`/hostel/${hostelId}/students`);
   };
 
-    // Handle add new hostel
+  // Handle add new hostel
   const handleAddHostel = async (e) => {
     e.preventDefault();
     if (!newHostel.name || !newHostel.address) {
@@ -167,16 +183,14 @@ const AdminDashboard = () => {
       try {
         await fetchUserProfile();
         await fetchHostels();
-      } catch (error) {
-        if (error.message === 'No authentication token found' || error.response?.status === 401) {
-          localStorage.removeItem('token'); // Clear invalid token
-          navigate('/admin'); // Redirect to login
+      } catch (err) {
+        console.error('Error fetching initial data:', err);
+        if (err.message.includes('401') || err.message.includes('unauthorized')) {
+          localStorage.removeItem('token');
+          navigate('/admin');
         }
-        setError('Failed to load data. Please try logging in again.');
       }
-    };
-
-    fetchData();
+    }; fetchData();
   }, [navigate]);
 
   const styles = {
@@ -611,7 +625,7 @@ const AdminDashboard = () => {
 
   const applyResponsiveStyles = (styleObj) => {
     const appliedStyles = { ...styleObj };
-    
+
     // Handle media query styles
     if (window.innerWidth <= 1024) {
       Object.assign(appliedStyles, styleObj['@media (max-width: 1024px)']);
@@ -622,15 +636,15 @@ const AdminDashboard = () => {
     if (window.innerWidth <= 480) {
       Object.assign(appliedStyles, styleObj['@media (max-width: 480px)']);
     }
-    
+
     // Remove media query keys
-    const { 
-      '@media (max-width: 1024px)': mq1024, 
-      '@media (max-width: 768px)': mq768, 
-      '@media (max-width: 480px)': mq480, 
-      ...cleanStyles 
+    const {
+      '@media (max-width: 1024px)': mq1024,
+      '@media (max-width: 768px)': mq768,
+      '@media (max-width: 480px)': mq480,
+      ...cleanStyles
     } = appliedStyles;
-    
+
     return cleanStyles;
   };
 
@@ -659,81 +673,81 @@ const AdminDashboard = () => {
   return (
     <div style={applyResponsiveStyles(styles.container)}>
       <div style={applyResponsiveStyles(styles.content)}>
-          {/* User Profile Section */}
+        {/* User Profile Section */}
+        <div style={{
+          background: 'white',
+          borderRadius: '0.75rem',
+          padding: '1.5rem',
+          marginBottom: '1.5rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }}>
           <div style={{
-            background: 'white',
-            borderRadius: '0.75rem',
-            padding: '1.5rem',
-            marginBottom: '1.5rem',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            marginBottom: '1rem'
           }}>
             <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              backgroundColor: '#8b5cf6',
               display: 'flex',
               alignItems: 'center',
-              gap: '1rem',
-              marginBottom: '1rem'
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '1.5rem',
+              fontWeight: 'bold'
             }}>
-              <div style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '50%',
-                backgroundColor: '#8b5cf6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '1.5rem',
-                fontWeight: 'bold'
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+            <div>
+              <h2 style={{
+                margin: 0,
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: '#1f2937'
               }}>
-                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
-              <div>
-                <h2 style={{
-                  margin: 0,
-                  fontSize: '1.25rem',
-                  fontWeight: '600',
-                  color: '#1f2937'
-                }}>
-                  {user?.name || 'User'}
-                </h2>
-                <p style={{
-                  margin: '0.25rem 0 0',
-                  color: '#6b7280',
-                  fontSize: '0.9375rem'
-                }}>
-                  {user?.email || ''}
-                </p>
-              </div>
-            </div>
-            <div style={{
-              display: 'flex',
-              gap: '0.75rem',
-              flexWrap: 'wrap'
-            }}>
-              <button 
-                onClick={() => navigate('/hostel/register')}
-                style={{
-                  ...applyResponsiveStyles(styles.addButton),
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                  '@media (max-width: 600px)': { flex: 1 }
-                }}
-                type="button"
-              >
-                <Home size={18} className="mr-2" />
-                New Hostel
-              </button>
+                {user?.name || 'User'}
+              </h2>
+              <p style={{
+                margin: '0.25rem 0 0',
+                color: '#6b7280',
+                fontSize: '0.9375rem'
+              }}>
+                {user?.email || ''}
+              </p>
             </div>
           </div>
+          <div style={{
+            display: 'flex',
+            gap: '0.75rem',
+            flexWrap: 'wrap'
+          }}>
+            <button
+              onClick={() => navigate('/hostel/register')}
+              style={{
+                ...applyResponsiveStyles(styles.addButton),
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                '@media (max-width: 600px)': { flex: 1 }
+              }}
+              type="button"
+            >
+              <Home size={18} className="mr-2" />
+              New Hostel
+            </button>
+          </div>
+        </div>
 
-          <div style={applyResponsiveStyles(styles.header)}>
-            <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
-          </div>
+        <div style={applyResponsiveStyles(styles.header)}>
+          <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
+        </div>
 
         <div style={applyResponsiveStyles(styles.tableContainer)}>
-          <table style={{ 
-            ...applyResponsiveStyles(styles.table), 
-            width: '100%', 
-            borderCollapse: 'collapse' 
+          <table style={{
+            ...applyResponsiveStyles(styles.table),
+            width: '100%',
+            borderCollapse: 'collapse'
           }}>
             <thead>
               <tr>
@@ -748,7 +762,7 @@ const AdminDashboard = () => {
                   <td style={styles.td}>{hostel.name}</td>
                   <td style={styles.td}>{hostel.studentsCount}</td>
                   <td style={styles.td}>
-                    <button 
+                    <button
                       onClick={() => handleHostelSelect(hostel)}
                       style={{ ...styles.actionButton, ...styles.editButton }}
                       title="View Students"
@@ -764,10 +778,10 @@ const AdminDashboard = () => {
 
         {selectedHostel && (
           <div style={applyResponsiveStyles(styles.tableContainer)}>
-            <table style={{ 
-              ...applyResponsiveStyles(styles.table), 
-              width: '100%', 
-              borderCollapse: 'collapse' 
+            <table style={{
+              ...applyResponsiveStyles(styles.table),
+              width: '100%',
+              borderCollapse: 'collapse'
             }}>
               <thead>
                 <tr>
