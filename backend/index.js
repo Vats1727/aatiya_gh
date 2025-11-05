@@ -79,36 +79,40 @@ initializeFirebase();
 const app = express();
 
 // CORS Configuration
+const allowedOrigins = [
+  'https://aatiya-gh.vercel.app',
+  'http://localhost:3000', // For local development
+  'http://localhost:5173'  // For Vite development server
+];
+
+// CORS middleware function
 const corsOptions = {
-  origin: [
-    'https://aatiya-gh.vercel.app',
-    'http://localhost:3000', // For local development
-    'http://localhost:5173'  // For Vite development server
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true,
+  maxAge: 86400 // 24 hours
 };
-
-// Handle preflight requests
-app.options('*', cors(corsOptions));
 
 // Apply CORS to all routes
 app.use(cors(corsOptions));
+
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
 
 // Other middleware
 app.use(express.json({ limit: '20mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '20mb' }));
 app.use(morgan('dev'));
-
-// Add CORS headers to all responses
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', corsOptions.origin);
-  res.header('Access-Control-Allow-Methods', corsOptions.methods.join(','));
-  res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(','));
-  res.header('Access-Control-Allow-Credentials', 'true');
-  next();
-});
 
 // Health check route
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
