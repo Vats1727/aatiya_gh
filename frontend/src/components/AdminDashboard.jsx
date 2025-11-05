@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+// Use production URL if environment variable is not set
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onrender.com';
 
 const AdminDashboard = () => {
   const [hostels, setHostels] = useState([]);
@@ -36,17 +37,27 @@ const AdminDashboard = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        },
-        credentials: 'include'
+        }
+      }).catch(error => {
+        console.error('Network error:', error);
+        throw new Error('Network error occurred. Please check your connection.');
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        let errorMessage = 'Authentication failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If parsing JSON fails, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+
         if (response.status === 401) {
           localStorage.removeItem('token');
-          throw new Error('Unauthorized access. Please login again.');
+          throw new Error('Session expired. Please login again.');
         }
-        throw new Error(errorData.message || 'Failed to fetch user profile');
+        throw new Error(errorMessage);
       }
 
       const userObj = await response.json();
@@ -190,40 +201,41 @@ const AdminDashboard = () => {
   // Check authentication and fetch data on component mount
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/admin');
-        return;
-      }
-
-      // Verify token format
       try {
+        setLoading(true);
+        setError('');
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No token found');
+        }
+
+        // Basic token format validation (JWT should have 3 parts)
         const tokenParts = token.split('.');
         if (tokenParts.length !== 3) {
-          console.error('Invalid token format');
-          localStorage.removeItem('token');
-          navigate('/admin');
-          return;
+          throw new Error('Invalid token format');
         }
 
-        // Fetch initial data
         try {
-          setLoading(true);
+          // First verify the token by fetching the user profile
           await fetchUserProfile();
+          // Then fetch the hostels data
           await fetchHostels();
         } catch (err) {
-          console.error('Error fetching initial data:', err);
-          if (err.message.includes('401') || err.message.includes('unauthorized')) {
-            localStorage.removeItem('token');
-            navigate('/admin');
+          if (err.response?.status === 401 || 
+              err.message.includes('401') || 
+              err.message.includes('unauthorized')) {
+            throw new Error('Session expired. Please login again.');
           }
-        } finally {
-          setLoading(false);
+          throw err;
         }
       } catch (err) {
-        console.error('Token validation error:', err);
+        console.error('Authentication error:', err);
         localStorage.removeItem('token');
+        setError(err.message || 'Authentication failed');
         navigate('/admin');
+      } finally {
+        setLoading(false);
       }
     };
 
