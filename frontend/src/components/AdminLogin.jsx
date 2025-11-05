@@ -138,12 +138,10 @@ const AdminLogin = () => {
       );
       
   // Get the ID token
-  const idToken = await userCredential.user.getIdToken();
+      const idToken = await userCredential.user.getIdToken();
 
-  // Store the raw token (no 'Bearer ' prefix)
-  localStorage.setItem('token', idToken);
-      
-      // Navigate after successful login
+      // Store the token with 'Bearer ' prefix to ensure consistency
+      localStorage.setItem('token', `Bearer ${idToken}`);      // Navigate after successful login
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
