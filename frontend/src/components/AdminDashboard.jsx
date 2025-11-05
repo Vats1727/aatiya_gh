@@ -16,8 +16,6 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
   const navigate = useNavigate();
 
-  const API_BASE = 'https://aatiya-gh-backend.onrender.com';
-
 // Fetch user profile function
 const fetchUserProfile = async () => {
   try {
@@ -29,7 +27,7 @@ const fetchUserProfile = async () => {
 
     const response = await fetch(`${API_BASE}/api/auth/me`, {
       headers: {
-        'Authorization': token,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
@@ -67,7 +65,7 @@ const fetchHostels = async () => {
 
     const response = await fetch(`${API_BASE}/api/hostels`, {
       headers: {
-        'Authorization': token,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
@@ -130,7 +128,14 @@ useEffect(() => {
         }
       });
 
-      if (!response.ok) throw new Error('Failed to fetch students'); if (!response.ok) throw new Error('Failed to fetch students');
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/admin');
+          return;
+        }
+        throw new Error('Failed to fetch students');
+      }
 
       const data = await response.json();
       setStudents(data.data || []);
@@ -772,7 +777,7 @@ useEffect(() => {
             flexWrap: 'wrap'
           }}>
             <button
-              onClick={() => navigate('/hostel/register')}
+              onClick={() => setShowAddHostel(true)}
               style={{
                 ...applyResponsiveStyles(styles.addButton),
                 background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
@@ -785,6 +790,41 @@ useEffect(() => {
             </button>
           </div>
         </div>
+
+        {/* Inline Add Hostel form shown on this page */}
+        {showAddHostel && (
+          <div style={applyResponsiveStyles(styles.card)}>
+            <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>Add New Hostel</h3>
+            <form onSubmit={handleAddHostel} style={applyResponsiveStyles(styles.form)}>
+              <input
+                name="name"
+                value={newHostel.name}
+                onChange={(e) => setNewHostel(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Hostel name"
+                style={applyResponsiveStyles(styles.input)}
+                required
+              />
+              <input
+                name="address"
+                value={newHostel.address}
+                onChange={(e) => setNewHostel(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="Address"
+                style={applyResponsiveStyles(styles.input)}
+                required
+              />
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="submit" style={applyResponsiveStyles(styles.submitButton)}>Add Hostel</button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '' }); setError(''); }}
+                  style={{ ...applyResponsiveStyles(styles.logoutButton), background: '#6b7280' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         <div style={applyResponsiveStyles(styles.header)}>
           <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
