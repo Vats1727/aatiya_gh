@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
 
 import { Printer, User, Phone, MapPin, Calendar, Users, GraduationCap } from 'lucide-react';
@@ -58,7 +58,9 @@ const HostelAdmissionForm = () => {
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const editId = params.get('editId');
-  const preHostelId = params.get('hostelDocId');
+  const { hostelId: routeHostelId } = useParams();
+  // Prefer explicit query param `hostelDocId`, fall back to route param `/hostel/:hostelId/...`
+  const preHostelId = params.get('hostelDocId') || routeHostelId || null;
   const preOwnerUserId = params.get('ownerUserId');
   const [fixedHostel, setFixedHostel] = useState(false);
 
