@@ -72,7 +72,8 @@ router.post('/users/:userId/hostels', async (req, res) => {
     res.status(201).json({ success: true, data: created });
   } catch (error) {
     console.error('Error creating hostel for user:', error);
-    res.status(500).json({ success: false, error: 'Failed to create hostel', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
+    // Return the error message to the client to make debugging easier.
+    res.status(500).json({ success: false, error: error.message || 'Failed to create hostel' });
   }
 });
 
@@ -87,12 +88,7 @@ router.get('/hostels', async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching hostels:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch hostels',
-      code: 'INTERNAL_SERVER_ERROR',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch hostels' });
   }
 });
 
@@ -112,7 +108,7 @@ router.get('/users/:userId/hostels', async (req, res) => {
     res.json({ success: true, data: hostels });
   } catch (error) {
     console.error('Error fetching hostels for user:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch hostels', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch hostels' });
   }
 });
 
@@ -135,7 +131,7 @@ router.post('/users/:userId/hostels/:hostelDocId/students', async (req, res) => 
     res.status(201).json({ success: true, data: { combinedId: result.combinedId, studentPath: result.studentRef.path } });
   } catch (error) {
     console.error('Error creating student for hostel:', error);
-    res.status(500).json({ success: false, error: 'Failed to create student', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
+    res.status(500).json({ success: false, error: error.message || 'Failed to create student' });
   }
 });
 
