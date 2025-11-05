@@ -18,9 +18,6 @@ export function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
-// Import the Firebase Admin SDK
-import admin from 'firebase-admin';
-
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
   initializeFirebase();
