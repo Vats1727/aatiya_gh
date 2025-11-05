@@ -73,7 +73,7 @@ export default function createAuthRouter(db) {
       res.json({ id: userDoc.id, fullName: d.fullName, username: d.username, role: d.role });
     } catch (err) {
       console.error('GET /api/auth/me error', err);
-      res.status(500).json({ error: 'Failed to fetch user profile' });
+      res.status(500).json({ error: String(err) });
     }
   });
 
