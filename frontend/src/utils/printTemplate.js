@@ -92,11 +92,27 @@ export const renderStudentPrintHtml = (student = {}) => {
 
   return formHtml;
 };
-export const renderRulesHtml = () => {
+export const renderRulesHtml = (student = {}) => {
+  const s = student || {};
+  const escape = (v) => String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const parentName = s.fatherName || s.motherName || '';
+  const daughterName = s.studentName || '';
+  const village = s.village || '';
+  const post = s.post || '';
+  const police = s.policeStation || '';
+  const district = s.district || '';
+
   return `
     <div style="max-width:900px;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;">
       <div style="text-align:center;border-bottom:2px solid #4f46e5;padding-bottom:10px;margin-bottom:12px;">
         <h2 style="color:#4f46e5;margin:0;font-size:18px;">हॉस्टल नियम एवं शर्तें / HOSTEL RULES AND REGULATIONS</h2>
+      </div>
+
+      <div style="font-size:14px;line-height:1.8;margin-top:10px;text-align:justify;color:#111827">
+        <p style="margin-bottom:12px;">
+          मैं <strong>${escape(parentName)}</strong> अपनी पुत्री / बहन <strong>${escape(daughterName)}</strong> ग्राम <strong>${escape(village)}</strong> पो॰ <strong>${escape(post)}</strong> थाना <strong>${escape(police)}</strong> जिला <strong>${escape(district)}</strong> को अपनी मर्ज़ी से आतिया गर्ल्स हॉस्टल में रख रहा/रही हूँ। मैं और मेरी पुत्री / बहन यह <strong>दोनों</strong> शपथ लेते हैं कि हॉस्टल के निम्नलिखित नियमों का पालन करेंगे।
+        </p>
       </div>
 
       <div style="font-size:13px;line-height:1.8;margin-top:6px;white-space:pre-wrap;text-align:left;color:#111827">
