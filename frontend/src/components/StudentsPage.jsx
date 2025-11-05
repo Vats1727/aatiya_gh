@@ -56,7 +56,8 @@ const StudentsPage = () => {
   }, [hostelId]);
 
   const handleAddStudent = () => {
-    navigate('/');
+    // Navigate to StudentForm and preselect this hostel
+    navigate(`/?hostelDocId=${hostelId}&ownerUserId=me`);
   };
 
   if (loading) {

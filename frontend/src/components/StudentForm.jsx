@@ -54,7 +54,6 @@ const HostelAdmissionForm = () => {
 
   const [showPreview, setShowPreview] = useState(false);
   const [hostels, setHostels] = useState([]);
-  const [noHostels, setNoHostels] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -115,33 +114,19 @@ const HostelAdmissionForm = () => {
 
   // If authenticated, load hostels for current user to allow admin additions
   useEffect(() => {
-    // Load hostels when a token exists. Don't rely on localStorage.user being present.
     const token = localStorage.getItem('token');
-    if (!token) return;
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !user) return;
     const loadHostels = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/users/me/hostels`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.status === 401) {
-          // token expired or invalid - clear and optionally redirect to login
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setHostels([]);
-          setNoHostels(false);
-          return;
-        }
-        if (!res.ok) {
-          console.warn('Failed to load hostels, status:', res.status);
-          setHostels([]);
-          setNoHostels(true);
-          return;
-        }
+        if (!res.ok) return;
         const data = await res.json();
         // API returns { success: true, data: [...] }
         const list = Array.isArray(data) ? data : (data && data.data) || [];
-        setHostels(list || []);
-        setNoHostels(!list || list.length === 0);
+        setHostels(list);
         // If a hostel was provided via query param, preselect it and lock the selection
         if (preHostelId) {
           setFormData(prev => ({ ...prev, hostelDocId: preHostelId }));
@@ -155,8 +140,6 @@ const HostelAdmissionForm = () => {
         }
       } catch (err) {
         console.warn('Failed to load hostels', err);
-        setHostels([]);
-        setNoHostels(true);
       }
     };
     loadHostels();
@@ -881,13 +864,15 @@ const HostelAdmissionForm = () => {
       let res;
       const token = localStorage.getItem('token');
       const user = JSON.parse(localStorage.getItem('user') || 'null');
-      // If user is authenticated (admin) we require selecting a hostel so we don't
-      // accidentally submit to the top-level `students` collection.
-      if (!editId && token && !formData.hostelDocId) {
-        if (noHostels) {
-          alert('You are signed in as an admin but no hostels were found. Please create a hostel first in the Admin Dashboard.');
-        } else {
+      // prefer hostelDocId from formData, fall back to query preHostelId
+      const effectiveHostelId = formData.hostelDocId || preHostelId;
+
+      // If user is admin (has token) and there is no hostel id available, ask to select/create one
+      if (!editId && token && !effectiveHostelId) {
+        if (hostels && hostels.length > 0) {
           alert('You are signed in as an admin — please select the hostel to add this student to (or create a hostel first).');
+        } else {
+          alert('You are signed in as an admin but have no hostels yet — please create a hostel first.');
         }
         submitButton.disabled = false;
         submitButton.innerHTML = originalButtonText;
@@ -895,9 +880,9 @@ const HostelAdmissionForm = () => {
         return;
       }
 
-      if (!editId && token && formData.hostelDocId) {
+      if (!editId && token && effectiveHostelId) {
         // Admin creating a student under a hostel - use protected endpoint to get combinedId
-        res = await fetch(`${API_BASE}/api/users/me/hostels/${formData.hostelDocId}/students`, {
+        res = await fetch(`${API_BASE}/api/users/me/hostels/${effectiveHostelId}/students`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(formDataWithStatus)
