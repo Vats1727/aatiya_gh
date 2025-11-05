@@ -882,7 +882,7 @@ useEffect(() => {
                   <td style={styles.td}>{hostel.studentsCount}</td>
                   <td style={styles.td}>
                     <button
-                      onClick={() => handleHostelSelect(hostel)}
+                      onClick={() => handleViewStudents(hostel.id)}
                       style={{ ...styles.actionButton, ...styles.editButton }}
                       title="View Students"
                     >
