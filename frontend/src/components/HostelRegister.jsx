@@ -17,11 +17,15 @@ const HostelRegister = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        // Force refresh the token to ensure it's current
+        const idToken = await currentUser.getIdToken(true);
+        localStorage.setItem('token', idToken);
         setUser(currentUser);
       } else {
-        // If no user is signed in, redirect to login
+        // If no user is signed in, clear any existing token and redirect to login
+        localStorage.removeItem('token');
         navigate('/admin');
       }
     });
@@ -279,6 +283,7 @@ const HostelRegister = () => {
     
     if (!user) {
       setError('Authentication required. Please log in.');
+      navigate('/admin');
       return;
     }
     
@@ -290,8 +295,11 @@ const HostelRegister = () => {
     setIsSubmitting(true);
     
     try {
-      // Get a fresh ID token
+      // Force refresh the token to ensure it's current
       const idToken = await user.getIdToken(true);
+      localStorage.setItem('token', idToken);
+      
+      console.log('Sending request with token:', idToken); // Debug log
       
       const res = await fetch(`${API_BASE}/api/users/me/hostels`, {
         method: 'POST',
@@ -299,11 +307,14 @@ const HostelRegister = () => {
           'Content-Type': 'application/json', 
           'Authorization': `Bearer ${idToken}`
         },
+        credentials: 'include', // Important for cookies if using them
         body: JSON.stringify({
           name: form.name.trim(),
           address: form.address.trim()
         })
       });
+      
+      console.log('Response status:', res.status); // Debug log
       
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
