@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import { db } from './config/firebase.js';
 import hostelsRouter from './routes/hostels.js';
 import authRouter from './routes/auth.js';
+import studentsRouter from './routes/students.js';
 
 // Load environment variables
 dotenv.config();
@@ -46,6 +47,9 @@ app.get('/api/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRouter);
+// Mount students router before hostels router so anonymous student submissions
+// (POST /api/students) are not intercepted by the hostels auth middleware.
+app.use('/api/students', studentsRouter);
 app.use('/api', hostelsRouter);
 
 // Error handling middleware
