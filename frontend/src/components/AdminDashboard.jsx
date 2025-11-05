@@ -7,84 +7,101 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 // Inline styles
 const styles = {
   container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '20px',
     minHeight: '100vh',
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
+    padding: '1rem',
+    background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
     display: 'flex',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     alignItems: 'center',
-    marginBottom: '30px',
-    flexWrap: 'wrap',
-    gap: '15px',
+  },
+  content: {
+    width: '100%',
+    maxWidth: '1200px',
+    padding: '1.5rem',
+    '@media (max-width: 768px)': {
+      padding: '1rem',
+    },
+    '@media (max-width: 480px)': {
+      padding: '0.75rem',
+    },
+  },
+  card: {
+    background: 'white',
+    borderRadius: '1rem',
+    padding: '1.5rem',
+    marginBottom: '1.5rem',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    '@media (max-width: 768px)': {
+      padding: '1.25rem',
+    },
+    '@media (max-width: 480px)': {
+      padding: '1rem',
+    },
   },
   profile: {
     display: 'flex',
     alignItems: 'center',
-    gap: '15px',
-    padding: '20px',
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    gap: '1rem',
+    marginBottom: '1.5rem',
   },
   avatar: {
-    width: '50px',
-    height: '50px',
+    width: '3.5rem',
+    height: '3.5rem',
     borderRadius: '50%',
-    backgroundColor: '#6c757d',
+    background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
     color: 'white',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '20px',
+    fontSize: '1.5rem',
     fontWeight: 'bold',
-  },
-  section: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    padding: '20px',
-    marginBottom: '20px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    boxShadow: '0 4px 6px -1px rgba(236, 72, 153, 0.3)',
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '15px',
-    marginBottom: '20px',
+    gap: '1rem',
+  },
+  inputGroup: {
+    marginBottom: '1rem',
+  },
+  label: {
+    display: 'block',
+    marginBottom: '0.5rem',
+    color: '#4b5563',
+    fontWeight: '600',
+    fontSize: '0.9375rem',
   },
   input: {
-    padding: '12px 15px',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    fontSize: '16px',
-    transition: 'border-color 0.2s',
+    width: '100%',
+    padding: '0.75rem 1rem',
+    border: '2px solid #e5e7eb',
+    borderRadius: '0.5rem',
+    fontSize: '1rem',
+    transition: 'all 0.2s',
     '&:focus': {
       outline: 'none',
-      borderColor: '#0d6efd',
-      boxShadow: '0 0 0 0.2rem rgba(13, 110, 253, 0.25)',
+      borderColor: '#8b5cf6',
+      boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.1)',
     },
   },
   button: {
-    padding: '12px 20px',
-    backgroundColor: '#0d6efd',
+    padding: '0.75rem 1.5rem',
+    background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
     color: 'white',
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: '0.5rem',
+    fontSize: '1rem',
+    fontWeight: '600',
     cursor: 'pointer',
-    fontSize: '16px',
-    fontWeight: '500',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '8px',
+    gap: '0.5rem',
     transition: 'all 0.2s',
     '&:hover': {
-      backgroundColor: '#0b5ed7',
-      transform: 'translateY(-1px)',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(139, 92, 246, 0.2)',
     },
     '&:active': {
       transform: 'translateY(0)',
@@ -97,43 +114,42 @@ const styles = {
   },
   hostelList: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '20px',
-    marginTop: '20px',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: '1.25rem',
+    marginTop: '1.5rem',
   },
   hostelCard: {
-    border: '1px solid #e9ecef',
-    borderRadius: '8px',
-    padding: '20px',
-    cursor: 'pointer',
+    background: 'white',
+    borderRadius: '0.75rem',
+    padding: '1.25rem',
+    border: '1px solid #e5e7eb',
     transition: 'all 0.2s',
-    backgroundColor: 'white',
     '&:hover': {
       transform: 'translateY(-2px)',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      borderColor: '#dee2e6',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+      borderColor: '#d1d5db',
     },
   },
   error: {
-    color: '#dc3545',
-    backgroundColor: '#f8d7da',
-    padding: '10px 15px',
-    borderRadius: '6px',
-    marginBottom: '20px',
-    border: '1px solid #f5c6cb',
+    color: '#dc2626',
+    backgroundColor: '#fef2f2',
+    padding: '0.75rem 1rem',
+    borderRadius: '0.5rem',
+    marginBottom: '1rem',
+    border: '1px solid #fecaca',
   },
   success: {
-    color: '#0f5132',
-    backgroundColor: '#d1e7dd',
-    padding: '10px 15px',
-    borderRadius: '6px',
-    marginBottom: '20px',
-    border: '1px solid #badbcc',
+    color: '#065f46',
+    backgroundColor: '#d1fae5',
+    padding: '0.75rem 1rem',
+    borderRadius: '0.5rem',
+    marginBottom: '1rem',
+    border: '1px solid #a7f3d0',
   },
   loading: {
     textAlign: 'center',
-    padding: '40px 0',
-    color: '#6c757d',
+    padding: '2rem',
+    color: '#6b7280',
   },
 };
 
@@ -320,135 +336,153 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div style={styles.container}>
-      {/* User Profile Section */}
-      <div style={styles.profile}>
-        <div style={styles.avatar}>
-          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-        </div>
-        <div>
-          <h2 style={{ margin: 0, color: '#212529' }}>{user?.name || 'User'}</h2>
-          <p style={{ margin: '5px 0 0', color: '#6c757d' }}>{user?.email || ''}</p>
-        </div>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div style={styles.error}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
-
-      {/* Success Message */}
-      {success && (
-        <div style={styles.success}>
-          {success}
-        </div>
-      )}
-
-      {/* Add Hostel Section */}
-      <div style={styles.section}>
-        <h3 style={{ marginTop: 0 }}>Add New Hostel</h3>
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div>
-            <label htmlFor="name" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-              Hostel Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Enter hostel name"
-              style={styles.input}
-              disabled={isSubmitting}
-              required
-            />
+    <div style={applyResponsiveStyles(styles.container)}>
+      <div style={applyResponsiveStyles(styles.content)}>
+        {/* Profile Section */}
+        <div style={applyResponsiveStyles(styles.card)}>
+          <div style={styles.profile}>
+            <div style={styles.avatar}>
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+            <div>
+              <h2 style={{ margin: 0, color: '#1f2937' }}>{user?.name || 'User'}</h2>
+              <p style={{ margin: '0.25rem 0 0', color: '#6b7280' }}>{user?.email || ''}</p>
+            </div>
           </div>
-          
-          <div>
-            <label htmlFor="address" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-              Address
-            </label>
-            <input
-              type="text"
-              id="address"
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              placeholder="Enter hostel address"
-              style={styles.input}
-              disabled={isSubmitting}
-              required
-            />
-          </div>
-          
-          <button 
-            type="submit" 
-            style={{
-              ...styles.button,
-              opacity: isSubmitting ? 0.7 : 1,
-              cursor: isSubmitting ? 'not-allowed' : 'pointer'
-            }}
-            disabled={isSubmitting || !form.name || !form.address}
-          >
-            <Plus size={18} />
-            {isSubmitting ? 'Creating...' : 'Add Hostel'}
-          </button>
-        </form>
-      </div>
-
-      {/* Hostels List */}
-      <div style={styles.section}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ margin: 0 }}>Your Hostels</h3>
-          <span style={{ color: '#6c757d' }}>{hostels.length} {hostels.length === 1 ? 'hostel' : 'hostels'}</span>
         </div>
-        
-        {loading ? (
-          <div style={styles.loading}>Loading hostels...</div>
-        ) : hostels.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '30px 0', color: '#6c757d' }}>
-            <p>You haven't added any hostels yet.</p>
-            <p>Add your first hostel using the form above.</p>
-          </div>
-        ) : (
-          <div style={styles.hostelList}>
-            {hostels.map(hostel => (
-              <div 
-                key={hostel.id} 
-                style={styles.hostelCard}
-                onClick={() => handleViewStudents(hostel.id)}
-              >
-                <h4 style={{ margin: '0 0 10px', color: '#212529' }}>{hostel.name}</h4>
-                <p style={{ margin: '0 0 15px', color: '#6c757d', fontSize: '0.95em' }}>
-                  {hostel.address}
-                </p>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  paddingTop: '10px',
-                  borderTop: '1px solid #e9ecef'
-                }}>
-                  <span style={{ fontSize: '0.9em', color: '#6c757d' }}>
-                    {hostel.studentCount || 0} {hostel.studentCount === 1 ? 'student' : 'students'}
-                  </span>
-                  <span style={{ 
-                    color: '#0d6efd', 
-                    display: 'flex', 
-                    alignItems: 'center',
-                    fontSize: '0.9em',
-                    fontWeight: '500'
-                  }}>
-                    View Students <ArrowRight size={16} style={{ marginLeft: '5px' }} />
-                  </span>
-                </div>
-              </div>
-            ))}
+
+        {/* Messages */}
+        {error && (
+          <div style={applyResponsiveStyles(styles.error)}>
+            {error}
           </div>
         )}
+        {success && (
+          <div style={applyResponsiveStyles(styles.success)}>
+            {success}
+          </div>
+        )}
+
+        {/* Add Hostel Form */}
+        <div style={applyResponsiveStyles(styles.card)}>
+          <h3 style={{ marginTop: 0, color: '#1f2937', marginBottom: '1.25rem' }}>
+            Add New Hostel
+          </h3>
+          <form onSubmit={handleSubmit} style={styles.form}>
+            <div style={styles.inputGroup}>
+              <label htmlFor="name" style={styles.label}>
+                Hostel Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Enter hostel name"
+                style={styles.input}
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+            
+            <div style={styles.inputGroup}>
+              <label htmlFor="address" style={styles.label}>
+                Address
+              </label>
+              <input
+                type="text"
+                id="address"
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                placeholder="Enter hostel address"
+                style={styles.input}
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+            
+            <button
+              type="submit"
+              style={{
+                ...styles.button,
+                opacity: isSubmitting ? 0.7 : 1,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer'
+              }}
+              disabled={isSubmitting || !form.name || !form.address}
+              onMouseOver={(e) => !isSubmitting && (e.currentTarget.style.transform = 'translateY(-2px)')}
+              onMouseOut={(e) => !isSubmitting && (e.currentTarget.style.transform = 'translateY(0)')}
+              onTouchStart={(e) => !isSubmitting && (e.currentTarget.style.transform = 'scale(0.98)')}
+              onTouchEnd={(e) => !isSubmitting && (e.currentTarget.style.transform = 'scale(1)')}
+            >
+              <Plus size={18} />
+              {isSubmitting ? 'Creating...' : 'Add Hostel'}
+            </button>
+          </form>
+        </div>
+
+        {/* Hostels List */}
+        <div style={applyResponsiveStyles(styles.card)}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3 style={{ margin: 0, color: '#1f2937' }}>Your Hostels</h3>
+            <span style={{ color: '#6b7280', fontSize: '0.9375rem' }}>
+              {hostels.length} {hostels.length === 1 ? 'hostel' : 'hostels'}
+            </span>
+          </div>
+          
+          {loading ? (
+            <div style={styles.loading}>Loading hostels...</div>
+          ) : hostels.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+              <p>You haven't added any hostels yet.</p>
+              <p>Add your first hostel using the form above.</p>
+            </div>
+          ) : (
+            <div style={styles.hostelList}>
+              {hostels.map(hostel => (
+                <div 
+                  key={hostel.id} 
+                  style={{
+                    ...styles.hostelCard,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => handleViewStudents(hostel.id)}
+                  onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <h4 style={{ margin: '0 0 0.75rem', color: '#1f2937', fontSize: '1.125rem' }}>
+                    {hostel.name}
+                  </h4>
+                  <p style={{ margin: '0 0 1rem', color: '#6b7280', fontSize: '0.9375rem' }}>
+                    {hostel.address}
+                  </p>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    paddingTop: '0.75rem',
+                    borderTop: '1px solid #e5e7eb'
+                  }}>
+                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                      {hostel.studentCount || 0} {hostel.studentCount === 1 ? 'student' : 'students'}
+                    </span>
+                    <span style={{ 
+                      color: '#7c3aed',
+                      display: 'flex', 
+                      alignItems: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      transition: 'color 0.2s'
+                    }}>
+                      View Students <ArrowRight size={16} style={{ marginLeft: '0.5rem' }} />
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
