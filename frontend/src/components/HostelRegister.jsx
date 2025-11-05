@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
+import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -11,7 +13,21 @@ const HostelRegister = () => {
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        // If no user is signed in, redirect to login
+        navigate('/admin');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   // Base styles for the component
   const baseStyles = {
@@ -261,8 +277,7 @@ const HostelRegister = () => {
     e.preventDefault();
     setError('');
     
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (!user) {
       setError('Authentication required. Please log in.');
       return;
     }
@@ -275,11 +290,14 @@ const HostelRegister = () => {
     setIsSubmitting(true);
     
     try {
+      // Get a fresh ID token
+      const idToken = await user.getIdToken(true);
+      
       const res = await fetch(`${API_BASE}/api/users/me/hostels`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({
           name: form.name.trim(),

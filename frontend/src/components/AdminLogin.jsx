@@ -129,10 +129,8 @@ const AdminLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
 
     if (!credentials.username || !credentials.password) {
-      setIsLoading(false);
       return setError('Please enter both username and password');
     }
 
@@ -143,10 +141,10 @@ const AdminLogin = () => {
         credentials.password
       );
 
-      // Get the ID token
-      const idToken = await userCredential.user.getIdToken();
+      // Get a fresh ID token
+      const idToken = await userCredential.user.getIdToken(true);
       
-      // Store the token in localStorage
+      // Store the token in localStorage (though we'll primarily use Firebase auth state)
       localStorage.setItem('token', idToken);
 
       // On successful login, redirect to hostel registration
