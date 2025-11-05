@@ -16,6 +16,7 @@ const HostelRegister = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
+  // Listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
