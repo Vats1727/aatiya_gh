@@ -385,11 +385,12 @@ const HostelRegister = () => {
         throw new Error(responseData.error || `Server error: ${response.status}`);
       }
       
-      const payload = await res.json();
-      setError('');
-      
-      // Show success message
-      setError(`Successfully created hostel: ${payload.name}`);
+  // responseData already contains parsed JSON from the server
+  const payload = responseData;
+  setError('');
+  // Show success message (backend returns { success: true, data: { name, ... } })
+  const createdName = (payload && payload.data && payload.data.name) || payload.name || '';
+  setError(`Successfully created hostel: ${createdName}`);
       
       // Reset form
       setForm({ name: '', address: '' });
