@@ -13,46 +13,79 @@ const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch user profile with enhanced error handling
+  // Fetch user profile with enhanced error handling and logging
   const fetchUserProfile = async () => {
+    console.log('Starting to fetch user profile...');
     try {
       const token = localStorage.getItem('token');
+      console.log('Token found:', token ? 'Yes' : 'No');
+      
       if (!token) {
         console.error('No authentication token found');
+        setError('No authentication token found. Please login again.');
+        navigate('/admin');
         return;
       }
 
-      console.log('Fetching user profile...');
-      const response = await fetch(`${API_BASE}/api/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      console.log('Making request to:', `${API_BASE}/api/auth/me`);
+      const startTime = Date.now();
+      
+      try {
+        const response = await Promise.race([
+          fetch(`${API_BASE}/api/auth/me`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout after 10s')), 10000)
+          )
+        ]);
+        
+        console.log(`Request completed in ${Date.now() - startTime}ms`);
+        console.log('Response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          let errorData;
+          try {
+            errorData = await response.json();
+            console.error('Error response body:', errorData);
+          } catch (e) {
+            console.error('Failed to parse error response:', e);
+            errorData = { message: 'Invalid server response' };
+          }
+          
+          if (response.status === 401) {
+            // Token is invalid or expired
+            localStorage.removeItem('token');
+            navigate('/admin');
+            return;
+          }
+          
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Error response from server:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData
-        });
-        throw new Error(errorData.message || 'Failed to fetch user profile');
-      }
-      
-      const data = await response.json();
-      console.log('User profile data:', data);
-      
-      if (data) {
-        // The backend returns the user data directly, not wrapped in a data property
-        setUser({
+        
+        const data = await response.json();
+        console.log('User profile data:', data);
+        
+        if (!data) {
+          throw new Error('No data received from server');
+        }
+        
+        const userData = {
           name: data.fullName || 'User',
           email: data.username || '',
           role: data.role || 'admin'
-        });
-      } else {
-        console.error('Unexpected API response format:', data);
-        setError('Received invalid user data from server');
+        };
+        
+        console.log('Setting user data:', userData);
+        setUser(userData);
+        
+      } catch (fetchError) {
+        console.error('Fetch error:', fetchError);
+        throw fetchError; // Re-throw to be caught by outer catch
       }
     } catch (err) {
       console.error('Error fetching user profile:', {
