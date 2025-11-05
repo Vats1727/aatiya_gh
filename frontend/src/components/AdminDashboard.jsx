@@ -23,7 +23,7 @@ const AdminDashboard = () => {
       }
 
       console.log('Fetching user profile...');
-      const response = await fetch(`${API_BASE}/api/users/me`, {
+      const response = await fetch(`${API_BASE}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -43,8 +43,13 @@ const AdminDashboard = () => {
       const data = await response.json();
       console.log('User profile data:', data);
       
-      if (data && data.data) {
-        setUser(data.data);
+      if (data) {
+        // The backend returns the user data directly, not wrapped in a data property
+        setUser({
+          name: data.fullName || 'User',
+          email: data.username || '',
+          role: data.role || 'admin'
+        });
       } else {
         console.error('Unexpected API response format:', data);
         setError('Received invalid user data from server');
