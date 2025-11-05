@@ -56,6 +56,11 @@ const AdminDashboard = () => {
       
       if (!response.ok) throw new Error('Failed to fetch hostels');
       
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add hostel');
+      }
+
       const data = await response.json();
       setHostels(data.data || []);
       
@@ -78,11 +83,12 @@ const AdminDashboard = () => {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
-      if (!response.ok) throw new Error('Failed to fetch students');
+      if (!response.ok) throw new Error('Failed to fetch students');      if (!response.ok) throw new Error('Failed to fetch students');
       
       const data = await response.json();
       setStudents(data.data || []);

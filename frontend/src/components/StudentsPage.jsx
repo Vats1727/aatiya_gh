@@ -26,7 +26,8 @@ const StudentsPage = () => {
         // Fetch students for this hostel using the correct endpoint
         const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
         
