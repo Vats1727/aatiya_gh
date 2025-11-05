@@ -278,67 +278,241 @@ useEffect(() => {
   }, [navigate]);
 
   const styles = {
-    container: {
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-      padding: '2rem 1rem',
-      boxSizing: 'border-box',
+  container: {
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
+    padding: '2rem 1rem',
+    boxSizing: 'border-box',
+    width: '100%',
+    overflowX: 'hidden',
+  },
+  content: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    width: '100%',
+    boxSizing: 'border-box',
+  },
+  header: {
+    background: 'rgba(255, 255, 255, 0.95)',
+    padding: '1.5rem',
+    borderRadius: '1rem',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
+    marginBottom: '2rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '1rem',
+    border: '1px solid rgba(0, 0, 0, 0.05)'
+  },
+  title: {
+    color: '#db2777',
+    fontSize: '1.75rem',
+    fontWeight: '700',
+    margin: 0,
+    background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent'
+  },
+  headerActions: {
+    display: 'flex',
+    gap: '1rem',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    '@media (max-width: 768px)': {
       width: '100%',
-      overflowX: 'hidden',
+      flexDirection: 'column',
+      gap: '0.75rem',
     },
-    content: {
-      maxWidth: '1200px',
-      margin: '0 auto',
+  },
+  button: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '0.75rem',
+    padding: '0.75rem 1.5rem',
+    fontSize: '1rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    minHeight: '44px',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 15px rgba(147, 51, 234, 0.3)',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+    },
+  },
+  secondaryButton: {
+    background: 'white',
+    color: '#7c3aed',
+    border: '2px solid #e9d5ff',
+    '&:hover': {
+      background: '#f5f3ff',
+      boxShadow: '0 2px 10px rgba(124, 58, 237, 0.1)',
+    },
+  },
+  error: {
+    background: '#fee2e2',
+    color: '#b91c1c',
+    padding: '1rem',
+    borderRadius: '0.5rem',
+    marginBottom: '1.5rem',
+    borderLeft: '4px solid #dc2626',
+    fontSize: '0.9375rem',
+    lineHeight: '1.5',
+  },
+  hostelGrid: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+    gap: '1.5rem',
+    padding: '0 1rem',
+  },
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '1rem',
+  },
+  cardIcon: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    background: 'linear-gradient(135deg, #f0abfc 0%, #c4b5fd 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: '1rem',
+    color: '#6d28d9',
+  },
+  cardTitle: {
+    fontSize: '1.25rem',
+    fontWeight: '600',
+    margin: '0 0 0.25rem',
+    color: '#1f2937',
+  },
+  cardSubtitle: {
+    fontSize: '0.875rem',
+    color: '#6b7280',
+    margin: 0,
+  },
+  cardContent: {
+    flex: 1,
+    marginBottom: '1.5rem',
+  },
+  cardFooter: {
+    marginTop: 'auto',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  studentCount: {
+    display: 'flex',
+    alignItems: 'center',
+    color: '#6b7280',
+    fontSize: '0.875rem',
+    '& svg': {
+      marginRight: '0.5rem',
+    },
+  },
+  viewButton: {
+    background: 'transparent',
+    border: 'none',
+    color: '#7c3aed',
+    display: 'flex',
+    alignItems: 'center',
+    fontSize: '0.9375rem',
+    fontWeight: '500',
+    cursor: 'pointer',
+    padding: '0.5rem',
+    borderRadius: '0.5rem',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      background: '#f5f3ff',
+    },
+  },
+  formContainer: {
+    maxWidth: '500px',
+    margin: '2rem auto',
+    background: 'white',
+    padding: '2rem',
+    borderRadius: '1rem',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
+  },
+  formGroup: {
+    marginBottom: '1.5rem',
+  },
+  label: {
+    display: 'block',
+    marginBottom: '0.5rem',
+    color: '#4b5563',
+    fontWeight: '500',
+  },
+  input: {
+    width: '100%',
+    padding: '0.875rem 1rem',
+    border: '2px solid #f0f0f0',
+    borderRadius: '0.75rem',
+    fontSize: '1rem',
+    outline: 'none',
+    boxSizing: 'border-box',
+    transition: 'all 0.2s ease',
+    backgroundColor: '#f9fafb',
+    '&:focus': {
+      borderColor: '#ec4899',
+      boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
+      backgroundColor: '#ffffff',
+    },
+  },
+  formActions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '1rem',
+    marginTop: '2rem',
+  },
+  cancelButton: {
+    background: 'transparent',
+    border: '2px solid #e5e7eb',
+    color: '#6b7280',
+    '&:hover': {
+      background: '#f9fafb',
+      boxShadow: 'none',
+    },
+  },
+  toolbar: {
+    display: 'flex',
+    gap: '0.5rem',
+    alignItems: 'center',
+    margin: '0 0 1rem 0',
+    '& input[type="search"]': {
+      padding: '0.5rem 0.75rem',
+      borderRadius: '0.5rem',
+      border: '1px solid #e5e7eb',
+      minWidth: '220px',
+      '&:focus': {
+        outline: 'none',
+        borderColor: '#8b5cf6',
+        boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.2)'
+      }
+    }
+  },
+  searchContainer: {
+    display: 'flex',
+    gap: '1rem',
+    flexWrap: 'wrap',
+    marginBottom: '2rem',
+    '@media (max-width: 768px)': {
+      flexDirection: 'column',
+      gap: '0.75rem',
       width: '100%',
-      boxSizing: 'border-box',
     },
-    header: {
-      background: 'rgba(255, 255, 255, 0.95)',
-      padding: '1.5rem',
-      borderRadius: '1rem',
-      boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
-      marginBottom: '2rem',
-      display: 'flex',
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '1.5rem',
-      border: '1px solid rgba(0, 0, 0, 0.05)',
-    },
-    title: {
-      color: '#db2777',
-      fontSize: '1.75rem',
-      fontWeight: '700',
-      margin: 0,
-      lineHeight: '1.2',
-      background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-    },
-    headerActions: {
-      display: 'flex',
-      gap: '1rem',
-      flexWrap: 'wrap',
-      alignItems: 'center',
-      '@media (max-width: 768px)': {
-        width: '100%',
-        flexDirection: 'column',
-        gap: '0.75rem',
-      },
-    },
-    searchContainer: {
-      display: 'flex',
-      gap: '1rem',
-      flexWrap: 'wrap',
-      marginBottom: '2rem',
-      '@media (max-width: 768px)': {
-        flexDirection: 'column',
-        gap: '0.75rem',
-        width: '100%',
-      },
-    },
-    searchInput: {
+  },
+  searchInput: {
       flex: 1,
       minWidth: '250px',
       padding: '0.875rem 1.25rem',
@@ -375,25 +549,7 @@ useEffect(() => {
       gap: '1.25rem',
       marginTop: '1.25rem',
     },
-    input: {
-      width: '100%',
-      padding: '0.875rem 1.25rem',
-      border: '2px solid #f0f0f0',
-      borderRadius: '0.75rem',
-      fontSize: '1rem',
-      outline: 'none',
-      boxSizing: 'border-box',
-      transition: 'all 0.2s ease',
-      minHeight: '52px',
-      backgroundColor: '#ffffff',
-      '&:focus': {
-        borderColor: '#ec4899',
-        boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
-      },
-      '::placeholder': {
-        color: '#9ca3af',
-      },
-    },
+    // Removed duplicate input style
     submitButton: {
       background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
       color: 'white',
@@ -421,70 +577,10 @@ useEffect(() => {
         boxShadow: 'none',
       },
     },
-    hostelGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-      gap: '1.5rem',
-      marginTop: '2rem',
-      '@media (max-width: 768px)': {
-        gridTemplateColumns: '1fr',
-      },
-    },
-    hostelCard: {
-      background: 'rgba(255, 255, 255, 0.95)',
-      padding: '1.75rem',
-      borderRadius: '1rem',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-      border: '1px solid #e5e7eb',
-      transition: 'all 0.3s ease',
-      '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-      },
-      '&:disabled': {
-        opacity: 0.5,
-        cursor: 'not-allowed',
-      },
-    },
-    loading: {
-      textAlign: 'center',
-      padding: '2rem',
-      color: '#6b21a8',
-      fontSize: '1.1rem',
-      fontWeight: '500',
-    },
-    toolbar: {
-      display: 'flex',
-      gap: '0.5rem',
-      alignItems: 'center',
-      margin: '0 0 1rem 0',
-      '& input[type="search"]': {
-        padding: '0.5rem 0.75rem',
-        borderRadius: '0.5rem',
-        border: '1px solid #e5e7eb',
-        minWidth: '220px',
-        fontSize: '0.875rem',
-        '&:focus': {
-          outline: 'none',
-          borderColor: '#8b5cf6',
-          boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.2)'
-        }
-      }
-    },
     filterSelect: {
       padding: '0.5rem 0.75rem',
       borderRadius: '0.5rem',
       border: '1px solid #e5e7eb'
-    },
-    error: {
-      background: '#fee2e2',
-      color: '#b91c1c',
-      padding: '1rem',
-      borderRadius: '0.5rem',
-      marginBottom: '1.5rem',
-      borderLeft: '4px solid #dc2626',
-      fontSize: '0.9375rem',
-      lineHeight: '1.5',
     },
     statusBadge: {
       padding: '0.25rem 0.75rem',
@@ -753,100 +849,288 @@ useEffect(() => {
 
         {/* Inline Add Hostel form shown on this page */}
         {showAddHostel && (
-          <div style={applyResponsiveStyles(styles.card)}>
-            <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>Add New Hostel</h3>
-            <form onSubmit={handleAddHostel} style={applyResponsiveStyles(styles.form)}>
-              <input
-                name="name"
-                value={newHostel.name}
-                onChange={(e) => setNewHostel(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Hostel name"
-                style={applyResponsiveStyles(styles.input)}
-                required
-              />
-              <input
-                name="address"
-                value={newHostel.address}
-                onChange={(e) => setNewHostel(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="Address"
-                style={applyResponsiveStyles(styles.input)}
-                required
-              />
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button type="submit" style={applyResponsiveStyles(styles.submitButton)}>Add Hostel</button>
-                <button
-                  type="button"
-                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '' }); setError(''); }}
-                  style={{ ...applyResponsiveStyles(styles.logoutButton), background: '#6b7280' }}
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem',
+          }}>
+            <div style={{
+              ...cardStyle,
+              maxWidth: '500px',
+              width: '100%',
+              margin: 0,
+              padding: '2rem',
+              position: 'relative',
+            }}>
+              <button 
+                onClick={() => setShowAddHostel(false)}
+                style={{
+                  position: 'absolute',
+                  top: '1rem',
+                  right: '1rem',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#9ca3af',
+                  cursor: 'pointer',
+                  fontSize: '1.5rem',
+                  lineHeight: 1,
+                  padding: '0.25rem',
+                  '&:hover': {
+                    color: '#6b7280',
+                  },
+                }}
+              >
+                &times;
+              </button>
+              
+              <h2 style={{ 
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: '0 0 1.5rem',
+                color: '#1f2937',
+                textAlign: 'center',
+                background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>
+                Add New Hostel
+              </h2>
+              
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  color: '#4b5563',
+                  fontWeight: '500',
+                  fontSize: '0.9375rem',
+                }}>
+                  Hostel Name
+                </label>
+                <input
+                  type="text"
+                  value={newHostel.name}
+                  onChange={(e) => setNewHostel({ ...newHostel, name: e.target.value })}
+                  placeholder="Enter hostel name"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '0.75rem',
+                    fontSize: '1rem',
+                    outline: 'none',
+                    transition: 'all 0.2s ease',
+                    backgroundColor: '#f9fafb',
+                    '&:focus': {
+                      borderColor: '#8b5cf6',
+                      boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.1)',
+                      backgroundColor: '#ffffff',
+                    },
+                  }}
+                />
+              </div>
+              
+              <div style={{ marginBottom: '2rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  color: '#4b5563',
+                  fontWeight: '500',
+                  fontSize: '0.9375rem',
+                }}>
+                  Address
+                </label>
+                <textarea
+                  value={newHostel.address}
+                  onChange={(e) => setNewHostel({ ...newHostel, address: e.target.value })}
+                  placeholder="Enter hostel address"
+                  rows="3"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '0.75rem',
+                    fontSize: '1rem',
+                    outline: 'none',
+                    resize: 'vertical',
+                    minHeight: '100px',
+                    transition: 'all 0.2s ease',
+                    backgroundColor: '#f9fafb',
+                    '&:focus': {
+                      borderColor: '#8b5cf6',
+                      boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.1)',
+                      backgroundColor: '#ffffff',
+                    },
+                  }}
+                />
+              </div>
+              
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '1rem',
+                paddingTop: '1rem',
+                borderTop: '1px solid #f3f4f6',
+              }}>
+                <button 
+                  onClick={() => setShowAddHostel(false)}
+                  style={{
+                    ...secondaryButtonStyle,
+                    padding: '0.75rem 1.25rem',
+                  }}
                 >
                   Cancel
                 </button>
+                <button 
+                  onClick={handleAddHostel}
+                  style={{
+                    ...buttonStyle,
+                    padding: '0.75rem 1.5rem',
+                    opacity: !newHostel.name ? 0.7 : 1,
+                    cursor: !newHostel.name ? 'not-allowed' : 'pointer',
+                  }}
+                  disabled={!newHostel.name}
+                >
+                  Add Hostel
+                </button>
               </div>
-            </form>
+            </div>
           </div>
         )}
 
-        <div style={applyResponsiveStyles(styles.header)}>
-          <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
+        <div style={headerStyle}>
+          <h1 style={titleStyle}>Hostel Dashboard</h1>
+          <div style={headerActionsStyle}>
+            <button 
+              onClick={handleLogout}
+              style={secondaryButtonStyle}
+            >
+              <LogOut size={18} style={{ marginRight: '8px' }} />
+              {isMobile ? 'Logout' : 'Sign Out'}
+            </button>
+            <button 
+              onClick={() => setShowAddHostel(true)}
+              style={buttonStyle}
+            >
+              <Plus size={18} style={{ marginRight: '8px' }} />
+              {isMobile ? 'Add' : 'Add New Hostel'}
+            </button>
+          </div>
         </div>
 
-        <div style={applyResponsiveStyles(styles.tableContainer)}>
-          <table style={{
-            ...applyResponsiveStyles(styles.table),
-            width: '100%',
-            borderCollapse: 'collapse'
-          }}>
+        <div style={tableContainerStyle}>
+          <table style={tableStyle}>
             <thead>
               <tr>
-                <th style={styles.th}>Hostel Name</th>
-                <th style={styles.th}>Number of Students</th>
-                <th style={styles.th}>Actions</th>
+                <th>Hostel Name</th>
+                <th>Number of Students</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {hostels.map((hostel, idx) => (
-                <tr key={hostel.id}>
-                  <td style={styles.td}>{hostel.name}</td>
-                  <td style={styles.td}>{hostel.studentsCount}</td>
-                  <td style={styles.td}>
-                    <button
-                      onClick={() => handleViewStudents(hostel.id)}
-                      style={{ ...styles.actionButton, ...styles.editButton }}
-                      title="View Students"
+              {hostels.length > 0 ? (
+                hostels.map((hostel) => (
+                  <tr key={hostel.id}>
+                    <td style={{ fontWeight: '500', color: '#1f2937' }}>{hostel.name}</td>
+                    <td style={{ color: '#6b7280' }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <Users size={16} style={{ marginRight: '8px', color: '#8b5cf6' }} />
+                        {hostel.studentsCount || 0} {hostel.studentsCount === 1 ? 'Student' : 'Students'}
+                      </div>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => handleViewStudents(hostel.id)}
+                        style={actionButtonStyle}
+                        title="View Students"
+                      >
+                        <ArrowRight size={18} />
+                        <span style={{ marginLeft: '6px' }}>View</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                    <div style={{ marginBottom: '1rem' }}>📋</div>
+                    <p style={{ margin: '0.5rem 0' }}>No hostels found</p>
+                    <p style={{ margin: '0.5rem 0 1rem', fontSize: '0.9375rem' }}>
+                      Get started by adding your first hostel
+                    </p>
+                    <button 
+                      onClick={() => setShowAddHostel(true)}
+                      style={{
+                        ...buttonStyle,
+                        padding: '0.5rem 1.25rem',
+                        fontSize: '0.9375rem',
+                      }}
                     >
-                      <ArrowRight size={16} />
+                      <Plus size={16} style={{ marginRight: '8px' }} />
+                      Add Hostel
                     </button>
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
 
         {selectedHostel && (
-          <div style={applyResponsiveStyles(styles.tableContainer)}>
-            <table style={{
-              ...applyResponsiveStyles(styles.table),
-              width: '100%',
-              borderCollapse: 'collapse'
+          <div style={tableContainerStyle}>
+            <div style={{
+              padding: '1rem 1.5rem',
+              borderBottom: '1px solid #f3f4f6',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
             }}>
+              <h3 style={{ margin: 0, color: '#1f2937' }}>Students in {selectedHostel.name}</h3>
+              <button 
+                onClick={() => setSelectedHostel(null)}
+                style={{
+                  ...secondaryButtonStyle,
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.875rem',
+                }}
+              >
+                Back to Hostels
+              </button>
+            </div>
+            <table style={tableStyle}>
               <thead>
                 <tr>
-                  <th style={styles.th}>Student Name</th>
-                  <th style={styles.th}>Application No</th>
-                  <th style={styles.th}>Contact</th>
-                  <th style={styles.th}>District</th>
+                  <th>Student Name</th>
+                  <th>Application No</th>
+                  <th>Contact</th>
+                  <th>District</th>
                 </tr>
               </thead>
               <tbody>
-                {students.map((student, idx) => (
-                  <tr key={student.id}>
-                    <td style={styles.td}>{student.studentName}</td>
-                    <td style={styles.td}>{student.combinedId || '-'}</td>
-                    <td style={styles.td}>{student.mobile1}</td>
-                    <td style={styles.td}>{student.district}</td>
+                {students.length > 0 ? (
+                  students.map((student) => (
+                    <tr key={student.id}>
+                      <td style={{ fontWeight: '500', color: '#1f2937' }}>{student.studentName}</td>
+                      <td style={{ fontFamily: 'monospace', color: '#6b7280' }}>{student.combinedId || '-'}</td>
+                      <td style={{ color: '#6b7280' }}>{student.mobile1 || '-'}</td>
+                      <td style={{ color: '#6b7280' }}>{student.district || '-'}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                      <div style={{ marginBottom: '1rem' }}>👥</div>
+                      <p style={{ margin: 0 }}>No students found in this hostel</p>
+                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

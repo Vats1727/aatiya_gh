@@ -156,7 +156,7 @@ const StudentsPage = () => {
           style={styles.addButton}
         >
           <UserPlus size={18} style={{ marginRight: '8px' }} />
-          Add New Student
+          New Student
         </button>
       </div>
       
@@ -241,8 +241,8 @@ const StudentsPage = () => {
                 <tr>
                   <th style={styles.th}>Application No.</th>
                   <th style={styles.th}>Student Details</th>
-                  <th style={styles.th}>Status</th>
                   <th style={styles.th}>Contact</th>
+                  <th style={styles.th}>Status</th>
                   <th style={{ ...styles.th, textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -268,11 +268,18 @@ const StudentsPage = () => {
                           </div>
                           <div>
                             <div style={styles.nameText}>{student.studentName || student.name || 'N/A'}</div>
-                            <div style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
-                              {student.email || 'No email provided'}
-                            </div>
+                            {student.email && (
+                              <div style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
+                                {student.email}
+                              </div>
+                            )}
                           </div>
                         </div>
+                        {student.mobile2 && (
+                          <div style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
+                            Alt: {student.mobile2}
+                          </div>
+                        )}
                       </td>
                       <td style={styles.td}>
                         <span style={{
@@ -286,14 +293,6 @@ const StudentsPage = () => {
                             student.status === 'rejected' ? 'Rejected' : 'Pending'
                           ) : 'Pending'}
                         </span>
-                      </td>
-                      <td style={styles.td}>
-                        <div style={styles.nameText}>{student.mobile1 || 'N/A'}</div>
-                        {student.mobile2 && (
-                          <div style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
-                            Alt: {student.mobile2}
-                          </div>
-                        )}
                       </td>
                       <td style={{ ...styles.td, textAlign: 'right' }}>
                         <div style={styles.actionButtons}>
