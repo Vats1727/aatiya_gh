@@ -7,7 +7,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 const AdminDashboard = () => {
   const [hostels, setHostels] = useState([]);
   const [showAddHostel, setShowAddHostel] = useState(false);
-  const [newHostel, setNewHostel] = useState({ name: '', location: '' });
+  const [newHostel, setNewHostel] = useState({ name: '', address: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
@@ -97,9 +97,14 @@ const AdminDashboard = () => {
     navigate(`/hostel/${hostelId}/students`);
   };
 
-  // Handle add new hostel
+    // Handle add new hostel
   const handleAddHostel = async (e) => {
     e.preventDefault();
+    if (!newHostel.name || !newHostel.address) {
+      setError('Please fill in all fields');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/api/hostels`, {
@@ -110,14 +115,18 @@ const AdminDashboard = () => {
         },
         body: JSON.stringify(newHostel)
       });
-      
-      if (!response.ok) throw new Error('Failed to add hostel');
-      
+
+      if (!response.ok) {
+        throw new Error('Failed to create hostel');
+      }
+
+      const data = await response.json();
+      setHostels(prev => [...prev, data.hostel]);
+      setNewHostel({ name: '', address: '' });
       setShowAddHostel(false);
-      setNewHostel({ name: '', location: '' });
-      await fetchHostels();
+      setError('');
     } catch (err) {
-      setError(err.message);
+      setError('Failed to create hostel. Please try again.');
     }
   };
 
@@ -129,19 +138,8 @@ const AdminDashboard = () => {
 
   // Fetch data on component mount
   useEffect(() => {
-    const loadData = async () => {
-      await fetchUserProfile();
-      await fetchHostels();
-    };
-    loadData();
+    fetchHostels();
   }, []);
-
-  // Format date to display
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
 
   // Check authentication and fetch data on component mount
   useEffect(() => {
