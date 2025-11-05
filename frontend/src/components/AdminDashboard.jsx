@@ -11,6 +11,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
+  const [selectedHostel, setSelectedHostel] = useState(null);
+  const [students, setStudents] = useState([]);
   const navigate = useNavigate();
 
   // Fetch user profile
@@ -19,35 +21,50 @@ const AdminDashboard = () => {
       const token = localStorage.getItem('token');
 
       if (!token) {
-        navigate('/admin');
-        return;
+        throw new Error('No authentication token found');
+      }
+
+      // Verify token format
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        throw new Error('Invalid token format');
       }
 
       const response = await fetch(`${API_BASE}/api/auth/me`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
       });
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
         if (response.status === 401) {
           localStorage.removeItem('token');
-          navigate('/admin');
-          return;
+          throw new Error('Unauthorized access. Please login again.');
         }
-        throw new Error('Failed to fetch user profile');
+        throw new Error(errorData.message || 'Failed to fetch user profile');
       }
 
       const userObj = await response.json();
-      setUser(userObj || {});
+      if (!userObj) {
+        throw new Error('No user data received');
+      }
+      setUser(userObj);
+      setError('');
     } catch (err) {
       console.error('Error fetching user profile:', err);
-      if (err.message.includes('401') || err.message.includes('unauthorized')) {
+      setError(err.message);
+      if (err.message.includes('401') || 
+          err.message.includes('unauthorized') || 
+          err.message.includes('Invalid token')) {
         localStorage.removeItem('token');
         navigate('/admin');
       }
-      setError(err.message);
+      throw err;
     }
   };
 
@@ -172,25 +189,45 @@ const AdminDashboard = () => {
 
   // Check authentication and fetch data on component mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/admin');
-      return;
-    }
+    const checkAuthAndFetchData = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/admin');
+        return;
+      }
 
-    // Fetch initial data
-    const fetchData = async () => {
+      // Verify token format
       try {
-        await fetchUserProfile();
-        await fetchHostels();
-      } catch (err) {
-        console.error('Error fetching initial data:', err);
-        if (err.message.includes('401') || err.message.includes('unauthorized')) {
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) {
+          console.error('Invalid token format');
           localStorage.removeItem('token');
           navigate('/admin');
+          return;
         }
+
+        // Fetch initial data
+        try {
+          setLoading(true);
+          await fetchUserProfile();
+          await fetchHostels();
+        } catch (err) {
+          console.error('Error fetching initial data:', err);
+          if (err.message.includes('401') || err.message.includes('unauthorized')) {
+            localStorage.removeItem('token');
+            navigate('/admin');
+          }
+        } finally {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Token validation error:', err);
+        localStorage.removeItem('token');
+        navigate('/admin');
       }
-    }; fetchData();
+    };
+
+    checkAuthAndFetchData();
   }, [navigate]);
 
   const styles = {
