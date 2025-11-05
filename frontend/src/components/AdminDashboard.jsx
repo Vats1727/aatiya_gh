@@ -16,109 +16,107 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
   const navigate = useNavigate();
 
-  // Fetch user profile
-  const fetchUserProfile = async () => {
-    try {
-      const token = localStorage.getItem('token');
+  const API_BASE = 'https://aatiya-gh-backend.onrender.com';
 
-      if (!token) {
-        throw new Error('No authentication token found');
+// Fetch user profile function
+const fetchUserProfile = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/admin');
+      return;
+    }
+
+    const response = await fetch(`${API_BASE}/api/auth/me`, {
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
       }
+    });
 
-      // Verify token format
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) {
-        throw new Error('Invalid token format');
-      }
-
-      const response = await fetch(`${API_BASE}/api/auth/me`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      }).catch(error => {
-        console.error('Network error:', error);
-        throw new Error('Network error occurred. Please check your connection.');
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'Authentication failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          // If parsing JSON fails, use status text
-          errorMessage = response.statusText || errorMessage;
-        }
-
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-          throw new Error('Session expired. Please login again.');
-        }
-        throw new Error(errorMessage);
-      }
-
-      const userObj = await response.json();
-      if (!userObj) {
-        throw new Error('No user data received');
-      }
-      setUser(userObj);
-      setError('');
-    } catch (err) {
-      console.error('Error fetching user profile:', err);
-      setError(err.message);
-      if (err.message.includes('401') || 
-          err.message.includes('unauthorized') || 
-          err.message.includes('Invalid token')) {
+    if (!response.ok) {
+      if (response.status === 401) {
         localStorage.removeItem('token');
         navigate('/admin');
+        return;
       }
-      throw err;
+      throw new Error('Failed to fetch user profile');
     }
-  };
 
-  // Fetch hostels for the current user
-  const fetchHostels = async () => {
+    const userObj = await response.json();
+    setUser(userObj);
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    if (err.message.includes('401') || err.message.includes('unauthorized')) {
+      localStorage.removeItem('token');
+      navigate('/admin');
+    }
+    setError('Failed to load user profile');
+  }
+};
+
+// Fetch hostels function
+const fetchHostels = async () => {
+  try {
+    setLoading(true);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/admin');
+      return;
+    }
+
+    const response = await fetch(`${API_BASE}/api/hostels`, {
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/admin');
+        return;
+      }
+      throw new Error('Failed to fetch hostels');
+    }
+
+    const data = await response.json();
+    setHostels(data.data || []);
+  } catch (err) {
+    console.error('Error fetching hostels:', err);
+    setError('Failed to load hostels');
+    if (err.message.includes('401')) {
+      localStorage.removeItem('token');
+      navigate('/admin');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Use effect for initial load
+useEffect(() => {
+  const loadInitialData = async () => {
     try {
-      setLoading(true);
       const token = localStorage.getItem('token');
-
       if (!token) {
         navigate('/admin');
         return;
       }
-
-      const response = await fetch(`${API_BASE}/api/hostels`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-          navigate('/admin');
-          return;
-        }
-        throw new Error('Failed to fetch hostels');
-      }
-
-      const data = await response.json();
-      setHostels(data.data || []);
+      await fetchUserProfile();
+      await fetchHostels();
     } catch (err) {
-      console.error('Error fetching hostels:', err);
-      setError(err.message);
-      if (err.message.includes('401') || err.message.includes('unauthorized')) {
+      console.error('Error loading initial data:', err);
+      if (err.message.includes('401')) {
         localStorage.removeItem('token');
         navigate('/admin');
       }
-    } finally {
-      setLoading(false);
     }
   };
+
+  loadInitialData();
+}, [navigate]);
 
   // Fetch students for a specific hostel
   const fetchStudents = async (hostelId) => {

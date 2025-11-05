@@ -127,11 +127,8 @@ const AdminLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     setError('');
-
-    if (!credentials.username || !credentials.password) {
-      return setError('Please enter both username and password');
-    }
 
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -140,56 +137,21 @@ const AdminLogin = () => {
         credentials.password
       );
       
-      // Get a fresh ID token
-      const idToken = await userCredential.user.getIdToken(true);
+      // Get the ID token
+      const idToken = await userCredential.user.getIdToken();
       
-      // Verify token with backend
-      if (idToken) {
-        try {
-          const verifyResponse = await fetch(`${API_BASE}/api/auth/verify`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${idToken}`
-            }
-          });
-
-          if (!verifyResponse.ok) {
-            throw new Error('Failed to verify token');
-          }
-
-          localStorage.setItem('token', idToken);
-          navigate('/admin/dashboard');
-        } catch (verifyError) {
-          console.error('Token verification error:', verifyError);
-          throw new Error('Failed to verify authentication');
-        }
-      }
+      // Store the token in localStorage with 'Bearer ' prefix
+      localStorage.setItem('token', `Bearer ${idToken}`);
+      
+      // Navigate after successful login
+      navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
-
-      // Handle different Firebase auth errors
-      switch (err.code) {
-        case 'auth/invalid-email':
-          setError('Please enter a valid email address');
-          break;
-        case 'auth/user-not-found':
-        case 'auth/wrong-password':
-          setError('Invalid email or password');
-          break;
-        case 'auth/too-many-requests':
-          setError('Too many failed attempts. Please try again later.');
-          break;
-        case 'auth/user-disabled':
-          setError('This account has been disabled. Please contact support.');
-          break;
-        default:
-          setError('Failed to sign in. Please check your credentials and try again.');
-      }
+      setError('Invalid email or password');
     } finally {
       setIsLoading(false);
     }
-  };
+};
 
   return (
     <div style={styles.container}>
