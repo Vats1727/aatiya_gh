@@ -5,8 +5,9 @@ import bodyParser from 'body-parser';
 import morgan from 'morgan';
 import { db } from './config/firebase.js';
 import hostelsRouter from './routes/hostels.js';
-import authRouter from './routes/auth.js';
+import createAuthRouter from './routes/auth.js';
 import studentsRouter from './routes/students.js';
+import { authMiddleware } from './middleware/auth.js';
 
 // Load environment variables
 dotenv.config();
@@ -46,7 +47,26 @@ app.get('/api/health', (req, res) => {
 });
 
 // API routes
+// auth router is a factory that needs the firestore `db` instance
+const authRouter = createAuthRouter(db);
 app.use('/api/auth', authRouter);
+
+// compatibility endpoint: some frontend code calls /api/users/me
+// return the same profile as GET /api/auth/me for backward-compat
+app.get('/api/users/me', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const userId = req.user.userId || req.user.uid;
+    if (!userId) return res.status(400).json({ error: 'Invalid user id' });
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) return res.status(404).json({ error: 'User not found' });
+    const d = userDoc.data();
+    return res.json({ id: userDoc.id, fullName: d.fullName, username: d.username, role: d.role });
+  } catch (err) {
+    console.error('GET /api/users/me error:', err);
+    return res.status(500).json({ error: String(err) });
+  }
+});
 // Mount students router before hostels router so anonymous student submissions
 // (POST /api/students) are not intercepted by the hostels auth middleware.
 app.use('/api/students', studentsRouter);
