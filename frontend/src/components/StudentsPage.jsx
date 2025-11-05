@@ -112,13 +112,6 @@ const StudentsPage = () => {
       <div style={styles.tableContainer}>
         <div style={styles.tableHeader}>
           <h3>Students</h3>
-          <button 
-            onClick={handleAddStudent}
-            style={styles.addButton}
-          >
-            <UserPlus size={16} style={{ marginRight: '8px' }} />
-            Add New Student
-          </button>
         </div>
         
         {students.length === 0 ? (
@@ -156,9 +149,9 @@ const StudentsPage = () => {
                   <td style={styles.td}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={styles.avatar}>
-                        {student.name?.charAt(0)?.toUpperCase() || 'S'}
+                        { (student.studentName || student.name)?.charAt(0)?.toUpperCase() || 'S' }
                       </div>
-                      <span>{student.name || 'N/A'}</span>
+                      <span>{student.studentName || student.name || 'N/A'}</span>
                     </div>
                   </td>
                   <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
