@@ -37,6 +37,31 @@ const HostelRegister = () => {
 
   // Base styles for the component
   const baseStyles = {
+    header: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '1.5rem',
+      flexWrap: 'wrap',
+      gap: '1rem',
+    },
+    backButton: {
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0.5rem 1rem',
+      borderRadius: '0.5rem',
+      border: '1px solid #e5e7eb',
+      background: '#fff',
+      color: '#4b5563',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      fontSize: '0.9375rem',
+      fontWeight: '500',
+      ':hover': {
+        background: '#f9fafb',
+        borderColor: '#d1d5db',
+      },
+    },
     container: {
       minHeight: '100vh',
       display: 'flex',
@@ -418,31 +443,17 @@ const HostelRegister = () => {
 
   return (
     <div style={styles.container}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 style={styles.title}>Register New Hostel</h2>
-        <button
-          onClick={() => navigate('/admin/dashboard')}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: '#f3f4f6',
-            color: '#4b5563',
-            border: '1px solid #e5e7eb',
-            borderRadius: '0.375rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            transition: 'all 0.2s',
-            ':hover': {
-              backgroundColor: '#e5e7eb',
-            },
-          }}
-          type="button"
-        >
-          <ArrowLeft size={18} />
-          Back to Dashboard
-        </button>
-      </div>
+      <div style={styles.form}>
+        <div style={styles.header}>
+          <h2 style={styles.title}>Register New Hostel</h2>
+          <button
+            onClick={() => navigate('/admin/dashboard')}
+            style={styles.backButton}
+          >
+            <ArrowLeft size={18} style={{ marginRight: '8px' }} />
+            Back to Dashboard
+          </button>
+        </div>
         
         {error && (
           <div style={error.startsWith('Successfully') ? styles.success : styles.error}>
@@ -557,6 +568,7 @@ const HostelRegister = () => {
           </div>
         </form>
       </div>
+    </div>
   );
 };
 
