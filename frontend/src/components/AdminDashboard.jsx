@@ -278,309 +278,285 @@ useEffect(() => {
   }, [navigate]);
 
   const styles = {
-  container: {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-    padding: '2rem 1rem',
-    boxSizing: 'border-box',
-    width: '100%',
-    overflowX: 'hidden',
-  },
-  content: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    width: '100%',
-    boxSizing: 'border-box',
-  },
-  header: {
-    background: 'rgba(255, 255, 255, 0.95)',
-    padding: '1.5rem',
-    borderRadius: '1rem',
-    boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
-    marginBottom: '2rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '1rem',
-    border: '1px solid rgba(0, 0, 0, 0.05)'
-  },
-  title: {
-    color: '#db2777',
-    fontSize: '1.75rem',
-    fontWeight: '700',
-    margin: 0,
-    background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent'
-  },
-  headerActions: {
-    display: 'flex',
-    gap: '1rem',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    '@media (max-width: 768px)': {
+    container: {
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
+      padding: '1.5rem 1rem',
+      boxSizing: 'border-box',
       width: '100%',
-      flexDirection: 'column',
+      overflowX: 'hidden',
+    },
+    content: {
+      maxWidth: '1200px',
+      margin: '0 auto',
+      width: '100%',
+      boxSizing: 'border-box',
+    },
+    header: {
+      background: 'white',
+      padding: '1.25rem',
+      borderRadius: '1rem',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      marginBottom: '1.5rem',
+      display: 'flex',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: '1rem',
+    },
+    title: {
+      color: '#db2777',
+      fontSize: '1.5rem',
+      fontWeight: 'bold',
+      margin: 0,
+      lineHeight: '1.3',
+    },
+    headerActions: {
+      display: 'flex',
       gap: '0.75rem',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      '@media (max-width: 600px)': {
+        width: '100%',
+        flexDirection: 'column',
+        gap: '0.5rem',
+      },
     },
-  },
-  button: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.75rem',
-    padding: '0.75rem 1.5rem',
-    fontSize: '1rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    minHeight: '44px',
-    '&:hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: '0 4px 15px rgba(147, 51, 234, 0.3)',
+    searchContainer: {
+      display: 'flex',
+      gap: '0.75rem',
+      flexWrap: 'wrap',
+      marginBottom: '1.5rem',
+      '@media (max-width: 600px)': {
+        flexDirection: 'column',
+        gap: '0.5rem',
+        width: '100%',
+      },
     },
-    '&:active': {
-      transform: 'translateY(0)',
-    },
-  },
-  secondaryButton: {
-    background: 'white',
-    color: '#7c3aed',
-    border: '2px solid #e9d5ff',
-    '&:hover': {
-      background: '#f5f3ff',
-      boxShadow: '0 2px 10px rgba(124, 58, 237, 0.1)',
-    },
-  },
-  error: {
-    background: '#fee2e2',
-    color: '#b91c1c',
-    padding: '1rem',
-    borderRadius: '0.5rem',
-    marginBottom: '1.5rem',
-    borderLeft: '4px solid #dc2626',
-    fontSize: '0.9375rem',
-    lineHeight: '1.5',
-  },
-  hostelGrid: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '1.5rem',
-    padding: '0 1rem',
-  },
-  cardHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: '1rem',
-  },
-  cardIcon: {
-    width: '48px',
-    height: '48px',
-    borderRadius: '12px',
-    background: 'linear-gradient(135deg, #f0abfc 0%, #c4b5fd 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: '1rem',
-    color: '#6d28d9',
-  },
-  cardTitle: {
-    fontSize: '1.25rem',
-    fontWeight: '600',
-    margin: '0 0 0.25rem',
-    color: '#1f2937',
-  },
-  cardSubtitle: {
-    fontSize: '0.875rem',
-    color: '#6b7280',
-    margin: 0,
-  },
-  cardContent: {
-    flex: 1,
-    marginBottom: '1.5rem',
-  },
-  cardFooter: {
-    marginTop: 'auto',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  studentCount: {
-    display: 'flex',
-    alignItems: 'center',
-    color: '#6b7280',
-    fontSize: '0.875rem',
-    '& svg': {
-      marginRight: '0.5rem',
-    },
-  },
-  viewButton: {
-    background: 'transparent',
-    border: 'none',
-    color: '#7c3aed',
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: '0.9375rem',
-    fontWeight: '500',
-    cursor: 'pointer',
-    padding: '0.5rem',
-    borderRadius: '0.5rem',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      background: '#f5f3ff',
-    },
-  },
-  formContainer: {
-    maxWidth: '500px',
-    margin: '2rem auto',
-    background: 'white',
-    padding: '2rem',
-    borderRadius: '1rem',
-    boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
-  },
-  formGroup: {
-    marginBottom: '1.5rem',
-  },
-  label: {
-    display: 'block',
-    marginBottom: '0.5rem',
-    color: '#4b5563',
-    fontWeight: '500',
-  },
-  input: {
-    width: '100%',
-    padding: '0.875rem 1rem',
-    border: '2px solid #f0f0f0',
-    borderRadius: '0.75rem',
-    fontSize: '1rem',
-    outline: 'none',
-    boxSizing: 'border-box',
-    transition: 'all 0.2s ease',
-    backgroundColor: '#f9fafb',
-    '&:focus': {
-      borderColor: '#ec4899',
-      boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
-      backgroundColor: '#ffffff',
-    },
-  },
-  formActions: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '1rem',
-    marginTop: '2rem',
-  },
-  cancelButton: {
-    background: 'transparent',
-    border: '2px solid #e5e7eb',
-    color: '#6b7280',
-    '&:hover': {
-      background: '#f9fafb',
-      boxShadow: 'none',
-    },
-  },
-  toolbar: {
-    display: 'flex',
-    gap: '0.5rem',
-    alignItems: 'center',
-    margin: '0 0 1rem 0',
-    '& input[type="search"]': {
-      padding: '0.5rem 0.75rem',
-      borderRadius: '0.5rem',
+    searchInput: {
+      flex: 1,
+      minWidth: '200px',
+      padding: '0.5rem 1rem',
       border: '1px solid #e5e7eb',
-      minWidth: '220px',
+      borderRadius: '0.5rem',
+      fontSize: '0.9375rem',
       '&:focus': {
         outline: 'none',
         borderColor: '#8b5cf6',
-        boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.2)'
-      }
-    }
-  },
-  searchContainer: {
-    display: 'flex',
-    gap: '1rem',
-    flexWrap: 'wrap',
-    marginBottom: '2rem',
-    '@media (max-width: 768px)': {
-      flexDirection: 'column',
-      gap: '0.75rem',
-      width: '100%',
-    },
-  },
-  searchInput: {
-      flex: 1,
-      minWidth: '250px',
-      padding: '0.875rem 1.25rem',
-      border: '2px solid #f0f0f0',
-      borderRadius: '0.75rem',
-      fontSize: '1rem',
-      outline: 'none',
-      boxSizing: 'border-box',
-      transition: 'all 0.2s ease',
-      minHeight: '52px',
-      backgroundColor: '#ffffff',
-      '&:focus': {
-        borderColor: '#ec4899',
-        boxShadow: '0 0 0 3px rgba(236, 72, 153, 0.1)',
+        boxShadow: '0 0 0 2px rgba(168, 85, 247, 0.2)',
       },
-      '::placeholder': {
-        color: '#9ca3af',
-      },
-      '@media (max-width: 768px)': {
+      '@media (max-width: 600px)': {
         width: '100%',
       },
     },
     card: {
-      background: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '1rem',
-      padding: '2rem',
-      marginBottom: '2rem',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-      border: '1px solid rgba(0, 0, 0, 0.03)',
+      background: 'white',
+      borderRadius: '0.75rem',
+      padding: '1.5rem',
+      marginBottom: '1.5rem',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
     },
     form: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '1.25rem',
-      marginTop: '1.25rem',
+      gap: '1rem',
+      marginTop: '1rem',
     },
-    // Removed duplicate input style
+    input: {
+      padding: '0.75rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '0.5rem',
+      fontSize: '0.9375rem',
+      '&:focus': {
+        outline: 'none',
+        borderColor: '#8b5cf6',
+        boxShadow: '0 0 0 2px rgba(168, 85, 247, 0.2)',
+      },
+    },
     submitButton: {
       background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
       color: 'white',
       border: 'none',
-      padding: '1rem',
-      borderRadius: '0.75rem',
+      padding: '0.75rem',
+      borderRadius: '0.5rem',
       fontWeight: '600',
       cursor: 'pointer',
-      fontSize: '1.05rem',
+      fontSize: '1rem',
       marginTop: '0.5rem',
+      '&:hover': {
+        opacity: 0.95,
+      },
+    },
+    hostelGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+      gap: '1.25rem',
+      marginTop: '1.5rem',
+    },
+    hostelCard: {
+      background: '#f9fafb',
+      padding: '1.25rem',
+      borderRadius: '0.75rem',
+      border: '1px solid #e5e7eb',
       transition: 'all 0.2s ease',
-      minHeight: '52px',
       '&:hover': {
         transform: 'translateY(-2px)',
-        boxShadow: '0 4px 15px rgba(147, 51, 234, 0.4)',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+      },
+    },
+    viewButton: {
+      background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+      color: 'white',
+      border: 'none',
+      padding: '0.5rem 1rem',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      marginTop: '1rem',
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '0.5rem',
+      '&:hover': {
+        opacity: 0.9,
+      },
+    },
+    logoutButton: {
+      background: '#4b5563',
+      color: 'white',
+      border: 'none',
+      padding: '0.5rem 1rem',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      fontSize: '0.9375rem',
+      fontWeight: '500',
+      transition: 'all 0.2s ease',
+      whiteSpace: 'nowrap',
+      ':hover': {
+        opacity: 0.9,
+        transform: 'translateY(-1px)',
+      },
+    },
+    addButton: {
+      background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
+      color: 'white',
+      border: 'none',
+      padding: '0.625rem 1.25rem',
+      borderRadius: '0.5rem',
+      fontWeight: '600',
+      cursor: 'pointer',
+      fontSize: '0.9375rem',
+      transition: 'all 0.2s ease',
+      whiteSpace: 'nowrap',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      ':hover': {
+        transform: 'translateY(-1px)',
+        boxShadow: '0 4px 12px rgba(147, 51, 234, 0.3)',
+      },
+    },
+    tableContainer: {
+      width: '100%',
+      overflowX: 'auto',
+      WebkitOverflowScrolling: 'touch',
+      msOverflowStyle: '-ms-autohiding-scrollbar',
+      borderRadius: '1rem',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      background: 'white',
+      marginBottom: '2rem',
+    },
+    table: {
+      width: '100%',
+      minWidth: '800px',
+      borderCollapse: 'separate',
+      borderSpacing: 0,
+    },
+    th: {
+      background: '#f3e8ff',
+      padding: '0.875rem 1rem',
+      textAlign: 'left',
+      color: '#6b21a8',
+      fontWeight: '600',
+      fontSize: '0.875rem',
+      whiteSpace: 'nowrap',
+    },
+    td: {
+      padding: '0.875rem 1rem',
+      borderTop: '1px solid #e5e7eb',
+      verticalAlign: 'middle',
+      fontSize: '0.875rem',
+      lineHeight: '1.5',
+    },
+    actionCell: {
+      whiteSpace: 'nowrap',
+    },
+    actionButton: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '32px',
+      height: '32px',
+      padding: '0',
+      margin: '0 2px',
+      borderRadius: '4px',
+      border: '1px solid #e5e7eb',
+      backgroundColor: 'white',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        backgroundColor: '#f9fafb',
+        borderColor: '#d1d5db',
+        transform: 'translateY(-1px)',
       },
       '&:active': {
-        transform: 'translateY(0)',
-        boxShadow: '0 2px 5px rgba(147, 51, 234, 0.3)',
+        backgroundColor: '#f3f4f6',
       },
       '&:disabled': {
-        opacity: 0.7,
+        opacity: 0.5,
         cursor: 'not-allowed',
-        transform: 'none',
-        boxShadow: 'none',
       },
+    },
+    loading: {
+      textAlign: 'center',
+      padding: '2rem',
+      color: '#6b21a8',
+      fontSize: '1.1rem',
+      fontWeight: '500',
+    },
+    toolbar: {
+      display: 'flex',
+      gap: '0.5rem',
+      alignItems: 'center',
+      margin: '0 0 1rem 0',
+      '& input[type="search"]': {
+        padding: '0.5rem 0.75rem',
+        borderRadius: '0.5rem',
+        border: '1px solid #e5e7eb',
+        minWidth: '220px',
+        fontSize: '0.875rem',
+        '&:focus': {
+          outline: 'none',
+          borderColor: '#8b5cf6',
+          boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.2)'
+        }
+      }
     },
     filterSelect: {
       padding: '0.5rem 0.75rem',
       borderRadius: '0.5rem',
       border: '1px solid #e5e7eb'
+    },
+    error: {
+      background: '#fee2e2',
+      color: '#b91c1c',
+      padding: '1rem',
+      borderRadius: '0.5rem',
+      marginBottom: '1.5rem',
+      borderLeft: '4px solid #dc2626',
+      fontSize: '0.9375rem',
+      lineHeight: '1.5',
     },
     statusBadge: {
       padding: '0.25rem 0.75rem',
@@ -849,288 +825,100 @@ useEffect(() => {
 
         {/* Inline Add Hostel form shown on this page */}
         {showAddHostel && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '1rem',
-          }}>
-            <div style={{
-              ...cardStyle,
-              maxWidth: '500px',
-              width: '100%',
-              margin: 0,
-              padding: '2rem',
-              position: 'relative',
-            }}>
-              <button 
-                onClick={() => setShowAddHostel(false)}
-                style={{
-                  position: 'absolute',
-                  top: '1rem',
-                  right: '1rem',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#9ca3af',
-                  cursor: 'pointer',
-                  fontSize: '1.5rem',
-                  lineHeight: 1,
-                  padding: '0.25rem',
-                  '&:hover': {
-                    color: '#6b7280',
-                  },
-                }}
-              >
-                &times;
-              </button>
-              
-              <h2 style={{ 
-                fontSize: '1.5rem',
-                fontWeight: '600',
-                margin: '0 0 1.5rem',
-                color: '#1f2937',
-                textAlign: 'center',
-                background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}>
-                Add New Hostel
-              </h2>
-              
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  color: '#4b5563',
-                  fontWeight: '500',
-                  fontSize: '0.9375rem',
-                }}>
-                  Hostel Name
-                </label>
-                <input
-                  type="text"
-                  value={newHostel.name}
-                  onChange={(e) => setNewHostel({ ...newHostel, name: e.target.value })}
-                  placeholder="Enter hostel name"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'all 0.2s ease',
-                    backgroundColor: '#f9fafb',
-                    '&:focus': {
-                      borderColor: '#8b5cf6',
-                      boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.1)',
-                      backgroundColor: '#ffffff',
-                    },
-                  }}
-                />
-              </div>
-              
-              <div style={{ marginBottom: '2rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  color: '#4b5563',
-                  fontWeight: '500',
-                  fontSize: '0.9375rem',
-                }}>
-                  Address
-                </label>
-                <textarea
-                  value={newHostel.address}
-                  onChange={(e) => setNewHostel({ ...newHostel, address: e.target.value })}
-                  placeholder="Enter hostel address"
-                  rows="3"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    resize: 'vertical',
-                    minHeight: '100px',
-                    transition: 'all 0.2s ease',
-                    backgroundColor: '#f9fafb',
-                    '&:focus': {
-                      borderColor: '#8b5cf6',
-                      boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.1)',
-                      backgroundColor: '#ffffff',
-                    },
-                  }}
-                />
-              </div>
-              
-              <div style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '1rem',
-                paddingTop: '1rem',
-                borderTop: '1px solid #f3f4f6',
-              }}>
-                <button 
-                  onClick={() => setShowAddHostel(false)}
-                  style={{
-                    ...secondaryButtonStyle,
-                    padding: '0.75rem 1.25rem',
-                  }}
+          <div style={applyResponsiveStyles(styles.card)}>
+            <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>Add New Hostel</h3>
+            <form onSubmit={handleAddHostel} style={applyResponsiveStyles(styles.form)}>
+              <input
+                name="name"
+                value={newHostel.name}
+                onChange={(e) => setNewHostel(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Hostel name"
+                style={applyResponsiveStyles(styles.input)}
+                required
+              />
+              <input
+                name="address"
+                value={newHostel.address}
+                onChange={(e) => setNewHostel(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="Address"
+                style={applyResponsiveStyles(styles.input)}
+                required
+              />
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="submit" style={applyResponsiveStyles(styles.submitButton)}>Add Hostel</button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '' }); setError(''); }}
+                  style={{ ...applyResponsiveStyles(styles.logoutButton), background: '#6b7280' }}
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={handleAddHostel}
-                  style={{
-                    ...buttonStyle,
-                    padding: '0.75rem 1.5rem',
-                    opacity: !newHostel.name ? 0.7 : 1,
-                    cursor: !newHostel.name ? 'not-allowed' : 'pointer',
-                  }}
-                  disabled={!newHostel.name}
-                >
-                  Add Hostel
-                </button>
               </div>
-            </div>
+            </form>
           </div>
         )}
 
-        <div style={headerStyle}>
-          <h1 style={titleStyle}>Hostel Dashboard</h1>
-          <div style={headerActionsStyle}>
-            <button 
-              onClick={handleLogout}
-              style={secondaryButtonStyle}
-            >
-              <LogOut size={18} style={{ marginRight: '8px' }} />
-              {isMobile ? 'Logout' : 'Sign Out'}
-            </button>
-            <button 
-              onClick={() => setShowAddHostel(true)}
-              style={buttonStyle}
-            >
-              <Plus size={18} style={{ marginRight: '8px' }} />
-              {isMobile ? 'Add' : 'Add New Hostel'}
-            </button>
-          </div>
+        <div style={applyResponsiveStyles(styles.header)}>
+          <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
         </div>
 
-        <div style={tableContainerStyle}>
-          <table style={tableStyle}>
+        <div style={applyResponsiveStyles(styles.tableContainer)}>
+          <table style={{
+            ...applyResponsiveStyles(styles.table),
+            width: '100%',
+            borderCollapse: 'collapse'
+          }}>
             <thead>
               <tr>
-                <th>Hostel Name</th>
-                <th>Number of Students</th>
-                <th>Actions</th>
+                <th style={styles.th}>Hostel Name</th>
+                <th style={styles.th}>Number of Students</th>
+                <th style={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {hostels.length > 0 ? (
-                hostels.map((hostel) => (
-                  <tr key={hostel.id}>
-                    <td style={{ fontWeight: '500', color: '#1f2937' }}>{hostel.name}</td>
-                    <td style={{ color: '#6b7280' }}>
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <Users size={16} style={{ marginRight: '8px', color: '#8b5cf6' }} />
-                        {hostel.studentsCount || 0} {hostel.studentsCount === 1 ? 'Student' : 'Students'}
-                      </div>
-                    </td>
-                    <td>
-                      <button
-                        onClick={() => handleViewStudents(hostel.id)}
-                        style={actionButtonStyle}
-                        title="View Students"
-                      >
-                        <ArrowRight size={18} />
-                        <span style={{ marginLeft: '6px' }}>View</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="3" style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-                    <div style={{ marginBottom: '1rem' }}>📋</div>
-                    <p style={{ margin: '0.5rem 0' }}>No hostels found</p>
-                    <p style={{ margin: '0.5rem 0 1rem', fontSize: '0.9375rem' }}>
-                      Get started by adding your first hostel
-                    </p>
-                    <button 
-                      onClick={() => setShowAddHostel(true)}
-                      style={{
-                        ...buttonStyle,
-                        padding: '0.5rem 1.25rem',
-                        fontSize: '0.9375rem',
-                      }}
+              {hostels.map((hostel, idx) => (
+                <tr key={hostel.id}>
+                  <td style={styles.td}>{hostel.name}</td>
+                  <td style={styles.td}>{hostel.studentsCount}</td>
+                  <td style={styles.td}>
+                    <button
+                      onClick={() => handleViewStudents(hostel.id)}
+                      style={{ ...styles.actionButton, ...styles.editButton }}
+                      title="View Students"
                     >
-                      <Plus size={16} style={{ marginRight: '8px' }} />
-                      Add Hostel
+                      <ArrowRight size={16} />
                     </button>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
 
         {selectedHostel && (
-          <div style={tableContainerStyle}>
-            <div style={{
-              padding: '1rem 1.5rem',
-              borderBottom: '1px solid #f3f4f6',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+          <div style={applyResponsiveStyles(styles.tableContainer)}>
+            <table style={{
+              ...applyResponsiveStyles(styles.table),
+              width: '100%',
+              borderCollapse: 'collapse'
             }}>
-              <h3 style={{ margin: 0, color: '#1f2937' }}>Students in {selectedHostel.name}</h3>
-              <button 
-                onClick={() => setSelectedHostel(null)}
-                style={{
-                  ...secondaryButtonStyle,
-                  padding: '0.5rem 1rem',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Back to Hostels
-              </button>
-            </div>
-            <table style={tableStyle}>
               <thead>
                 <tr>
-                  <th>Student Name</th>
-                  <th>Application No</th>
-                  <th>Contact</th>
-                  <th>District</th>
+                  <th style={styles.th}>Student Name</th>
+                  <th style={styles.th}>Application No</th>
+                  <th style={styles.th}>Contact</th>
+                  <th style={styles.th}>District</th>
                 </tr>
               </thead>
               <tbody>
-                {students.length > 0 ? (
-                  students.map((student) => (
-                    <tr key={student.id}>
-                      <td style={{ fontWeight: '500', color: '#1f2937' }}>{student.studentName}</td>
-                      <td style={{ fontFamily: 'monospace', color: '#6b7280' }}>{student.combinedId || '-'}</td>
-                      <td style={{ color: '#6b7280' }}>{student.mobile1 || '-'}</td>
-                      <td style={{ color: '#6b7280' }}>{student.district || '-'}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-                      <div style={{ marginBottom: '1rem' }}>👥</div>
-                      <p style={{ margin: 0 }}>No students found in this hostel</p>
-                    </td>
+                {students.map((student, idx) => (
+                  <tr key={student.id}>
+                    <td style={styles.td}>{student.studentName}</td>
+                    <td style={styles.td}>{student.combinedId || '-'}</td>
+                    <td style={styles.td}>{student.mobile1}</td>
+                    <td style={styles.td}>{student.district}</td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>
