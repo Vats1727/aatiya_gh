@@ -73,14 +73,14 @@ export async function createStudent(db, userId, hostelDocId, studentData = {}) {
     const newStudentRef = hostelRef.collection('students').doc();
     tx.set(newStudentRef, studentPayload);
 
-    // mirror to top-level students collection for backward compatibility
-    const topRef = topStudents.doc();
-    tx.set(topRef, { ...studentPayload, _mirroredFrom: newStudentRef.path });
+      // NOTE: we no longer mirror students to a top-level 'students' collection.
+      // Students are stored under users/{userId}/hostels/{hostelDocId}/students.
+      // If needed later, mirroring can be reintroduced as an option.
 
     // increment nextStudentSeq
     tx.update(hostelRef, { nextStudentSeq: nextStudentSeq + 1 });
 
-    return { studentRef: newStudentRef, topRef, combinedId };
+    return { studentRef: newStudentRef, combinedId };
   });
 }
 

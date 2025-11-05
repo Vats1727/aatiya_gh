@@ -120,8 +120,9 @@ const HostelAdmissionForm = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) return;
-        const data = await res.json();
-        setHostels(data);
+  const data = await res.json();
+  // API returns { success: true, data: [...] }
+  setHostels(Array.isArray(data) ? data : (data && data.data) || []);
       } catch (err) {
         console.warn('Failed to load hostels', err);
       }
@@ -873,7 +874,9 @@ const HostelAdmissionForm = () => {
       // If admin-created student, backend returns combinedId; show to user/admin
       if (!editId && token && formData.hostelDocId) {
         const payload = await res.json();
-        alert(`Student created with Application no: ${payload.combinedId}`);
+        // backend returns { success: true, data: { combinedId, studentPath } }
+        const combined = payload && ((payload.data && payload.data.combinedId) || payload.combinedId);
+        alert(`Student created with Application no: ${combined || 'N/A'}`);
       }
       alert('Record updated successfully');
       // If this was an admin editing an existing record, go back to admin dashboard

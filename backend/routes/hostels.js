@@ -2,6 +2,7 @@ import express from 'express';
 import admin from 'firebase-admin';
 import { verifyAnyToken } from '../middleware/auth.js';
 import { db } from '../config/firebase.js';
+import { createHostel, createStudent } from '../utils/idGenerator.js';
 
 const router = express.Router();
 
@@ -42,54 +43,8 @@ const authMiddleware = async (req, res, next) => {
 router.use(authMiddleware);
 
 // Create a new hostel
-// Create a new hostel (legacy path: /api/hostels)
-router.post('/hostels', async (req, res) => {
-  try {
-    const { name, address } = req.body;
-    const userId = req.user.uid;
-
-    if (!name || !address) {
-      return res.status(400).json({
-        success: false,
-        error: 'Name and address are required',
-        code: 'VALIDATION_ERROR'
-      });
-    }
-
-    const hostelData = {
-      name,
-      address,
-      ownerId: userId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    const docRef = await db.collection('hostels').add(hostelData);
-    
-    // Update user's hostels array
-    await db.collection('users').doc(userId).update({
-      hostels: admin.firestore.FieldValue.arrayUnion(docRef.id),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    res.status(201).json({
-      success: true,
-      data: {
-        id: docRef.id,
-        ...hostelData
-      }
-    });
-
-  } catch (error) {
-    console.error('Error creating hostel:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create hostel',
-      code: 'INTERNAL_SERVER_ERROR',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
+// Legacy top-level /hostels endpoint removed in favor of nested users/{userId}/hostels
+// Use POST /users/:userId/hostels (below) to create hostels under a user.
 
 // Create a hostel for a specific user: POST /api/users/:userId/hostels
 router.post('/users/:userId/hostels', async (req, res) => {
@@ -110,21 +65,11 @@ router.post('/users/:userId/hostels', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Name and address are required' });
     }
 
-    const hostelData = {
-      name,
-      address,
-      ownerId: userId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
+    // Create hostel under users/{userId}/hostels using transactional helper
+    const created = await createHostel(db, userId, { name, address });
 
-    const docRef = await db.collection('hostels').add(hostelData);
-    await db.collection('users').doc(userId).update({
-      hostels: admin.firestore.FieldValue.arrayUnion(docRef.id),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    res.status(201).json({ success: true, data: { id: docRef.id, ...hostelData } });
+    // created: { id: <docId>, hostelId, name, address, createdAt, nextStudentSeq, meta }
+    res.status(201).json({ success: true, data: created });
   } catch (error) {
     console.error('Error creating hostel for user:', error);
     res.status(500).json({ success: false, error: 'Failed to create hostel', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
@@ -135,31 +80,10 @@ router.post('/users/:userId/hostels', async (req, res) => {
 router.get('/hostels', async (req, res) => {
   try {
     const userId = req.user.uid;
-    const userDoc = await db.collection('users').doc(userId).get();
-    
-    if (!userDoc.exists) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found',
-        code: 'USER_NOT_FOUND'
-      });
-    }
-
-    const userData = userDoc.data();
-    const hostels = userData.hostels || [];
-    
-    // Get detailed hostel information
-    const hostelPromises = hostels.map(hostelId => 
-      db.collection('hostels').doc(hostelId).get()
-        .then(doc => doc.exists ? { id: doc.id, ...doc.data() } : null)
-    );
-    
-    const hostelData = (await Promise.all(hostelPromises)).filter(Boolean);
-    
-    res.json({
-      success: true,
-      data: hostelData
-    });
+    // Read hostels from users/{userId}/hostels
+    const hostelsSnap = await db.collection('users').doc(userId).collection('hostels').orderBy('createdAt', 'desc').get();
+    const hostels = hostelsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json({ success: true, data: hostels });
 
   } catch (error) {
     console.error('Error fetching hostels:', error);
@@ -182,17 +106,36 @@ router.get('/users/:userId/hostels', async (req, res) => {
     if (req.user.uid !== userId && req.user.role !== 'superadmin') {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
-
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) return res.status(404).json({ success: false, error: 'User not found' });
-    const userData = userDoc.data();
-    const hostels = userData.hostels || [];
-    const hostelPromises = hostels.map(hostelId => db.collection('hostels').doc(hostelId).get().then(doc => doc.exists ? { id: doc.id, ...doc.data() } : null));
-    const hostelData = (await Promise.all(hostelPromises)).filter(Boolean);
-    res.json({ success: true, data: hostelData });
+    // Read hostels from users/{userId}/hostels subcollection
+    const hostelsSnap = await db.collection('users').doc(userId).collection('hostels').orderBy('createdAt', 'desc').get();
+    const hostels = hostelsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json({ success: true, data: hostels });
   } catch (error) {
     console.error('Error fetching hostels for user:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch hostels', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
+  }
+});
+
+// Create a student under a user's hostel: POST /api/users/:userId/hostels/:hostelDocId/students
+router.post('/users/:userId/hostels/:hostelDocId/students', async (req, res) => {
+  try {
+    let userId = req.params.userId;
+    const hostelDocId = req.params.hostelDocId;
+    if (userId === 'me') userId = req.user && req.user.uid;
+    if (!userId || !hostelDocId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
+    // allow only self or superadmin
+    if (req.user.uid !== userId && req.user.role !== 'superadmin') {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    const studentData = req.body || {};
+
+    const result = await createStudent(db, userId, hostelDocId, studentData);
+    // result: { studentRef, combinedId }
+    res.status(201).json({ success: true, data: { combinedId: result.combinedId, studentPath: result.studentRef.path } });
+  } catch (error) {
+    console.error('Error creating student for hostel:', error);
+    res.status(500).json({ success: false, error: 'Failed to create student', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
   }
 });
 

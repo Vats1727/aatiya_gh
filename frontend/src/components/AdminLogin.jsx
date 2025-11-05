@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, signInWithEmailAndPassword } from '../firebase';
 
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({

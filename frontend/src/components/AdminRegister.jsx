@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { doc, setDoc, serverTimestamp, auth, db, createUserWithEmailAndPassword, updateProfile } from '../firebase';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';

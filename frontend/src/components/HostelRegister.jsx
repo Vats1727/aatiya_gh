@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useResponsiveStyles } from '../utils/responsiveStyles';
 import { auth } from '../firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from '../firebase';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 

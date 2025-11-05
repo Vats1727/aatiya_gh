@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -30,3 +30,7 @@ try {
 }
 
 export { auth, db, app };
+// Re-export commonly used auth helpers so components can import from './firebase'
+export { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged };
+// Re-export some firestore helpers used across the app
+export { doc, setDoc, serverTimestamp };
