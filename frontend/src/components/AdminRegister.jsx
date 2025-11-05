@@ -256,6 +256,8 @@ const AdminRegister = () => {
     setIsSubmitting(true);
     
     try {
+      console.log('Attempting to create user with email:', form.email);
+      
       // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -263,10 +265,14 @@ const AdminRegister = () => {
         form.password
       );
       
+      console.log('User created, updating profile...');
+      
       // Update user profile with display name
       await updateProfile(userCredential.user, {
         displayName: form.fullName
       });
+      
+      console.log('Profile updated, creating user document...');
       
       // Create user document in Firestore
       const userDocRef = doc(db, 'users', userCredential.user.uid);
@@ -279,6 +285,7 @@ const AdminRegister = () => {
         updatedAt: serverTimestamp()
       });
       
+      console.log('User document created, registration complete');
       setSuccess('Registration successful! Redirecting to dashboard...');
       
       // Redirect to dashboard after a short delay
@@ -299,6 +306,12 @@ const AdminRegister = () => {
           break;
         case 'auth/weak-password':
           setError('Password is too weak. Please use a stronger password.');
+          break;
+        case 'auth/operation-not-allowed':
+          setError('Email/password accounts are not enabled. Please contact support.');
+          break;
+        case 'auth/configuration-not-found':
+          setError('Authentication service is not properly configured. Please try again later.');
           break;
         default:
           setError(err.message || 'Registration failed. Please try again.');
