@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, Users, Plus, ArrowRight, Home, UserPlus } from 'lucide-react';
+import { Building, Users, Plus, ArrowRight, Home, UserPlus, X } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -11,6 +11,10 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
+  const [showAddHostel, setShowAddHostel] = useState(false);
+  const [newHostel, setNewHostel] = useState({ name: '', address: '' });
+  const [isAddingHostel, setIsAddingHostel] = useState(false);
+  const [hostelError, setHostelError] = useState('');
   const navigate = useNavigate();
 
   // Fetch user profile
@@ -87,7 +91,11 @@ const AdminDashboard = () => {
   };
 
   // Handle hostel selection
-  const handleHostelSelect = (hostel) => {
+  const handleHostelSelect = (hostel, e) => {
+    // Only navigate if the click wasn't on a button inside the card
+    if (e && e.target.tagName === 'BUTTON') {
+      return;
+    }
     setSelectedHostel(hostel);
     fetchStudents(hostel.id);
   };
@@ -97,9 +105,80 @@ const AdminDashboard = () => {
     navigate(`/hostel/${hostelId}/students`);
   };
 
+  // Handle delete hostel
+  const handleDeleteHostel = async (hostelId, e) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this hostel? This action cannot be undone.')) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/api/hostels/${hostelId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete hostel');
+        }
+
+        // Refresh hostels list
+        await fetchHostels();
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
+
   // Handle add new student
   const handleAddStudent = (hostelId) => {
     navigate(`/hostel/${hostelId}/add-student`);
+  };
+
+  // Handle input change for new hostel form
+  const handleHostelInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewHostel(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle add new hostel
+  const handleAddHostel = async (e) => {
+    e.preventDefault();
+    if (!newHostel.name.trim() || !newHostel.address.trim()) {
+      setHostelError('Please fill in all fields');
+      return;
+    }
+
+    try {
+      setIsAddingHostel(true);
+      setHostelError('');
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/hostels`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newHostel)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add hostel');
+      }
+
+      // Refresh hostels list
+      await fetchHostels();
+      setNewHostel({ name: '', address: '' });
+      setShowAddHostel(false);
+    } catch (err) {
+      setHostelError(err.message);
+    } finally {
+      setIsAddingHostel(false);
+    }
   };
 
   // Fetch data on component mount

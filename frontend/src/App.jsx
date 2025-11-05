@@ -14,7 +14,7 @@ const PrivateRoute = ({ children }) => {
 // Public route wrapper
 const PublicRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  return !token ? children : <Navigate to="/dashboard" />;
+  return !token ? children : <Navigate to="/admin" />;
 };
 
 export default function App() {
