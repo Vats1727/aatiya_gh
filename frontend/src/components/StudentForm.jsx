@@ -864,9 +864,10 @@ const HostelAdmissionForm = () => {
       let res;
       const token = localStorage.getItem('token');
       const user = JSON.parse(localStorage.getItem('user') || 'null');
-      // If admin token exists and hostels are available, require selecting a hostel
-      if (!editId && token && hostels && hostels.length > 0 && !formData.hostelDocId) {
-        alert('Please select a hostel from the dropdown before saving (you have admin access).');
+      // If user is authenticated (admin) we require selecting a hostel so we don't
+      // accidentally submit to the top-level `students` collection.
+      if (!editId && token && !formData.hostelDocId) {
+        alert('You are signed in as an admin — please select the hostel to add this student to (or create a hostel first).');
         submitButton.disabled = false;
         submitButton.innerHTML = originalButtonText;
         setLoading(false);
