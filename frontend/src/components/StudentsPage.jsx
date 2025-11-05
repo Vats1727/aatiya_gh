@@ -19,7 +19,7 @@ const StudentsPage = () => {
         const token = localStorage.getItem('token');
         
         // Fetch hostel details
-        const hostelResponse = await fetch(`${API_BASE}/api/hostels/${hostelId}`, {
+        const hostelResponse = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
