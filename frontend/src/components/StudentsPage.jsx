@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Eye, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download } from 'lucide-react';
+import { downloadStudentPdf } from '../utils/pdfUtils';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -58,6 +59,49 @@ const StudentsPage = () => {
 
   const handleAddStudent = () => {
     navigate(`/hostel/${hostelId}/add-student`);
+  };
+
+  const updateStudentStatus = async (studentId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return alert('Not authenticated');
+      const res = await fetch(`${API_BASE}/api/students/${studentId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || 'Failed to update status');
+      }
+      const updated = await res.json();
+      // Update local state
+      setStudents(prev => prev.map(s => (s.id === updated.id || s.id === studentId ? { ...s, ...updated } : s)));
+      return { success: true, data: updated };
+    } catch (err) {
+      console.error('Failed to update status', err);
+      alert('Failed to update status');
+      return { success: false, error: err };
+    }
+  };
+
+  const handleAccept = async (student) => {
+    // backend expects 'approved'
+    await updateStudentStatus(student.id, 'approved');
+  };
+
+  const handleReject = async (student) => {
+    await updateStudentStatus(student.id, 'rejected');
+  };
+
+  const handleDownload = async (student) => {
+    try {
+      // student object should contain full form data saved earlier; pass directly to PDF util
+      await downloadStudentPdf(student);
+    } catch (err) {
+      console.error('Download failed', err);
+      alert('Failed to download PDF');
+    }
   };
 
   if (loading) {
@@ -124,6 +168,7 @@ const StudentsPage = () => {
               <tr>
                 <th style={styles.th}>Application No.</th>
                 <th style={styles.th}>Name</th>
+                <th style={styles.th}>Status</th>
                 <th style={styles.th}>Mobile Number</th>
                 <th style={styles.th}>Actions</th>
               </tr>
@@ -147,34 +192,43 @@ const StudentsPage = () => {
                 <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
                   <td style={styles.td}>{computedAppNo}</td>
                   <td style={styles.td}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={styles.avatar}>
-                        { (student.studentName || student.name)?.charAt(0)?.toUpperCase() || 'S' }
-                      </div>
-                      <span>{student.studentName || student.name || 'N/A'}</span>
-                    </div>
+                    <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={{...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {})}}>
+                      {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
+                    </span>
                   </td>
                   <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                   <td style={styles.td}>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button 
-                        style={{ ...styles.actionButton, ...styles.viewButton }}
-                        title="View Details"
-                      >
-                        <Eye size={16} />
+                      <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Accept">
+                        <Check size={16} />
                       </button>
-                      <button 
-                        style={{ ...styles.actionButton, ...styles.editButton }}
-                        title="Edit"
-                      >
+                      <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton }} title="Reject">
+                        <X size={16} />
+                      </button>
+                      <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
                         <Edit size={16} />
                       </button>
-                      <button 
-                        style={{ ...styles.actionButton, ...styles.deleteButton }}
-                        title="Delete"
-                      >
+                      <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
+                        <Download size={16} />
+                      </button>
+                      <button onClick={async () => {
+                          if (!confirm('Delete this student? This cannot be undone.')) return;
+                          try {
+                            const token = localStorage.getItem('token');
+                            const res = await fetch(`${API_BASE}/api/students/${student.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                            if (!res.ok) throw new Error('Delete failed');
+                            setStudents(prev => prev.filter(s => s.id !== student.id));
+                          } catch (err) {
+                            console.error('Delete failed', err);
+                            alert('Failed to delete student');
+                          }
+                        }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete">
                         <Trash2 size={16} />
                       </button>
+                      
                     </div>
                   </td>
                 </tr>
@@ -270,6 +324,49 @@ const styles = {
     justifyContent: 'center',
     fontSize: '14px',
     fontWeight: '500',
+  },
+  nameText: {
+    fontSize: '0.95rem',
+    color: '#111827',
+  },
+  statusBadge: {
+    display: 'inline-block',
+    padding: '6px 10px',
+    borderRadius: '999px',
+    backgroundColor: '#f3f4f6',
+    color: '#374151',
+    fontWeight: 600,
+    fontSize: '0.75rem',
+  },
+  statusAccepted: {
+    backgroundColor: '#ecfccb',
+    color: '#365314',
+  },
+  statusRejected: {
+    backgroundColor: '#fee2e2',
+    color: '#7f1d1d',
+  },
+  iconButton: {
+    padding: '6px',
+    borderRadius: '6px',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#f8fafc',
+  },
+  acceptButton: {
+    backgroundColor: '#ecfdf5',
+    color: '#0f766e',
+  },
+  rejectButton: {
+    backgroundColor: '#fff1f2',
+    color: '#9f1239',
+  },
+  downloadButton: {
+    backgroundColor: '#eef2ff',
+    color: '#3730a3',
   },
   header: {
     background: 'white',
