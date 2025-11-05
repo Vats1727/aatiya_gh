@@ -107,7 +107,10 @@ const StudentsPage = () => {
   if (loading) {
     return (
       <div style={styles.container}>
-        <div style={styles.loading}>Loading...</div>
+        <div style={styles.loading}>
+          <div style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>⏳</div>
+          <div>Loading students...</div>
+        </div>
       </div>
     );
   }
@@ -116,15 +119,21 @@ const StudentsPage = () => {
     return (
       <div style={styles.container}>
         <div style={styles.error}>
-          <strong>Error:</strong> {error}
+          <div style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>⚠️ Error</div>
+          <p>{error}</p>
+          <button 
+            onClick={() => navigate(-1)}
+            style={{
+              ...styles.backButton,
+              marginTop: '1rem',
+              background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+              color: 'white',
+            }}
+          >
+            <ArrowLeft size={16} style={{ marginRight: '8px' }} />
+            Back to Dashboard
+          </button>
         </div>
-        <button 
-          onClick={() => navigate(-1)}
-          style={styles.backButton}
-        >
-          <ArrowLeft size={16} style={{ marginRight: '8px' }} />
-          Back to Dashboard
-        </button>
       </div>
     );
   }
@@ -146,96 +155,212 @@ const StudentsPage = () => {
           onClick={handleAddStudent}
           style={styles.addButton}
         >
-          <UserPlus size={16} style={{ marginRight: '8px' }} />
-          Add Student
+          <UserPlus size={18} style={{ marginRight: '8px' }} />
+          Add New Student
         </button>
       </div>
       
-      <p style={styles.address}>{hostel?.address}</p>
+      {hostel?.address && (
+        <p style={styles.address}>
+          <span style={{ fontWeight: '500', color: '#4b5563' }}>Address: </span>
+          {hostel.address}
+        </p>
+      )}
       
       <div style={styles.tableContainer}>
         <div style={styles.tableHeader}>
-          <h3>Students</h3>
+          <h3 style={{ margin: 0, color: '#4b5563', fontSize: '1.125rem' }}>Student Records</h3>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <input 
+              type="text" 
+              placeholder="Search students..." 
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '0.75rem',
+                border: '1px solid #e5e7eb',
+                minWidth: '250px',
+                fontSize: '0.9375rem',
+                outline: 'none',
+                transition: 'all 0.2s ease',
+                ':focus': {
+                  borderColor: '#8b5cf6',
+                  boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.2)',
+                },
+              }}
+            />
+            <select 
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '0.75rem',
+                border: '1px solid #e5e7eb',
+                backgroundColor: 'white',
+                fontSize: '0.9375rem',
+                outline: 'none',
+                cursor: 'pointer',
+                ':focus': {
+                  borderColor: '#8b5cf6',
+                  boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.2)',
+                },
+              }}
+            >
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
         </div>
         
         {students.length === 0 ? (
           <div style={styles.emptyState}>
-            <p>No students found in this hostel.</p>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+            <h3 style={{ margin: '0 0 0.5rem', color: '#111827' }}>No students found</h3>
+            <p style={{ margin: 0, maxWidth: '400px' }}>
+              {hostel?.name ? 
+                `No students have been added to ${hostel.name} yet.` : 
+                'No students found for this hostel.'
+              }
+            </p>
+            <button 
+              onClick={handleAddStudent}
+              style={{
+                ...styles.addButton,
+                marginTop: '1.5rem',
+                padding: '0.75rem 2rem',
+                fontSize: '1rem',
+              }}
+            >
+              <UserPlus size={18} style={{ marginRight: '8px' }} />
+              Add Your First Student
+            </button>
           </div>
         ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Application No.</th>
-                <th style={styles.th}>Name</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Mobile Number</th>
-                <th style={styles.th}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student, index) => {
-                // Compute application number display:
-                // preferred: student.applicationNumber
-                // else if student.combinedId exists (e.g. "02/0001") show without slash -> "020001"
-                // else if student.studentId and hostel.hostelId available, join them
-                const computedAppNo = (() => {
-                  if (student.applicationNumber) return student.applicationNumber;
-                    if (student.combinedId) return String(student.combinedId).replace(/\//g, '');
-                  // some records may store studentId and hostelId separately
-                  const hostelCode = student.hostelId || (hostel && hostel.hostelId) || null;
-                  if (student.studentId && hostelCode) return `${String(hostelCode)}${String(student.studentId)}`;
-                  return 'N/A';
-                })();
-
-                return (
-                <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
-                  <td style={styles.td}>{computedAppNo}</td>
-                  <td style={styles.td}>
-                    <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
-                  </td>
-                  <td style={styles.td}>
-                    <span style={{...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {})}}>
-                      {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
-                    </span>
-                  </td>
-                  <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
-                  <td style={styles.td}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Accept">
-                        <Check size={16} />
-                      </button>
-                      <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton }} title="Reject">
-                        <X size={16} />
-                      </button>
-                      <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
-                        <Edit size={16} />
-                      </button>
-                      <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
-                        <Download size={16} />
-                      </button>
-                      <button onClick={async () => {
-                          if (!confirm('Delete this student? This cannot be undone.')) return;
-                          try {
-                            const token = localStorage.getItem('token');
-                            const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-                            if (!res.ok) throw new Error('Delete failed');
-                            setStudents(prev => prev.filter(s => s.id !== student.id));
-                          } catch (err) {
-                            console.error('Delete failed', err);
-                            alert('Failed to delete student');
-                          }
-                        }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete">
-                        <Trash2 size={16} />
-                      </button>
-                      
-                    </div>
-                  </td>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Application No.</th>
+                  <th style={styles.th}>Student Details</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.th}>Contact</th>
+                  <th style={{ ...styles.th, textAlign: 'right' }}>Actions</th>
                 </tr>
-              );
-            })}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {students.map((student) => {
+                  const computedAppNo = (() => {
+                    if (student.applicationNumber) return student.applicationNumber;
+                    if (student.combinedId) return String(student.combinedId).replace(/\//g, '');
+                    const hostelCode = student.hostelId || (hostel && hostel.hostelId) || null;
+                    if (student.studentId && hostelCode) return `${String(hostelCode)}${String(student.studentId)}`;
+                    return 'N/A';
+                  })();
+
+                  return (
+                    <tr key={student.id} style={styles.tr}>
+                      <td style={styles.td}>
+                        <div style={{ ...styles.nameText, fontFamily: 'monospace' }}>{computedAppNo}</div>
+                      </td>
+                      <td style={styles.td}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={styles.avatar}>
+                            {student.studentName ? student.studentName.charAt(0).toUpperCase() : '?'}
+                          </div>
+                          <div>
+                            <div style={styles.nameText}>{student.studentName || student.name || 'N/A'}</div>
+                            <div style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
+                              {student.email || 'No email provided'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={styles.td}>
+                        <span style={{
+                          ...styles.statusBadge,
+                          ...(student.status === 'approved' ? styles.statusAccepted : 
+                              student.status === 'rejected' ? styles.statusRejected : 
+                              styles.statusPending)
+                        }}>
+                          {student.status ? (
+                            student.status === 'approved' ? 'Approved' : 
+                            student.status === 'rejected' ? 'Rejected' : 'Pending'
+                          ) : 'Pending'}
+                        </span>
+                      </td>
+                      <td style={styles.td}>
+                        <div style={styles.nameText}>{student.mobile1 || 'N/A'}</div>
+                        {student.mobile2 && (
+                          <div style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
+                            Alt: {student.mobile2}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'right' }}>
+                        <div style={styles.actionButtons}>
+                          <button 
+                            onClick={() => handleDownload(student)} 
+                            style={{ ...styles.iconButton, ...styles.downloadButton }} 
+                            title="Download Application"
+                          >
+                            <Download size={16} />
+                          </button>
+                          <button 
+                            onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} 
+                            style={{ ...styles.iconButton, ...styles.editButton }} 
+                            title="Edit Student"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          {student.status !== 'approved' && (
+                            <button 
+                              onClick={() => handleAccept(student)} 
+                              style={{ ...styles.iconButton, ...styles.acceptButton }} 
+                              title="Approve Application"
+                            >
+                              <Check size={16} />
+                            </button>
+                          )}
+                          {student.status !== 'rejected' && (
+                            <button 
+                              onClick={() => handleReject(student)} 
+                              style={{ ...styles.iconButton, ...styles.rejectButton }} 
+                              title="Reject Application"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                          <button 
+                            onClick={async () => {
+                              if (!window.confirm('Are you sure you want to delete this student? This action cannot be undone.')) return;
+                              try {
+                                const token = localStorage.getItem('token');
+                                const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, { 
+                                  method: 'DELETE', 
+                                  headers: { 
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                  } 
+                                });
+                                if (!res.ok) throw new Error('Delete failed');
+                                setStudents(prev => prev.filter(s => s.id !== student.id));
+                              } catch (err) {
+                                console.error('Delete failed', err);
+                                alert('Failed to delete student. Please try again.');
+                              }
+                            }} 
+                            style={{ ...styles.iconButton, ...styles.deleteButton }} 
+                            title="Delete Student"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
@@ -246,133 +371,167 @@ const styles = {
   container: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '1.5rem 1rem',
+    padding: '2rem 1rem',
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
+    boxSizing: 'border-box',
+    width: '100%',
   },
   tableContainer: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: '1rem',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
     overflow: 'hidden',
+    border: '1px solid rgba(0, 0, 0, 0.03)',
+    padding: '1.5rem',
   },
   tableHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '16px 24px',
-    borderBottom: '1px solid #e5e7eb',
+    padding: '1rem 0',
+    marginBottom: '1rem',
+    borderBottom: '1px solid #f0f0f0',
   },
   table: {
     width: '100%',
-    borderCollapse: 'collapse',
+    borderCollapse: 'separate',
+    borderSpacing: '0 0.5rem',
   },
   th: {
-    padding: '12px 16px',
+    padding: '1rem',
     textAlign: 'left',
-    backgroundColor: '#f9fafb',
-    color: '#374151',
+    backgroundColor: 'transparent',
+    color: '#6b7280',
     fontWeight: '600',
-    fontSize: '0.875rem',
-    borderBottom: '1px solid #e5e7eb',
+    fontSize: '0.8125rem',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    borderBottom: '2px solid #f3f4f6',
   },
   td: {
-    padding: '16px',
-    borderBottom: '1px solid #e5e7eb',
-    fontSize: '0.875rem',
+    padding: '1rem',
+    fontSize: '0.9375rem',
     color: '#4b5563',
-  },
-  trEven: {
-    backgroundColor: '#ffffff',
-  },
-  trOdd: {
-    backgroundColor: '#f9fafb',
-  },
-  actionButton: {
-    padding: '6px 10px',
-    borderRadius: '6px',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'all 0.2s',
-    '&:hover': {
-      opacity: 0.8,
+    backgroundColor: 'white',
+    '&:first-child': {
+      borderTopLeftRadius: '0.75rem',
+      borderBottomLeftRadius: '0.75rem',
+    },
+    '&:last-child': {
+      borderTopRightRadius: '0.75rem',
+      borderBottomRightRadius: '0.75rem',
     },
   },
-  viewButton: {
-    backgroundColor: '#e0f2fe',
-    color: '#0369a1',
+  tr: {
+    transition: 'all 0.2s ease',
+    '&:hover td': {
+      backgroundColor: '#f9fafb',
+    },
   },
-  editButton: {
-    backgroundColor: '#f0fdf4',
-    color: '#15803d',
-  },
-  deleteButton: {
-    backgroundColor: '#fef2f2',
-    color: '#b91c1c',
-  },
-  avatar: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    backgroundColor: '#3b82f6',
-    color: 'white',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '14px',
-    fontWeight: '500',
-  },
-  nameText: {
-    fontSize: '0.95rem',
-    color: '#111827',
-  },
-  statusBadge: {
-    display: 'inline-block',
-    padding: '6px 10px',
-    borderRadius: '999px',
-    backgroundColor: '#f3f4f6',
-    color: '#374151',
-    fontWeight: 600,
-    fontSize: '0.75rem',
-  },
-  statusAccepted: {
-    backgroundColor: '#ecfccb',
-    color: '#365314',
-  },
-  statusRejected: {
-    backgroundColor: '#fee2e2',
-    color: '#7f1d1d',
-  },
-  iconButton: {
-    padding: '6px',
-    borderRadius: '6px',
+  actionButton: {
+    padding: '0.5rem',
+    borderRadius: '0.75rem',
     border: 'none',
     cursor: 'pointer',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#f8fafc',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+    },
+  },
+  viewButton: {
+    background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+    color: 'white',
+  },
+  editButton: {
+    background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)',
+    color: 'white',
+  },
+  deleteButton: {
+    background: 'linear-gradient(135deg, #f87171 0%, #ef4444 100%)',
+    color: 'white',
+  },
+  avatar: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+  },
+  nameText: {
+    fontSize: '0.9375rem',
+    color: '#111827',
+    fontWeight: '500',
+  },
+  statusBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0.375rem 0.875rem',
+    borderRadius: '9999px',
+    fontSize: '0.8125rem',
+    fontWeight: '600',
+    letterSpacing: '0.025em',
+    textTransform: 'capitalize',
+  },
+  statusAccepted: {
+    background: 'rgba(16, 185, 129, 0.1)',
+    color: '#047857',
+  },
+  statusRejected: {
+    background: 'rgba(239, 68, 68, 0.1)',
+    color: '#b91c1c',
+  },
+  statusPending: {
+    background: 'rgba(245, 158, 11, 0.1)',
+    color: '#b45309',
+  },
+  iconButton: {
+    padding: '0.5rem',
+    borderRadius: '0.75rem',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+    },
   },
   acceptButton: {
-    backgroundColor: '#ecfdf5',
-    color: '#0f766e',
+    background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)',
+    color: 'white',
   },
   rejectButton: {
-    backgroundColor: '#fff1f2',
-    color: '#9f1239',
+    background: 'linear-gradient(135deg, #f87171 0%, #ef4444 100%)',
+    color: 'white',
   },
   downloadButton: {
-    backgroundColor: '#eef2ff',
-    color: '#3730a3',
+    background: 'linear-gradient(135deg, #818cf8 0%, #4f46e5 100%)',
+    color: 'white',
   },
   header: {
-    background: 'white',
-    padding: '1.25rem',
+    background: 'rgba(255, 255, 255, 0.95)',
+    padding: '1.5rem',
     borderRadius: '1rem',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
     marginBottom: '1.5rem',
     display: 'flex',
     flexDirection: 'row',
@@ -380,27 +539,31 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: '1rem',
+    border: '1px solid rgba(0, 0, 0, 0.03)',
   },
   backButton: {
     display: 'flex',
     alignItems: 'center',
     background: '#f3f4f6',
     border: 'none',
-    padding: '0.6rem 1.25rem',
-    borderRadius: '0.5rem',
+    padding: '0.75rem 1.25rem',
+    borderRadius: '0.75rem',
     cursor: 'pointer',
     color: '#4b5563',
-    fontWeight: '500',
+    fontWeight: '600',
     transition: 'all 0.2s ease',
     '&:hover': {
       background: '#e5e7eb',
-      transform: 'translateY(-1px)',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
     },
   },
   title: {
     fontSize: '1.5rem',
-    fontWeight: 'bold',
-    color: '#6b21a8',
+    fontWeight: '700',
+    background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
     margin: 0,
     flex: 1,
     textAlign: 'center',
@@ -408,60 +571,68 @@ const styles = {
   addButton: {
     display: 'flex',
     alignItems: 'center',
-    background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
+    justifyContent: 'center',
+    background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
     color: 'white',
     border: 'none',
-    padding: '0.6rem 1.25rem',
-    borderRadius: '0.5rem',
-    fontWeight: '500',
+    padding: '0.75rem 1.5rem',
+    borderRadius: '0.75rem',
+    fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+    minHeight: '44px',
     '&:hover': {
-      opacity: 0.9,
-      transform: 'translateY(-1px)',
-      boxShadow: '0 4px 12px rgba(147, 51, 234, 0.3)',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 15px rgba(147, 51, 234, 0.4)',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
     },
   },
   address: {
-    color: '#64748b',
-    marginBottom: '30px',
+    color: '#6b7280',
+    marginBottom: '1.5rem',
+    fontSize: '0.9375rem',
+    textAlign: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    padding: '0.75rem',
+    borderRadius: '0.75rem',
+    border: '1px solid rgba(0, 0, 0, 0.03)',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
   },
   emptyState: {
     textAlign: 'center',
-    padding: '40px 20px',
-    backgroundColor: '#f8fafc',
-    borderRadius: '8px',
-    border: '1px dashed #e2e8f0',
-  },
-  studentsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '20px',
-  },
-  studentCard: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    padding: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-    border: '1px solid #e2e8f0',
-    '&:hover': {
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      transform: 'translateY(-2px)',
-    },
-    transition: 'all 0.2s',
+    padding: '3rem 2rem',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: '1rem',
+    margin: '1.5rem 0',
+    border: '1px dashed #e5e7eb',
+    color: '#6b7280',
+    fontSize: '1rem',
+    lineHeight: '1.6',
   },
   loading: {
     textAlign: 'center',
-    padding: '40px',
-    color: '#64748b',
+    padding: '3rem',
+    color: '#6b7280',
+    fontSize: '1rem',
+    fontWeight: '500',
   },
   error: {
     backgroundColor: '#fef2f2',
     color: '#b91c1c',
-    padding: '12px 16px',
-    borderRadius: '6px',
-    marginBottom: '20px',
+    padding: '1rem',
+    borderRadius: '0.75rem',
+    marginBottom: '1.5rem',
     border: '1px solid #fecaca',
+    textAlign: 'center',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+  },
+  actionButtons: {
+    display: 'flex',
+    gap: '0.5rem',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
   },
 };
 
