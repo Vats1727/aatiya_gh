@@ -80,7 +80,7 @@ const fetchHostels = async () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/api/hostels`, {
+      const response = await fetch(`${API_BASE}/api/users/me/hostels`, {
         headers: {
           'Authorization': authHeader,
           'Content-Type': 'application/json'
@@ -196,7 +196,7 @@ useEffect(() => {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/api/hostels`, {
+      const response = await fetch(`${API_BASE}/api/users/me/hostels`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,8 +209,10 @@ useEffect(() => {
         throw new Error('Failed to create hostel');
       }
 
-      const data = await response.json();
-      setHostels(prev => [...prev, data.hostel]);
+  const data = await response.json();
+  // backend might return { hostel } or { data: hostel } or the hostel directly
+  const created = data?.hostel || data?.data || data;
+  setHostels(prev => [...prev, created]);
       setNewHostel({ name: '', address: '' });
       setShowAddHostel(false);
       setError('');
