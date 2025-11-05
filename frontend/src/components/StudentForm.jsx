@@ -58,6 +58,9 @@ const HostelAdmissionForm = () => {
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const editId = params.get('editId');
+  const preHostelId = params.get('hostelDocId');
+  const preOwnerUserId = params.get('ownerUserId');
+  const [fixedHostel, setFixedHostel] = useState(false);
 
   // If editId present, load student data to edit
   useEffect(() => {
@@ -120,9 +123,21 @@ const HostelAdmissionForm = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) return;
-  const data = await res.json();
-  // API returns { success: true, data: [...] }
-  setHostels(Array.isArray(data) ? data : (data && data.data) || []);
+        const data = await res.json();
+        // API returns { success: true, data: [...] }
+        const list = Array.isArray(data) ? data : (data && data.data) || [];
+        setHostels(list);
+        // If a hostel was provided via query param, preselect it and lock the selection
+        if (preHostelId) {
+          setFormData(prev => ({ ...prev, hostelDocId: preHostelId }));
+          setFixedHostel(true);
+        }
+        // If admin has exactly one hostel, preselect and lock it for convenience
+        if (!preHostelId && Array.isArray(list) && list.length === 1) {
+          const only = list[0];
+          setFormData(prev => ({ ...prev, hostelDocId: only.id }));
+          setFixedHostel(true);
+        }
       } catch (err) {
         console.warn('Failed to load hostels', err);
       }
@@ -849,6 +864,16 @@ const HostelAdmissionForm = () => {
       let res;
       const token = localStorage.getItem('token');
       const user = JSON.parse(localStorage.getItem('user') || 'null');
+      // If user is authenticated (admin) we require selecting a hostel so we don't
+      // accidentally submit to the top-level `students` collection.
+      if (!editId && token && !formData.hostelDocId) {
+        alert('You are signed in as an admin — please select the hostel to add this student to (or create a hostel first).');
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonText;
+        setLoading(false);
+        return;
+      }
+
       if (!editId && token && formData.hostelDocId) {
         // Admin creating a student under a hostel - use protected endpoint to get combinedId
         res = await fetch(`${API_BASE}/api/users/me/hostels/${formData.hostelDocId}/students`, {
@@ -963,6 +988,7 @@ const HostelAdmissionForm = () => {
                     name="hostelDocId"
                     value={formData.hostelDocId || ''}
                     onChange={handleInputChange}
+                    disabled={fixedHostel}
                     style={{ padding: '10px', borderRadius: 6, width: '100%', border: '1px solid #e5e7eb' }}
                   >
                     <option value="">-- Select hostel --</option>

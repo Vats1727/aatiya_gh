@@ -162,9 +162,14 @@ const AdminDashboard = () => {
         }
       });
       
-      if (!response.ok) throw new Error('Failed to fetch user profile');
-      const data = await response.json();
-      setUser(data.data);
+      // Use auth/me endpoint which returns the user object
+      const altResponse = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!altResponse.ok) throw new Error('Failed to fetch user profile');
+      const userObj = await altResponse.json();
+      // auth/me returns the user object directly; use it or fallback to previous shape
+      setUser(userObj || {});
     } catch (err) {
       console.error('Error fetching user profile:', err);
       setError('Failed to load user profile. Please try again.');
