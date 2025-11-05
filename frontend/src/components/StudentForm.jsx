@@ -69,11 +69,15 @@ const HostelAdmissionForm = () => {
     if (!editId) return;
     const load = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/students/${editId}`);
+        // If a hostelDocId is available (preHostelId), fetch the nested student doc under that hostel.
+        const endpoint = preHostelId
+          ? `${API_BASE}/api/users/me/hostels/${preHostelId}/students/${editId}`
+          : `${API_BASE}/api/students/${editId}`;
+        const res = await fetch(endpoint, { headers: preHostelId ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` } : { 'Content-Type': 'application/json' } });
         if (!res.ok) throw new Error('Failed to load student');
         const payload = await res.json();
         // payload contains id and fields
-        const data = payload;
+        const data = payload && (payload.data || payload);
         // Map known fields into formData shape
         setFormData(prev => ({
           ...prev,
@@ -890,13 +894,22 @@ const HostelAdmissionForm = () => {
           body: JSON.stringify(formDataWithStatus)
         });
       } else {
-        const endpoint = editId ? `${API_BASE}/api/students/${editId}` : `${API_BASE}/api/students`;
-        const method = editId ? 'PUT' : 'POST';
-        res = await fetch(endpoint, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formDataWithStatus)
-        });
+        // If editing as an admin (token & effectiveHostelId & editId) update the nested student
+        if (editId && token && effectiveHostelId) {
+          res = await fetch(`${API_BASE}/api/users/me/hostels/${effectiveHostelId}/students/${editId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(formDataWithStatus)
+          });
+        } else {
+          const endpoint = editId ? `${API_BASE}/api/students/${editId}` : `${API_BASE}/api/students`;
+          const method = editId ? 'PUT' : 'POST';
+          res = await fetch(endpoint, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formDataWithStatus)
+          });
+        }
       }
       if (!res.ok) {
         const errText = await res.text();

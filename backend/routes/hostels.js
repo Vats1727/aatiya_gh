@@ -202,4 +202,69 @@ router.get('/users/me/hostels/:hostelId/students', async (req, res) => {
   }
 });
 
+// Update a student's status within a specific hostel: PUT /api/users/me/hostels/:hostelId/students/:studentId/status
+router.put('/users/me/hostels/:hostelId/students/:studentId/status', async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { hostelId, studentId } = req.params;
+    if (!userId || !hostelId || !studentId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
+
+    const { status } = req.body || {};
+    if (!status) return res.status(400).json({ success: false, error: 'Missing status' });
+
+    const studentRef = db.collection('users').doc(userId).collection('hostels').doc(hostelId).collection('students').doc(studentId);
+    const snap = await studentRef.get();
+    if (!snap.exists) return res.status(404).json({ success: false, error: 'Student not found' });
+
+    // Accept a small set of statuses or pass-through
+    const normalized = String(status).toLowerCase();
+    const allowed = ['pending', 'approved', 'rejected'];
+    if (!allowed.includes(normalized)) return res.status(400).json({ success: false, error: 'Invalid status' });
+
+    await studentRef.update({ status: normalized, statusUpdatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    const updated = (await studentRef.get()).data();
+    res.json({ success: true, data: { id: studentId, ...updated } });
+  } catch (error) {
+    console.error('Error updating student status:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to update status' });
+  }
+});
+
+// Delete a student within a specific hostel: DELETE /api/users/me/hostels/:hostelId/students/:studentId
+router.delete('/users/me/hostels/:hostelId/students/:studentId', async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { hostelId, studentId } = req.params;
+    if (!userId || !hostelId || !studentId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
+
+    const studentRef = db.collection('users').doc(userId).collection('hostels').doc(hostelId).collection('students').doc(studentId);
+    const snap = await studentRef.get();
+    if (!snap.exists) return res.status(404).json({ success: false, error: 'Student not found' });
+
+    await studentRef.delete();
+    res.json({ success: true, data: { id: studentId } });
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to delete student' });
+  }
+});
+
+// Get a single student under a hostel (useful for edit/download): GET /api/users/me/hostels/:hostelId/students/:studentId
+router.get('/users/me/hostels/:hostelId/students/:studentId', async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { hostelId, studentId } = req.params;
+    if (!userId || !hostelId || !studentId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
+
+    const studentRef = db.collection('users').doc(userId).collection('hostels').doc(hostelId).collection('students').doc(studentId);
+    const snap = await studentRef.get();
+    if (!snap.exists) return res.status(404).json({ success: false, error: 'Student not found' });
+
+    res.json({ success: true, data: { id: snap.id, ...snap.data() } });
+  } catch (error) {
+    console.error('Error fetching single student:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch student' });
+  }
+});
+
 export default router;

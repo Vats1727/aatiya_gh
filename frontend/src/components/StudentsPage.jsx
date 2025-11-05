@@ -65,7 +65,7 @@ const StudentsPage = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return alert('Not authenticated');
-      const res = await fetch(`${API_BASE}/api/students/${studentId}/status`, {
+      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ status: newStatus })
@@ -208,7 +208,7 @@ const StudentsPage = () => {
                       <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton }} title="Reject">
                         <X size={16} />
                       </button>
-                      <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
+                      <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
                         <Edit size={16} />
                       </button>
                       <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
@@ -218,7 +218,7 @@ const StudentsPage = () => {
                           if (!confirm('Delete this student? This cannot be undone.')) return;
                           try {
                             const token = localStorage.getItem('token');
-                            const res = await fetch(`${API_BASE}/api/students/${student.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                            const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
                             if (!res.ok) throw new Error('Delete failed');
                             setStudents(prev => prev.filter(s => s.id !== student.id));
                           } catch (err) {
