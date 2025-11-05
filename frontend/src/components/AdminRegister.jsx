@@ -23,7 +23,7 @@ const AdminRegister = () => {
       const token = localStorage.getItem('token');
       if (user && token) {
         // Redirect to the admin dashboard, not the login page
-        navigate('/admin/dashboard');
+        navigate('/admin/register');
       }
     });
     return () => unsubscribe();
