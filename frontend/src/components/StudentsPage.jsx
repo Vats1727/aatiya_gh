@@ -136,9 +136,23 @@ const StudentsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {students.map((student, index) => (
+              {students.map((student, index) => {
+                // Compute application number display:
+                // preferred: student.applicationNumber
+                // else if student.combinedId exists (e.g. "02/0001") show without slash -> "020001"
+                // else if student.studentId and hostel.hostelId available, join them
+                const computedAppNo = (() => {
+                  if (student.applicationNumber) return student.applicationNumber;
+                    if (student.combinedId) return String(student.combinedId).replace(/\//g, '');
+                  // some records may store studentId and hostelId separately
+                  const hostelCode = student.hostelId || (hostel && hostel.hostelId) || null;
+                  if (student.studentId && hostelCode) return `${String(hostelCode)}${String(student.studentId)}`;
+                  return 'N/A';
+                })();
+
+                return (
                 <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
-                  <td style={styles.td}>{student.applicationNumber || 'N/A'}</td>
+                  <td style={styles.td}>{computedAppNo}</td>
                   <td style={styles.td}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={styles.avatar}>
@@ -171,7 +185,8 @@ const StudentsPage = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
         )}
