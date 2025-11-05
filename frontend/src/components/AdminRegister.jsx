@@ -434,20 +434,21 @@ const AdminRegister = () => {
             style={{
               ...styles.button,
               opacity: isSubmitting ? 0.7 : 1,
-              cursor: isSubmitting ? 'not-allowed' : 'pointer'
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
             }}
             disabled={isSubmitting || !form.fullName || !form.email || !form.password || !form.confirmPassword}
           >
-            {isSubmitting ? 'Creating Account...' : 'Create Account'}
             {isSubmitting ? (
               <>
                 <svg 
                   style={{
                     animation: 'spin 1s linear infinite',
-                    margin: '0 auto',
                     display: 'inline-block',
                     verticalAlign: 'middle',
-                    marginRight: '8px',
                   }} 
                   width="20" 
                   height="20" 

@@ -13,21 +13,48 @@ const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch user profile
+  // Fetch user profile with enhanced error handling
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      console.log('Fetching user profile...');
       const response = await fetch(`${API_BASE}/api/users/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
-      if (!response.ok) throw new Error('Failed to fetch user profile');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error response from server:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        throw new Error(errorData.message || 'Failed to fetch user profile');
+      }
+      
       const data = await response.json();
-      setUser(data.data);
+      console.log('User profile data:', data);
+      
+      if (data && data.data) {
+        setUser(data.data);
+      } else {
+        console.error('Unexpected API response format:', data);
+        setError('Received invalid user data from server');
+      }
     } catch (err) {
-      console.error('Error fetching user profile:', err);
+      console.error('Error fetching user profile:', {
+        message: err.message,
+        stack: err.stack
+      });
+      setError(`Failed to load user profile: ${err.message}`);
     }
   };
 
