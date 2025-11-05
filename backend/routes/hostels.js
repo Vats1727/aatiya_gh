@@ -42,6 +42,44 @@ const authMiddleware = async (req, res, next) => {
 
 router.use(authMiddleware);
 
+// Get hostels with student counts for the current user
+router.get('/users/me/hostels', async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    
+    // Get all hostels for the current user
+    const hostelsSnapshot = await db.collection('users').doc(userId).collection('hostels').get();
+    
+    const hostels = [];
+    
+    // Get student counts for each hostel
+    for (const doc of hostelsSnapshot.docs) {
+      const hostelData = doc.data();
+      const studentsSnapshot = await db.collection('users')
+        .doc(userId)
+        .collection('hostels')
+        .doc(doc.id)
+        .collection('students')
+        .get();
+      
+      hostels.push({
+        id: doc.id,
+        ...hostelData,
+        studentCount: studentsSnapshot.size
+      });
+    }
+    
+    res.json({ success: true, data: hostels });
+  } catch (error) {
+    console.error('Error fetching hostels:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch hostels',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Create a new hostel
 // Legacy top-level /hostels endpoint removed in favor of nested users/{userId}/hostels
 // Use POST /users/:userId/hostels (below) to create hostels under a user.
@@ -132,6 +170,35 @@ router.post('/users/:userId/hostels/:hostelDocId/students', async (req, res) => 
   } catch (error) {
     console.error('Error creating student for hostel:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to create student' });
+  }
+});
+
+// Get students for a specific hostel
+router.get('/users/me/hostels/:hostelId/students', async (req, res) => {
+  try {
+    const { hostelId } = req.params;
+    const userId = req.user.uid;
+    
+    const studentsSnapshot = await db.collection('users')
+      .doc(userId)
+      .collection('hostels')
+      .doc(hostelId)
+      .collection('students')
+      .get();
+    
+    const students = studentsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    res.json({ success: true, data: students });
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch students',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
