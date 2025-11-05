@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building, Users, Plus, ArrowRight, Home, UserPlus } from 'lucide-react';
 
+// Add spin animation
+const spinKeyframes = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+// Add the styles to the document
+const styleElement = document.createElement('style');
+styleElement.textContent = spinKeyframes;
+document.head.appendChild(styleElement);
+
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const AdminDashboard = () => {
@@ -13,66 +26,66 @@ const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch user profile with enhanced error handling and logging
-  const fetchUserProfile = async () => {
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Function to make the actual API call
+  const makeApiCall = async (token) => {
+    console.log('Making API request to:', `${API_BASE}/api/auth/me`);
+    const response = await fetch(`${API_BASE}/api/auth/me`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/admin');
+        return null;
+      }
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    
+    return response.json();
+  };
+
+  // Function to fetch user profile with retry logic
+  const fetchUserProfile = async (isRetry = false) => {
+    if (!isRetry) {
+      setLoading(true);
+      setError('');
+    } else {
+      setIsRetrying(true);
+    }
+    
     console.log('Starting to fetch user profile...');
+    
     try {
       const token = localStorage.getItem('token');
       console.log('Token found:', token ? 'Yes' : 'No');
       
       if (!token) {
-        console.error('No authentication token found');
-        setError('No authentication token found. Please login again.');
-        navigate('/admin');
-        return;
+        throw new Error('No authentication token found');
       }
 
-      console.log('Making request to:', `${API_BASE}/api/auth/me`);
       const startTime = Date.now();
       
+      // Try the API call with a timeout
       try {
-        const response = await Promise.race([
-          fetch(`${API_BASE}/api/auth/me`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }),
+        const data = await Promise.race([
+          makeApiCall(token),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Request timeout after 10s')), 10000)
+            setTimeout(() => reject(new Error('Backend server is taking too long to respond')), 10000)
           )
         ]);
         
+        if (!data) return; // Handled in makeApiCall (e.g., 401)
+        
         console.log(`Request completed in ${Date.now() - startTime}ms`);
-        console.log('Response status:', response.status, response.statusText);
-        
-        if (!response.ok) {
-          let errorData;
-          try {
-            errorData = await response.json();
-            console.error('Error response body:', errorData);
-          } catch (e) {
-            console.error('Failed to parse error response:', e);
-            errorData = { message: 'Invalid server response' };
-          }
-          
-          if (response.status === 401) {
-            // Token is invalid or expired
-            localStorage.removeItem('token');
-            navigate('/admin');
-            return;
-          }
-          
-          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('User profile data:', data);
-        
-        if (!data) {
-          throw new Error('No data received from server');
-        }
         
         const userData = {
           name: data.fullName || 'User',
@@ -82,11 +95,28 @@ const AdminDashboard = () => {
         
         console.log('Setting user data:', userData);
         setUser(userData);
+        setRetryCount(0); // Reset retry count on success
         
       } catch (fetchError) {
-        console.error('Fetch error:', fetchError);
-        throw fetchError; // Re-throw to be caught by outer catch
+        console.error('API call error:', fetchError);
+        
+        // If this is a retry attempt, increment the count
+        if (isRetry) {
+          const newRetryCount = retryCount + 1;
+          setRetryCount(newRetryCount);
+          
+          if (newRetryCount < 3) {
+            // Auto-retry up to 3 times with exponential backoff
+            const delay = Math.min(1000 * Math.pow(2, newRetryCount), 10000);
+            console.log(`Retrying in ${delay}ms... (Attempt ${newRetryCount + 1}/3)`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return fetchUserProfile(true);
+          }
+        }
+        
+        throw fetchError;
       }
+      
     } catch (err) {
       console.error('Error fetching user profile:', {
         message: err.message,
@@ -552,45 +582,141 @@ const AdminDashboard = () => {
     const appliedStyles = { ...styleObj };
     
     // Handle media query styles
-    if (window.innerWidth <= 1024) {
+    if (window.innerWidth <= 1024 && styleObj['@media (max-width: 1024px)']) {
       Object.assign(appliedStyles, styleObj['@media (max-width: 1024px)']);
     }
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth <= 768 && styleObj['@media (max-width: 768px)']) {
       Object.assign(appliedStyles, styleObj['@media (max-width: 768px)']);
     }
-    if (window.innerWidth <= 480) {
+    if (window.innerWidth <= 480 && styleObj['@media (max-width: 480px)']) {
       Object.assign(appliedStyles, styleObj['@media (max-width: 480px)']);
     }
     
     // Remove media query keys
     const { 
       '@media (max-width: 1024px)': mq1024, 
-      '@media (max-width: 768px)': mq768, 
-      '@media (max-width: 480px)': mq480, 
-      ...cleanStyles 
+      '@media (max-width: 768px)': mq768,
+      '@media (max-width: 480px)': mq480,
+      ...cleanStyles
     } = appliedStyles;
     
     return cleanStyles;
   };
 
-  if (loading) {
+  // Error state
+  if (error) {
     return (
-      <div style={applyResponsiveStyles(styles.container)}>
-        <div style={applyResponsiveStyles(styles.content)}>
-          <div style={applyResponsiveStyles(styles.loading)}>Loading...</div>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        padding: '2rem',
+        background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          background: '#fef2f2',
+          borderLeft: '4px solid #ef4444',
+          padding: '1.5rem',
+          borderRadius: '0.5rem',
+          maxWidth: '32rem',
+          width: '100%',
+          textAlign: 'left'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+            <div style={{ marginRight: '0.75rem', marginTop: '0.25rem' }}>
+              <svg style={{ color: '#ef4444', width: '1.25rem', height: '1.25rem' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#b91c1c', marginBottom: '0.5rem' }}>
+                Could not connect to the server
+              </h3>
+              <div style={{ color: '#991b1b', marginBottom: '1rem' }}>
+                <p>{error}</p>
+              </div>
+              <div>
+                <button
+                  onClick={() => {
+                    setError('');
+                    fetchUserProfile();
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    fontWeight: 500,
+                    borderRadius: '0.375rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+                >
+                  <svg style={{ marginRight: '0.5rem', width: '1rem', height: '1rem' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ marginTop: '2rem', textAlign: 'center', color: '#4b5563' }}>
+          <p style={{ marginBottom: '0.5rem' }}>If the problem persists, please check:</p>
+          <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', textAlign: 'left', display: 'inline-block' }}>
+            <li>Your internet connection</li>
+            <li>If the backend server is running</li>
+            <li>Check the browser's console for more details</li>
+          </ul>
         </div>
       </div>
     );
   }
-
-  if (error) {
+  // Loading state
+  if (loading || isRetrying) {
     return (
-      <div style={applyResponsiveStyles(styles.container)}>
-        <div style={applyResponsiveStyles(styles.content)}>
-          <div style={applyResponsiveStyles(styles.error)}>
-            <strong>Error:</strong> {error}
-          </div>
-        </div>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        padding: '2rem',
+        textAlign: 'center',
+        background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)'
+      }}>
+        <div style={{
+          animation: 'spin 1s linear infinite',
+          borderRadius: '50%',
+          height: '4rem',
+          width: '4rem',
+          border: '0.5rem solid #f3f3f3',
+          borderTop: '0.5rem solid #3b82f6',
+          marginBottom: '1rem'
+        }}></div>
+        <h2 style={{
+          fontSize: '1.25rem',
+          fontWeight: 600,
+          marginBottom: '0.5rem',
+          color: '#1e40af'
+        }}>
+          {isRetrying ? 'Trying to reconnect...' : 'Loading your dashboard...'}
+        </h2>
+        <p style={{
+          color: '#4b5563',
+          marginBottom: '1.5rem'
+        }}>
+          {isRetrying 
+            ? `Attempt ${retryCount + 1} of 3`
+            : 'Please wait while we load your information.'}
+        </p>
       </div>
     );
   }
