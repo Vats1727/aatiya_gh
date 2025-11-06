@@ -971,7 +971,9 @@ const HostelAdmissionForm = () => {
         } else {
           // Anonymous/new student submission for a specific hostel -> use public endpoint that attaches student to hostel
           if (!editId && !token && effectiveHostelId) {
-            res = await fetch(`${API_BASE}/api/public/hostels/${effectiveHostelId}/students`, {
+            // include ownerUserId in query if present so backend can attribute the hostel
+            const ownerParam = preOwnerUserId ? `?ownerUserId=${encodeURIComponent(preOwnerUserId)}` : '';
+            res = await fetch(`${API_BASE}/api/public/hostels/${effectiveHostelId}/students${ownerParam}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(formDataWithStatus)

@@ -61,10 +61,15 @@ const initializeFirebase = () => {
         throw new Error('No Firebase service account found. Please set up your Firebase credentials.');
       }
       
-      // Initialize Firebase with the service account
-      firebaseApp = admin.initializeApp({
+      // Derive storage bucket name from env or service account project_id
+      const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || (serviceAccount && serviceAccount.project_id ? `${serviceAccount.project_id}.appspot.com` : undefined);
+
+      // Initialize Firebase with the service account and optional storage bucket
+      const initOptions = {
         credential: admin.credential.cert(serviceAccount)
-      });
+      };
+      if (storageBucket) initOptions.storageBucket = storageBucket;
+      firebaseApp = admin.initializeApp(initOptions);
     }
 
     // Initialize Firestore with settings

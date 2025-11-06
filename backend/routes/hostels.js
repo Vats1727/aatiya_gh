@@ -13,15 +13,17 @@ router.post('/public/hostels/:hostelDocId/students', async (req, res) => {
     if (!hostelDocId) return res.status(400).json({ success: false, error: 'Missing hostelDocId' });
 
     const studentData = req.body || {};
-    // Find the hostel document using a collectionGroup query to locate the hostel across all users
-    const q = await db.collectionGroup('hostels').where(admin.firestore.FieldPath.documentId(), '==', hostelDocId).limit(1).get();
-    if (q.empty) return res.status(404).json({ success: false, error: 'Hostel not found' });
+    // Prefer explicit ownerUserId passed in query or body to avoid expensive/invalid collectionGroup queries
+    // Try query param first, then body
+    const ownerUserId = (req.query && req.query.ownerUserId) || (req.body && req.body.ownerUserId) || null;
+    if (!ownerUserId) {
+      return res.status(400).json({ success: false, error: 'ownerUserId is required for public submissions' });
+    }
 
-    const hostelDoc = q.docs[0];
-    // owner userId is the parent of the hostels collection: /users/{userId}/hostels/{hostelDocId}
-    const userDocRef = hostelDoc.ref.parent.parent;
-    if (!userDocRef || !userDocRef.id) return res.status(500).json({ success: false, error: 'Owner not found for hostel' });
-    const ownerUserId = userDocRef.id;
+    // Ensure the hostel exists under the provided owner
+    const hostelRef = db.collection('users').doc(ownerUserId).collection('hostels').doc(hostelDocId);
+    const hostelSnap = await hostelRef.get();
+    if (!hostelSnap.exists) return res.status(404).json({ success: false, error: 'Hostel not found for provided owner' });
 
     // Use transactional helper to create the student under the owner's hostel
     const result = await createStudent(db, ownerUserId, hostelDocId, studentData);

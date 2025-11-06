@@ -213,7 +213,10 @@ useEffect(() => {
     if (!hostel || !hostel.id) return;
     try {
       const publicBase = window.location.origin || 'https://aatiya-gh.vercel.app';
-      const addUrl = `${publicBase}/hostel/${encodeURIComponent(hostel.id)}/add-student`;
+  // Include owner user id in the QR URL as a query param so public submissions can be attributed correctly
+  const ownerId = user?.uid || user?.id || (user && user.userId) || null;
+  const ownerQuery = ownerId ? `?ownerUserId=${encodeURIComponent(ownerId)}` : '';
+  const addUrl = `${publicBase}/hostel/${encodeURIComponent(hostel.id)}/add-student${ownerQuery}`;
 
       // Generate a data URL (PNG) for the QR locally using the `qrcode` lib
       const dataUrl = await QRCode.toDataURL(addUrl, { width: 360, margin: 1 });
@@ -1229,7 +1232,7 @@ useEffect(() => {
               </div>
               <div style={{wordBreak: 'break-all', fontSize: '0.9rem', color: '#374151', marginBottom: '0.75rem'}}>
                 <small>
-                  {`${window.location.origin || 'https://aatiya-gh.vercel.app'}/hostel/${encodeURIComponent(qrHostel.id)}/add-student`}
+                  {`${window.location.origin || 'https://aatiya-gh.vercel.app'}/hostel/${encodeURIComponent(qrHostel.id)}/add-student${user?.uid ? `?ownerUserId=${encodeURIComponent(user.uid)}` : ''}`}
                 </small>
               </div>
               <div style={{display: 'flex', gap: '0.5rem', justifyContent: 'center'}}>
