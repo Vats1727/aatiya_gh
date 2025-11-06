@@ -188,6 +188,31 @@ const StudentsPage = () => {
 
   return (
     <div className="container" style={styles.container}>
+      {/* Static profile navbar (sticky) - show current admin info if available */}
+      {(() => {
+        let stored = null;
+        try { stored = JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { stored = null; }
+        const display = stored?.name || stored?.displayName || (stored?.email && stored.email.split('@')[0]) || null;
+        if (!display) return null;
+        return (
+          <div style={{background: 'white', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 8, zIndex: 50}}>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>
+                <div style={{width:48,height:48,borderRadius:'50%',backgroundColor:'#8b5cf6',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:'1.25rem',fontWeight:'bold'}}>
+                  {String(display).charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{fontSize:'1rem',fontWeight:600,color:'#111827'}}>{display}</div>
+                  <div style={{fontSize:'0.875rem',color:'#6b7280'}}>{stored?.email || ''}</div>
+                </div>
+              </div>
+              <div>
+                <button onClick={() => { localStorage.removeItem('token'); navigate('/admin'); }} style={{padding:'0.5rem 0.75rem',borderRadius:8,border:'none',background:'#ef4444',color:'white',cursor:'pointer'}}>Logout</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       <div className="header" style={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', flexWrap: 'wrap' }}>
           <button 

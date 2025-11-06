@@ -1073,20 +1073,6 @@ useEffect(() => {
                 width: '100%',
               }}
             >
-              <button
-                onClick={() => setShowAddHostel(true)}
-                className="btn btn-primary"
-                style={{
-                  ...applyResponsiveStyles(styles.addButton),
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                  minWidth: '120px',
-                }}
-                type="button"
-              >
-                <Home size={18} className="mr-2" />
-                New Hostel
-              </button>
-
               <button onClick={handleLogout} className="btn btn-secondary" style={{...applyResponsiveStyles(styles.logoutButton), minWidth: '100px'}} title="Logout">
                 <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
               </button>
@@ -1147,7 +1133,24 @@ useEffect(() => {
         )}
 
         <div style={applyResponsiveStyles(styles.header)}>
-          <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%'}}>
+            <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
+            <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+              <button
+                onClick={() => setShowAddHostel(true)}
+                className="btn btn-primary"
+                style={{
+                  ...applyResponsiveStyles(styles.addButton),
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  minWidth: '120px',
+                }}
+                type="button"
+              >
+                <Home size={18} className="mr-2" />
+                New Hostel
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
