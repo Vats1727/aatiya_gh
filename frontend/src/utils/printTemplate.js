@@ -6,7 +6,8 @@ export const renderStudentPrintHtml = (student = {}) => {
 
   // Use the reference styles: two-page HTML (form page + affidavit/rules page).
   // Use A4 dimensions so the form occupies the full first page and rules always start on page 2
-  const pageStyle = `width:210mm;min-height:297mm;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;page-break-after:always;`;
+  // make the page container position:relative so we can absolutely position signatures
+  const pageStyle = `width:210mm;min-height:297mm;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;page-break-after:always;position:relative;`;
 
   const photoBlock = (label, src) => `
     <div style="text-align:center">
@@ -30,7 +31,7 @@ export const renderStudentPrintHtml = (student = {}) => {
         <div>${photoBlock('छात्रा का फोटो / Student Photo', s.studentPhoto)}</div>
       </div>
 
-      <div style="margin-bottom:10px">
+  <div style="margin-bottom:10px">
         <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">व्यक्तिगत जानकारी / Personal Information</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
           <div><strong>छात्रा का नाम:</strong> ${escape(s.studentName)}</div>
@@ -40,7 +41,7 @@ export const renderStudentPrintHtml = (student = {}) => {
         </div>
       </div>
 
-      <div style="margin-bottom:10px">
+  <div style="margin-bottom:10px">
         <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">संपर्क जानकारी / Contact Information</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
           <div><strong>मोबाइल नं (1):</strong> ${escape(s.mobile1)}</div>
@@ -72,20 +73,18 @@ export const renderStudentPrintHtml = (student = {}) => {
           ${[1,2,3,4].map(i => {
             const name = escape(s[`coaching${i}Name`]);
             const addr = escape(s[`coaching${i}Address`]);
-            return (name || addr) ? `<div style="border-bottom:1px solid #e5e7eb;padding:6px 0;margin-bottom:6px"><strong>कोचिंग ${i}:</strong> ${name ? `नाम एवं समय: ${name}` : ''} ${addr ? ` - पता: ${addr}` : ''}</div>` : '';
+            const start = escape(s[`coaching${i}Start`]);
+            const end = escape(s[`coaching${i}End`]);
+            const timePart = (start || end) ? ` - समय: ${start || ''}${(start && end) ? ` - ${end}` : (end ? ` - ${end}` : '')}` : '';
+            return (name || addr || start || end) ? `<div style="border-bottom:1px solid #e5e7eb;padding:6px 0;margin-bottom:6px"><strong>कोचिंग ${i}:</strong> ${name ? `नाम: ${name}` : ''}${timePart} ${addr ? ` - पता: ${addr}` : ''}</div>` : '';
           }).join('')}
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
-        <div style="text-align:center">
-          <div style="border-top:2px solid #9ca3af;padding-top:8px;min-height:48px">${escape(s.studentSignature) || ''}</div>
-          <div style="font-size:12px;color:#666;margin-top:4px">छात्रा का हस्ताक्षर / Student Signature</div>
-        </div>
-        <div style="text-align:center">
-          <div style="border-top:2px solid #9ca3af;padding-top:8px;min-height:48px">${escape(s.parentSignature) || ''}</div>
-          <div style="font-size:12px;color:#666;margin-top:4px">पिता/माता का हस्ताक्षर / Parent Signature</div>
-        </div>
+      <!-- Place a single student signature on the bottom-right of page 1 -->
+      <div style="position:absolute;right:24px;bottom:24px;width:260px;text-align:right;">
+        <div style="border-top:2px solid #9ca3af;padding-top:8px;min-height:48px">${escape(s.studentSignature) || ''}</div>
+        <div style="font-size:12px;color:#666;margin-top:4px">छात्रा का हस्ताक्षर / Student Signature</div>
       </div>
     </div>
   `;
@@ -104,7 +103,7 @@ export const renderRulesHtml = (student = {}) => {
   const district = s.district || '';
 
   return `
-    <div style="max-width:900px;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;">
+    <div style="max-width:900px;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;min-height:297mm;position:relative;">
       <div style="text-align:center;border-bottom:2px solid #4f46e5;padding-bottom:10px;margin-bottom:12px;">
         <h2 style="color:#4f46e5;margin:0;font-size:18px;">हॉस्टल नियम एवं शर्तें / HOSTEL RULES AND REGULATIONS</h2>
       </div>
@@ -115,7 +114,7 @@ export const renderRulesHtml = (student = {}) => {
         </p>
       </div>
 
-      <div style="font-size:13px;line-height:1.8;margin-top:6px;white-space:pre-wrap;text-align:left;color:#111827">
+  <div style="font-size:13px;line-height:1.8;margin-top:6px;white-space:pre-wrap;text-align:left;color:#111827">
         1. हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है.
         
         2. कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है.
@@ -141,6 +140,17 @@ export const renderRulesHtml = (student = {}) => {
         12. किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें.
         
         13. हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह का शुल्क लिया जाएगा.
+      </div>
+      <!-- signatures at bottom of page 2: both parent and student -->
+      <div style="position:absolute;left:24px;right:24px;bottom:24px;display:flex;justify-content:space-between;gap:16px;">
+        <div style="text-align:left;width:45%">
+          <div style="border-top:2px solid #9ca3af;padding-top:8px;min-height:48px">${escape(s.parentSignature) || ''}</div>
+          <div style="font-size:12px;color:#666;margin-top:4px">पिता/माता का हस्ताक्षर / Parent Signature</div>
+        </div>
+        <div style="text-align:right;width:45%">
+          <div style="border-top:2px solid #9ca3af;padding-top:8px;min-height:48px">${escape(s.studentSignature) || ''}</div>
+          <div style="font-size:12px;color:#666;margin-top:4px">छात्रा का हस्ताक्षर / Student Signature</div>
+        </div>
       </div>
     </div>
   `;

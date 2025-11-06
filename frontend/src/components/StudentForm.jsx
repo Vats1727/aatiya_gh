@@ -1174,6 +1174,23 @@ const HostelAdmissionForm = () => {
                   </div>
                 </div>
               </div>
+              {/* Coaching preview (show name, time slot and address) */}
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#7c3aed' }}>कोचिंग विवरण / Coaching Details</h4>
+                <div style={{ fontSize: '14px', color: '#374151' }}>
+                  {(coachingList && coachingList.length > 0) ? (
+                    coachingList.map((c, i) => (
+                      <div key={i} style={{ marginBottom: '6px' }}>
+                        <strong>कोचिंग {i + 1}:</strong> {c.name || formData[`coaching${i+1}Name`] || '-'}
+                        &nbsp; - &nbsp; समय: { (c.start || formData[`coaching${i+1}Start`] || '') }{(c.start || formData[`coaching${i+1}Start`]) && (c.end || formData[`coaching${i+1}End`]) ? ` - ${ (c.end || formData[`coaching${i+1}End`]) }` : ''}
+                        &nbsp; - &nbsp; पता: {c.address || formData[`coaching${i+1}Address`] || 'rajkot'}
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ color: '#6b7280' }}>No coaching entries.</div>
+                  )}
+                </div>
+              </div>
 
               {/* Photos Section */}
               <div style={{

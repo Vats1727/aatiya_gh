@@ -65,7 +65,7 @@ const StudentsPage = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return alert('Not authenticated');
-      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
+      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ status: newStatus })
@@ -119,7 +119,7 @@ const StudentsPage = () => {
           <strong>Error:</strong> {error}
         </div>
         <button 
-          onClick={() => navigate('/admin/dashboard')}
+          onClick={() => navigate(-1)}
           style={styles.backButton}
         >
           <ArrowLeft size={16} style={{ marginRight: '8px' }} />
@@ -133,7 +133,7 @@ const StudentsPage = () => {
     <div style={styles.container}>
       <div style={styles.header}>
         <button 
-          onClick={() => navigate('/admin/dashboard')}
+          onClick={() => navigate(-1)}
           style={styles.backButton}
         >
           <ArrowLeft size={16} style={{ marginRight: '8px' }} />
@@ -194,12 +194,12 @@ const StudentsPage = () => {
                   <td style={styles.td}>
                     <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
                   </td>
-                  <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                   <td style={styles.td}>
                     <span style={{...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {})}}>
                       {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
                     </span>
                   </td>
+                  <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                   <td style={styles.td}>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Accept">
