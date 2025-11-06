@@ -949,9 +949,9 @@ useEffect(() => {
               style={{
                 display: 'flex',
                 gap: '0.75rem',
-                flexWrap: 'wrap',
+                flexWrap: 'nowrap',
                 alignItems: 'center',
-                justifyContent: 'flex-start',
+                justifyContent: 'flex-end',
                 width: '100%',
               }}
             >
@@ -961,7 +961,6 @@ useEffect(() => {
                 style={{
                   ...applyResponsiveStyles(styles.addButton),
                   background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                  flex: 1,
                   minWidth: '120px',
                 }}
                 type="button"
@@ -970,7 +969,7 @@ useEffect(() => {
                 New Hostel
               </button>
 
-              <button onClick={handleLogout} className="btn btn-secondary" style={{...applyResponsiveStyles(styles.logoutButton), flex: 1, minWidth: '100px'}} title="Logout">
+              <button onClick={handleLogout} className="btn btn-secondary" style={{...applyResponsiveStyles(styles.logoutButton), minWidth: '100px'}} title="Logout">
                 <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
               </button>
             </div>
