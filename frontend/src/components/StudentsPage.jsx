@@ -1,12 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download } from 'lucide-react';
 import { downloadStudentPdf } from '../utils/pdfUtils';
-import '../styles.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-
-const ITEMS_PER_PAGE = 10;
 
 const StudentsPage = () => {
   const { hostelId } = useParams();
@@ -15,9 +12,6 @@ const StudentsPage = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -70,12 +64,17 @@ const StudentsPage = () => {
   const updateStudentStatus = async (studentId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD
       if (!token) {
         navigate('/admin');
         return { success: false, error: 'Not authenticated' };
       }
       
       const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
+=======
+      if (!token) return alert('Not authenticated');
+      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/status`, {
+>>>>>>> 7b075585e70c5870001eb3dc24f00efde5b8787a
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json', 
@@ -105,27 +104,12 @@ const StudentsPage = () => {
   };
 
   const handleAccept = async (student) => {
-    try {
-      await updateStudentStatus(student.id, 'approved');
-      // Update local state immediately for better UX
-      setStudents(prev => prev.map(s => 
-        s.id === student.id ? { ...s, status: 'approved' } : s
-      ));
-    } catch (error) {
-      console.error('Failed to accept student:', error);
-    }
+    // backend expects 'approved'
+    await updateStudentStatus(student.id, 'approved');
   };
 
   const handleReject = async (student) => {
-    try {
-      await updateStudentStatus(student.id, 'rejected');
-      // Update local state immediately for better UX
-      setStudents(prev => prev.map(s => 
-        s.id === student.id ? { ...s, status: 'rejected' } : s
-      ));
-    } catch (error) {
-      console.error('Failed to reject student:', error);
-    }
+    await updateStudentStatus(student.id, 'rejected');
   };
 
   const handleDownload = async (student) => {
@@ -135,40 +119,6 @@ const StudentsPage = () => {
     } catch (err) {
       console.error('Download failed', err);
       alert('Failed to download PDF');
-    }
-  };
-
-  // Move hooks to the top level
-  const filteredStudents = useMemo(() => {
-    if (loading) return [];
-    if (error) return [];
-    
-    return students.filter(student => {
-      const matchesSearch = searchTerm === '' || 
-        (student.studentName && student.studentName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (student.applicationNumber && student.applicationNumber.toString().includes(searchTerm)) ||
-        (student.combinedId && student.combinedId.toString().includes(searchTerm));
-      
-      const matchesStatus = statusFilter === 'all' || 
-        (statusFilter === 'pending' && (!student.status || student.status === 'pending')) ||
-        (statusFilter === 'approved' && student.status === 'approved') ||
-        (statusFilter === 'rejected' && student.status === 'rejected');
-      
-      return matchesSearch && matchesStatus;
-    });
-  }, [students, searchTerm, statusFilter, loading, error]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
-  const currentStudents = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredStudents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredStudents, currentPage]);
-
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -187,7 +137,7 @@ const StudentsPage = () => {
           <strong>Error:</strong> {error}
         </div>
         <button 
-          onClick={() => navigate('/admin/dashboard')}
+          onClick={() => navigate(-1)}
           style={styles.backButton}
         >
           <ArrowLeft size={16} style={{ marginRight: '8px' }} />
@@ -196,7 +146,6 @@ const StudentsPage = () => {
       </div>
     );
   }
-
 
   return (
     <div className="container" style={styles.container}>
@@ -264,14 +213,14 @@ const StudentsPage = () => {
         </div>
       </div>
       
-      <div className="card" style={styles.tableContainer}>
+      <div style={styles.tableContainer}>
         <div style={styles.tableHeader}>
           <h3>Students</h3>
         </div>
         
-        {filteredStudents.length === 0 ? (
+        {students.length === 0 ? (
           <div style={styles.emptyState}>
-            <p>No students found matching your criteria.</p>
+            <p>No students found in this hostel.</p>
           </div>
         ) : (
           <table style={styles.table}>
@@ -285,7 +234,7 @@ const StudentsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {currentStudents.map((student, index) => {
+              {students.map((student, index) => {
                 // Compute application number display:
                 // preferred: student.applicationNumber
                 // else if student.combinedId exists (e.g. "02/0001") show without slash -> "020001"
@@ -348,77 +297,6 @@ const StudentsPage = () => {
             </tbody>
           </table>
         )}
-        
-        {/* Pagination */}
-        {filteredStudents.length > ITEMS_PER_PAGE && (
-          <div style={styles.pagination}>
-            <button 
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              style={{
-                ...styles.pageButton,
-                opacity: currentPage === 1 ? 0.5 : 1,
-                cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
-              }}
-              aria-label="Previous page"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              // Show first page, last page, current page, and pages around current page
-              let pageNum;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (currentPage <= 3) {
-                pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = currentPage - 2 + i;
-              }
-              
-              if (pageNum > totalPages) return null;
-              
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => handlePageChange(pageNum)}
-                  style={{
-                    ...styles.pageButton,
-                    ...(currentPage === pageNum ? styles.activePageButton : {})
-                  }}
-                  aria-label={`Page ${pageNum}`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-            
-            <button 
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              style={{
-                ...styles.pageButton,
-                opacity: currentPage === totalPages ? 0.5 : 1,
-                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
-              }}
-              aria-label="Next page"
-            >
-              <ChevronRight size={18} />
-            </button>
-            
-            <div style={styles.pageInfo}>
-              Page {currentPage} of {totalPages}
-            </div>
-          </div>
-        )}
-        
-        <div style={styles.resultCount}>
-          Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-{
-            Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)
-          } of {filteredStudents.length} students
-        </div>
       </div>
     </div>
   );
@@ -427,30 +305,17 @@ const StudentsPage = () => {
 
 const styles = {
   container: {
-    width: '100%',
+    maxWidth: '1200px',
     margin: '0 auto',
-    padding: '1rem',
+    padding: '1.5rem 1rem',
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-    boxSizing: 'border-box',
-    '@media (min-width: 481px)': {
-      padding: '1.25rem',
-    },
-    '@media (min-width: 769px)': {
-      maxWidth: '1200px',
-      padding: '1.5rem',
-    },
   },
   tableContainer: {
     backgroundColor: 'white',
-    borderRadius: '0.75rem',
+    borderRadius: '8px',
     boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    overflowX: 'auto',
-    width: '100%',
-    margin: '0 auto',
-    '@media (min-width: 769px)': {
-      borderRadius: '0.75rem',
-    },
+    overflow: 'hidden',
   },
   tableHeader: {
     display: 'flex',
@@ -458,50 +323,25 @@ const styles = {
     alignItems: 'center',
     padding: '16px 24px',
     borderBottom: '1px solid #e5e7eb',
-    flexWrap: 'wrap',
-    gap: '1rem',
   },
   table: {
     width: '100%',
-    minWidth: '600px', // Ensures table doesn't get too narrow on small screens
     borderCollapse: 'collapse',
-    tableLayout: 'fixed',
   },
   th: {
-    padding: '0.75rem 1rem',
+    padding: '12px 16px',
     textAlign: 'left',
     backgroundColor: '#f9fafb',
     color: '#374151',
     fontWeight: '600',
-    fontSize: '0.75rem',
+    fontSize: '0.875rem',
     borderBottom: '1px solid #e5e7eb',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    '@media (min-width: 481px)': {
-      fontSize: '0.8125rem',
-      padding: '0.875rem 1rem',
-    },
-    '@media (min-width: 769px)': {
-      fontSize: '0.875rem',
-      padding: '1rem 1.25rem',
-    },
   },
   td: {
-    padding: '0.75rem 1rem',
+    padding: '16px',
     borderBottom: '1px solid #e5e7eb',
-    fontSize: '0.75rem',
+    fontSize: '0.875rem',
     color: '#4b5563',
-    verticalAlign: 'middle',
-    wordBreak: 'break-word',
-    '@media (min-width: 481px)': {
-      fontSize: '0.8125rem',
-      padding: '0.875rem 1rem',
-    },
-    '@media (min-width: 769px)': {
-      fontSize: '0.875rem',
-      padding: '1rem 1.25rem',
-    },
   },
   trEven: {
     backgroundColor: '#ffffff',
@@ -568,21 +408,14 @@ const styles = {
     color: '#7f1d1d',
   },
   iconButton: {
-    padding: '0.4rem',
-    borderRadius: '0.375rem',
+    padding: '6px',
+    borderRadius: '6px',
     border: 'none',
     cursor: 'pointer',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     background: '#f8fafc',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      transform: 'scale(1.05)',
-    },
-    '@media (min-width: 481px)': {
-      padding: '0.5rem',
-    },
   },
   acceptButton: {
     backgroundColor: '#ecfdf5',
@@ -598,6 +431,7 @@ const styles = {
   },
   header: {
     background: 'white',
+<<<<<<< HEAD
     padding: '1rem',
     borderRadius: '0.75rem',
     boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
@@ -640,30 +474,42 @@ const styles = {
       marginTop: 0,
       flexWrap: 'nowrap',
     },
+=======
+    padding: '1.25rem',
+    borderRadius: '1rem',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    marginBottom: '1.5rem',
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '1rem',
+>>>>>>> 7b075585e70c5870001eb3dc24f00efde5b8787a
   },
   backButton: {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    background: '#f8fafc',
-    border: '1px solid #e2e8f0',
-    padding: '0.5rem 0.875rem',
+    background: '#f3f4f6',
+    border: 'none',
+    padding: '0.6rem 1.25rem',
     borderRadius: '0.5rem',
     cursor: 'pointer',
     color: '#4b5563',
     fontWeight: '500',
-    fontSize: '0.875rem',
-    lineHeight: '1.25',
     transition: 'all 0.2s ease',
+<<<<<<< HEAD
     minWidth: '100px',
     boxSizing: 'border-box',
     position: 'relative',
     zIndex: 1,
     whiteSpace: 'nowrap',
+=======
+>>>>>>> 7b075585e70c5870001eb3dc24f00efde5b8787a
     '&:hover': {
-      background: '#f1f5f9',
-      borderColor: '#cbd5e1',
+      background: '#e5e7eb',
       transform: 'translateY(-1px)',
+<<<<<<< HEAD
       boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
     },
     '&:active': {
@@ -674,12 +520,16 @@ const styles = {
       padding: '0.5rem 0.75rem',
       fontSize: '0.8125rem',
     }
+=======
+    },
+>>>>>>> 7b075585e70c5870001eb3dc24f00efde5b8787a
   },
   title: {
-    fontSize: '1.25rem',
-    fontWeight: '700',
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
     color: '#6b21a8',
     margin: 0,
+<<<<<<< HEAD
     padding: 0,
     textAlign: 'left',
     position: 'relative',
@@ -694,43 +544,30 @@ const styles = {
     '@media (min-width: 768px)': {
       fontSize: '1.625rem',
     },
+=======
+    flex: 1,
+    textAlign: 'center',
+>>>>>>> 7b075585e70c5870001eb3dc24f00efde5b8787a
   },
   addButton: {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+    background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
     color: 'white',
     border: 'none',
-    padding: '0.5rem 1rem',
+    padding: '0.6rem 1.25rem',
     borderRadius: '0.5rem',
-    cursor: 'pointer',
     fontWeight: '500',
-    fontSize: '0.875rem',
-    lineHeight: '1.25',
+    cursor: 'pointer',
     transition: 'all 0.2s ease',
-    width: '100%',
-    boxSizing: 'border-box',
-    position: 'relative',
-    zIndex: 1,
     '&:hover': {
-      opacity: 0.95,
+      opacity: 0.9,
       transform: 'translateY(-1px)',
-      boxShadow: '0 4px 12px -2px rgba(139, 92, 246, 0.3)'
-    },
-    '&:active': {
-      transform: 'translateY(0)',
-      boxShadow: '0 2px 4px -1px rgba(139, 92, 246, 0.2)'
-    },
-    '@media (min-width: 481px)': {
-      width: 'auto',
-      padding: '0.5rem 1.125rem',
-    },
-    '@media (min-width: 769px)': {
-      padding: '0.6rem 1.25rem',
+      boxShadow: '0 4px 12px rgba(147, 51, 234, 0.3)',
     },
   },
   address: {
+<<<<<<< HEAD
     color: '#6b7280',
     margin: '0.25rem 0 0',
     fontSize: '0.875rem',
@@ -862,15 +699,16 @@ const styles = {
   },
   
   // Empty State
+=======
+    color: '#64748b',
+    marginBottom: '30px',
+  },
+>>>>>>> 7b075585e70c5870001eb3dc24f00efde5b8787a
   emptyState: {
-    padding: '3rem 1rem',
     textAlign: 'center',
-    color: '#6b7280',
-    fontSize: '0.9375rem',
-    '@media (min-width: 481px)': {
-      padding: '2rem',
-      fontSize: '1rem',
-    },
+    padding: '40px 20px',
+    backgroundColor: '#f8fafc',
+    borderRadius: '8px',
     border: '1px dashed #e2e8f0',
   },
   studentsGrid: {

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2 } from 'lucide-react';
-import '../styles.css';
 
 // Use production URL if environment variable is not set
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onrender.com';
@@ -282,177 +281,81 @@ useEffect(() => {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-      padding: '0.75rem',
+      padding: '1.5rem 1rem',
       boxSizing: 'border-box',
       width: '100%',
       overflowX: 'hidden',
-      position: 'relative',
-      '@media (min-width: 481px)': {
-        padding: '1rem',
-      },
-      '@media (min-width: 769px)': {
-        padding: '1.25rem',
-      },
-      '@media (min-width: 1024px)': {
-        padding: '1.5rem',
-      },
     },
     content: {
-      maxWidth: '100%',
+      maxWidth: '1200px',
       margin: '0 auto',
       width: '100%',
       boxSizing: 'border-box',
-      padding: '0 0.25rem',
-      '@media (min-width: 375px)': {
-        padding: '0 0.5rem',
-      },
-      '@media (min-width: 481px)': {
-        maxWidth: '100%',
-        padding: '0 1rem',
-      },
-      '@media (min-width: 769px)': {
-        maxWidth: '1200px',
-        padding: '0 0.5rem',
-      },
-      '@media (min-width: 1025px)': {
-        padding: '0',
-      },
     },
     header: {
       background: 'white',
-      padding: '0.875rem',
-      borderRadius: '0.75rem',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-      marginBottom: '1rem',
+      padding: '1.25rem',
+      borderRadius: '1rem',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      marginBottom: '1.5rem',
       display: 'flex',
-      flexDirection: 'column',
-      gap: '0.75rem',
-      position: 'relative',
-      zIndex: 10,
-      '@media (min-width: 481px)': {
-        padding: '1rem',
-        borderRadius: '0.875rem',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.08)',
-        marginBottom: '1.25rem',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '1rem',
-      },
-      '@media (min-width: 769px)': {
-        padding: '1rem 1.5rem',
-        borderRadius: '1rem',
-        marginBottom: '1.5rem',
-        flexWrap: 'nowrap',
-      },
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: '1rem',
     },
     title: {
       color: '#db2777',
-      fontSize: '1.125rem',
-      fontWeight: '700',
+      fontSize: '1.5rem',
+      fontWeight: 'bold',
       margin: 0,
       lineHeight: '1.3',
-      textAlign: 'center',
-      width: '100%',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      '@media (min-width: 375px)': {
-        fontSize: '1.25rem',
-      },
-      '@media (min-width: 481px)': {
-        fontSize: '1.375rem',
-        width: 'auto',
-        textAlign: 'left',
-        flex: 1,
-        minWidth: 0,
-      },
-      '@media (min-width: 769px)': {
-        fontSize: '1.5rem',
-      },
     },
     headerActions: {
       display: 'flex',
-      flexDirection: 'column',
-      gap: '0.5rem',
-      width: '100%',
-      '@media (min-width: 481px)': {
-        flexDirection: 'row',
+      gap: '0.75rem',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      '@media (max-width: 600px)': {
+        width: '100%',
+        flexDirection: 'column',
         gap: '0.5rem',
-        flexWrap: 'nowrap',
-        alignItems: 'center',
-        width: 'auto',
-        marginLeft: 'auto',
-      },
-      '@media (min-width: 640px)': {
-        gap: '0.75rem',
       },
     },
     searchContainer: {
       display: 'flex',
-      flexDirection: 'column',
-      gap: '0.5rem',
-      marginBottom: '1rem',
-      width: '100%',
-      position: 'relative',
-      '@media (min-width: 481px)': {
-        flexDirection: 'row',
+      gap: '0.75rem',
+      flexWrap: 'wrap',
+      marginBottom: '1.5rem',
+      '@media (max-width: 600px)': {
+        flexDirection: 'column',
         gap: '0.5rem',
-        marginBottom: '1.25rem',
-      },
-      '@media (min-width: 640px)': {
-        gap: '0.75rem',
-        marginBottom: '1.5rem',
+        width: '100%',
       },
     },
     searchInput: {
-      width: '100%',
-      padding: '0.5rem 0.875rem',
+      flex: 1,
+      minWidth: '200px',
+      padding: '0.5rem 1rem',
       border: '1px solid #e5e7eb',
       borderRadius: '0.5rem',
       fontSize: '0.9375rem',
-      boxSizing: 'border-box',
-      minHeight: '42px',
-      WebkitAppearance: 'none',
       '&:focus': {
         outline: 'none',
         borderColor: '#8b5cf6',
         boxShadow: '0 0 0 2px rgba(168, 85, 247, 0.2)',
       },
-      '&::placeholder': {
-        color: '#9ca3af',
-        opacity: 1,
-      },
-      '@media (min-width: 375px)': {
-        padding: '0.5rem 1rem',
-      },
-      '@media (min-width: 481px)': {
-        minWidth: '200px',
-        flex: 1,
+      '@media (max-width: 600px)': {
+        width: '100%',
       },
     },
     card: {
       background: 'white',
       borderRadius: '0.75rem',
-      padding: '1rem',
-      marginBottom: '1rem',
+      padding: '1.5rem',
+      marginBottom: '1.5rem',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      width: '100%',
-      boxSizing: 'border-box',
-      position: 'relative',
-      overflow: 'hidden',
-      '@media (min-width: 481px)': {
-        padding: '1.125rem',
-        marginBottom: '1.25rem',
-      },
-      '@media (min-width: 769px)': {
-        padding: '1.25rem',
-        marginBottom: '1.5rem',
-      },
-      '@media (min-width: 1024px)': {
-        padding: '1.5rem',
-      },
     },
     form: {
       display: 'flex',
@@ -487,55 +390,19 @@ useEffect(() => {
     },
     hostelGrid: {
       display: 'grid',
-      gridTemplateColumns: '1fr',
-      gap: '0.875rem',
-      marginTop: '0.75rem',
-      '@media (min-width: 420px)': {
-        gap: '1rem',
-        marginTop: '1rem',
-      },
-      '@media (min-width: 481px)': {
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '1rem',
-        marginTop: '1.25rem',
-      },
-      '@media (min-width: 640px)': {
-        gap: '1.25rem',
-      },
-      '@media (min-width: 1024px)': {
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '1.5rem',
-        marginTop: '1.5rem',
-      },
+      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+      gap: '1.25rem',
+      marginTop: '1.5rem',
     },
     hostelCard: {
-      background: '#ffffff',
-      padding: '1rem',
+      background: '#f9fafb',
+      padding: '1.25rem',
       borderRadius: '0.75rem',
       border: '1px solid #e5e7eb',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
       transition: 'all 0.2s ease',
-      position: 'relative',
-      overflow: 'hidden',
       '&:hover': {
         transform: 'translateY(-2px)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-      },
-      '@media (min-width: 481px)': {
-        padding: '1.125rem',
-      },
-      '@media (min-width: 769px)': {
-        padding: '1.25rem',
-      },
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '4px',
-        background: 'linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%)',
-        opacity: 0.9,
+        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
       },
     },
     viewButton: {
@@ -888,10 +755,10 @@ useEffect(() => {
   }
 
   return (
-    <div className="container" style={applyResponsiveStyles(styles.container)}>
-      <div className="content" style={applyResponsiveStyles(styles.content)}>
+    <div style={applyResponsiveStyles(styles.container)}>
+      <div style={applyResponsiveStyles(styles.content)}>
         {/* User Profile Section */}
-        <div className="card" style={{
+        <div style={{
           background: 'white',
           borderRadius: '0.75rem',
           padding: '1.5rem',
@@ -901,103 +768,72 @@ useEffect(() => {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             gap: '1rem',
-            width: '100%'
+            marginBottom: '1rem'
           }}>
             <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              backgroundColor: '#8b5cf6',
               display: 'flex',
               alignItems: 'center',
-              gap: '1rem'
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '1.5rem',
+              fontWeight: 'bold'
             }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                backgroundColor: '#8b5cf6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+            <div>
+              <h2 style={{
+                margin: 0,
                 fontSize: '1.25rem',
-                fontWeight: 'bold'
+                fontWeight: '600',
+                color: '#1f2937'
               }}>
-                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
-              <div>
-                <h2 style={{
-                  margin: 0,
-                  fontSize: '1.25rem',
-                  fontWeight: '600',
-                  color: '#1f2937'
-                }}>
-                  {user?.name || 'User'}
-                </h2>
-                <p style={{
-                  margin: '0.25rem 0 0',
-                  color: '#6b7280',
-                  fontSize: '0.9375rem'
-                }}>
-                  {user?.email || ''}
-                </p>
-              </div>
+                {user?.name || 'User'}
+              </h2>
+              <p style={{
+                margin: '0.25rem 0 0',
+                color: '#6b7280',
+                fontSize: '0.9375rem'
+              }}>
+                {user?.email || ''}
+              </p>
             </div>
-            <div style={{
-              display: 'flex',
-              gap: '0.75rem',
-              width: '100%',
-              '@media (min-width: 481px)': {
-                width: 'auto',
-                flexWrap: 'nowrap',
-              },
-              flexWrap: 'wrap',
-              alignItems: 'center'
-            }}>
-              <button
-                onClick={() => setShowAddHostel(true)}
-                className="btn btn-primary"
-                style={{
-                  ...applyResponsiveStyles(styles.addButton),
-                  flex: 1,
-                  minWidth: '120px',
-                  '@media (min-width: 481px)': {
-                    flex: '0 1 auto',
-                  }
-                }}
-                type="button"
-              >
-                <Home size={16} style={{ marginRight: '6px' }} />
-                New Hostel
-              </button>
+          </div>
+          <div style={{
+            display: 'flex',
+            gap: '0.75rem',
+            flexWrap: 'wrap'
+          }}>
+            <button
+              onClick={() => setShowAddHostel(true)}
+              style={{
+                ...applyResponsiveStyles(styles.addButton),
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                '@media (max-width: 600px)': { flex: 1 }
+              }}
+              type="button"
+            >
+              <Home size={18} className="mr-2" />
+              New Hostel
+            </button>
 
-              <button 
-                onClick={handleLogout} 
-                className="btn btn-secondary" 
-                style={{
-                  ...applyResponsiveStyles(styles.logoutButton),
-                  flex: 1,
-                  minWidth: '120px',
-                  '@media (min-width: 481px)': {
-                    flex: '0 1 auto',
-                  }
-                }} 
-                title="Logout"
-              >
-                <LogOut size={16} style={{ marginRight: '6px' }} />
-                <span>Logout</span>
-              </button>
-            </div>
+            <button onClick={handleLogout} style={applyResponsiveStyles(styles.logoutButton)} title="Logout">
+              <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
+            </button>
           </div>
         </div>
 
         {/* Inline Add Hostel form shown on this page */}
         {showAddHostel && (
-          <div className="card" style={applyResponsiveStyles(styles.card)}>
+          <div style={applyResponsiveStyles(styles.card)}>
             <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>Add New Hostel</h3>
-            <form onSubmit={handleAddHostel} className="form" style={applyResponsiveStyles(styles.form)}>
+            <form onSubmit={handleAddHostel} style={applyResponsiveStyles(styles.form)}>
               <input
                 name="name"
-                className="input"
                 value={newHostel.name}
                 onChange={(e) => setNewHostel(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Hostel name"
@@ -1006,18 +842,16 @@ useEffect(() => {
               />
               <input
                 name="address"
-                className="input"
                 value={newHostel.address}
                 onChange={(e) => setNewHostel(prev => ({ ...prev, address: e.target.value }))}
                 placeholder="Address"
                 style={applyResponsiveStyles(styles.input)}
                 required
               />
-              <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>Add Hostel</button>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="submit" style={applyResponsiveStyles(styles.submitButton)}>Add Hostel</button>
                 <button
                   type="button"
-                  className="btn btn-secondary"
                   onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '' }); setError(''); }}
                   style={{ ...applyResponsiveStyles(styles.logoutButton), background: '#6b7280' }}
                 >
@@ -1032,7 +866,7 @@ useEffect(() => {
           <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
         </div>
 
-        <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
+        <div style={applyResponsiveStyles(styles.tableContainer)}>
           <table style={{
             ...applyResponsiveStyles(styles.table),
             width: '100%',
@@ -1053,7 +887,6 @@ useEffect(() => {
                     <td style={styles.td}>
                       <button
                         onClick={() => handleViewStudents(hostel.id)}
-                        className="btn btn-icon btn-primary"
                         style={{ ...styles.actionButton, ...styles.editButton }}
                         title="View Students"
                       >
@@ -1079,7 +912,6 @@ useEffect(() => {
                             setHostels(prev => prev.map(h => h.id === hostel.id ? { ...h, ...updated } : h));
                           }).catch(err => { console.error(err); alert('Failed to update hostel'); });
                         }}
-                        className="btn btn-icon btn-secondary"
                         style={{ ...styles.actionButton }}
                         title="Edit Hostel"
                       >
@@ -1097,7 +929,6 @@ useEffect(() => {
                             setHostels(prev => prev.filter(h => h.id !== hostel.id));
                           }).catch(err => { console.error(err); alert('Failed to delete hostel'); });
                         }}
-                        className="btn btn-icon btn-danger"
                         style={{ ...styles.actionButton }}
                         title="Delete Hostel"
                       >
@@ -1111,7 +942,7 @@ useEffect(() => {
         </div>
 
         {selectedHostel && (
-          <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
+          <div style={applyResponsiveStyles(styles.tableContainer)}>
             <table style={{
               ...applyResponsiveStyles(styles.table),
               width: '100%',
