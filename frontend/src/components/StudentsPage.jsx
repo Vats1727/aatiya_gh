@@ -174,13 +174,7 @@ const StudentsPage = () => {
         <div style={styles.error}>
           <strong>Error:</strong> {error}
         </div>
-        <button 
-          onClick={() => navigate('/admin/dashboard')}
-          style={styles.backButton}
-        >
-          <ArrowLeft size={16} style={{ marginRight: '8px' }} />
-          Back to Dashboard
-        </button>
+        {/* Back navigation moved to the profile navbar (sticky) */}
       </div>
     );
   }
@@ -206,7 +200,8 @@ const StudentsPage = () => {
                   <div style={{fontSize:'0.875rem',color:'#6b7280'}}>{stored?.email || ''}</div>
                 </div>
               </div>
-              <div>
+              <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
+                <button onClick={() => navigate('/admin/dashboard')} style={{padding:'0.5rem 0.75rem',borderRadius:8,border:'none',background:'#06b6d4',color:'white',cursor:'pointer'}}>Student list</button>
                 <button onClick={() => { localStorage.removeItem('token'); navigate('/admin'); }} style={{padding:'0.5rem 0.75rem',borderRadius:8,border:'none',background:'#ef4444',color:'white',cursor:'pointer'}}>Logout</button>
               </div>
             </div>
@@ -215,15 +210,6 @@ const StudentsPage = () => {
       })()}
       <div className="header" style={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', flexWrap: 'wrap' }}>
-          <button 
-            onClick={() => navigate('/admin/dashboard')}
-            style={styles.backButton}
-            aria-label="Back to Dashboard"
-          >
-            <ArrowLeft size={18} style={{ marginRight: '6px', flexShrink: 0 }} />
-            <span>Back to Dashboard</span>
-          </button>
-
           <h1 style={styles.title}>
             {hostel?.name ? `${hostel.name} - Students` : 'Hostel Students'}
           </h1>

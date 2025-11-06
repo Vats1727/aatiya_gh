@@ -226,7 +226,7 @@ const styles = {
         <div style={styles.inputGroup}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
             <label style={styles.label}>Password</label>
-            <Link 
+            {/* <Link 
               to="/forgot-password" 
               style={{
                 fontSize: '0.875rem',
@@ -239,7 +239,7 @@ const styles = {
               }}
             >
               Forgot Password?
-            </Link>
+            </Link> */}
           </div>
           <input
             type="password"
