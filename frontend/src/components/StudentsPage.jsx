@@ -582,28 +582,32 @@ const styles = {
   },
   header: {
     background: 'white',
-    padding: '0.875rem 1rem',
+    padding: '0.75rem 1rem',
     borderRadius: '0.75rem',
     boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
     marginBottom: '1rem',
     display: 'flex',
-    flexDirection: 'column',
-    gap: '0.875rem',
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.75rem',
     position: 'relative',
     zIndex: 10,
+    overflowX: 'auto',
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none',
+    '&::-webkit-scrollbar': {
+      display: 'none',
+    },
     '@media (min-width: 481px)': {
-      padding: '1rem 1.25rem',
+      padding: '0.75rem 1.25rem',
       borderRadius: '0.875rem',
       boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
       marginBottom: '1.25rem',
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '1rem',
     },
     '@media (min-width: 769px)': {
-      padding: '1rem 1.5rem',
+      padding: '0.75rem 1.5rem',
       borderRadius: '1rem',
       marginBottom: '1.5rem',
     },
@@ -617,14 +621,6 @@ const styles = {
       background: 'linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%)',
       borderTopLeftRadius: '0.75rem',
       borderTopRightRadius: '0.75rem',
-      '@media (min-width: 481px)': {
-        borderTopLeftRadius: '0.875rem',
-        borderTopRightRadius: '0.875rem',
-      },
-      '@media (min-width: 769px)': {
-        borderTopLeftRadius: '1rem',
-        borderTopRightRadius: '1rem',
-      },
     },
   },
   backButton: {
@@ -641,7 +637,8 @@ const styles = {
     fontSize: '0.875rem',
     lineHeight: '1.25',
     transition: 'all 0.2s ease',
-    width: '100%',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
     boxSizing: 'border-box',
     position: 'relative',
     zIndex: 1,
@@ -656,12 +653,7 @@ const styles = {
       boxShadow: 'none'
     },
     '@media (min-width: 481px)': {
-      width: 'auto',
       padding: '0.5rem 1rem',
-      justifyContent: 'flex-start',
-    },
-    '@media (min-width: 769px)': {
-      padding: '0.5rem 1.125rem',
     },
   },
   title: {
@@ -669,9 +661,10 @@ const styles = {
     fontWeight: '700',
     color: '#6b21a8',
     margin: 0,
-    padding: '0.25rem 0',
-    flex: 1,
-    textAlign: 'center',
+    padding: '0 0.5rem',
+    flex: '1 1 auto',
+    minWidth: '100px',
+    textAlign: 'left',
     position: 'relative',
     zIndex: 1,
     textOverflow: 'ellipsis',
@@ -682,11 +675,6 @@ const styles = {
     },
     '@media (min-width: 481px)': {
       fontSize: '1.5rem',
-      textAlign: 'left',
-      padding: '0 1rem',
-    },
-    '@media (min-width: 768px)': {
-      fontSize: '1.625rem',
     },
   },
   addButton: {
@@ -703,7 +691,8 @@ const styles = {
     fontSize: '0.875rem',
     lineHeight: '1.25',
     transition: 'all 0.2s ease',
-    width: '100%',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
     boxSizing: 'border-box',
     position: 'relative',
     zIndex: 1,
@@ -715,13 +704,6 @@ const styles = {
     '&:active': {
       transform: 'translateY(0)',
       boxShadow: '0 2px 4px -1px rgba(139, 92, 246, 0.2)'
-    },
-    '@media (min-width: 481px)': {
-      width: 'auto',
-      padding: '0.5rem 1.125rem',
-    },
-    '@media (min-width: 769px)': {
-      padding: '0.6rem 1.25rem',
     },
   },
   address: {
@@ -746,18 +728,23 @@ const styles = {
   // Search and Filter Styles
   searchFilterContainer: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem',
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+    gap: '0.75rem',
     marginBottom: '1.5rem',
-    '@media (min-width: 640px)': {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+    overflowX: 'auto',
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none',
+    '&::-webkit-scrollbar': {
+      display: 'none',
     },
+    paddingBottom: '0.25rem',
   },
   searchContainer: {
     position: 'relative',
-    flex: 1,
+    flex: '1 0 auto',
+    minWidth: '200px',
     maxWidth: '400px',
   },
   searchIcon: {
@@ -784,6 +771,7 @@ const styles = {
     display: 'flex',
     gap: '0.5rem',
     alignItems: 'center',
+    flexShrink: 0,
   },
   statusFilter: {
     padding: '0.6rem 2.5rem 0.6rem 1rem',
