@@ -233,7 +233,7 @@ useEffect(() => {
           });
           if (resp.ok) {
             const payload = await resp.json();
-            hostedUrl = payload?.data?.qrUrl || dataUrl;
+            hostedUrl = payload?.data?.qrDataUrl || payload?.data?.qrUrl || dataUrl;
             // reflect stored URL on local state list for immediacy
             setHostels(prev => prev.map(h => h.id === hostel.id ? { ...h, qrUrl: hostedUrl } : h));
           } else {

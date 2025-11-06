@@ -44,15 +44,20 @@ if (!admin.apps.length) {
 // Express middleware to verify Firebase ID token and attach user info to req.user
 export async function authMiddleware(req, res, next) {
   const auth = req.headers.authorization || '';
-  if (!auth.startsWith('Bearer ')) {
+  if (!auth) {
     return res.status(401).json({ 
       error: 'Unauthorized',
-      message: 'No authorization token provided',
+      message: 'No authorization header provided',
       code: 'auth/no-token'
     });
   }
 
-  const token = auth.split('Bearer ')[1].trim();
+  const parts = auth.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return res.status(401).json({ error: 'Unauthorized', message: 'Invalid authorization header format', code: 'auth/invalid-format' });
+  }
+
+  const token = parts[1].trim();
   try {
     const { provider, decoded } = await verifyAnyToken(token);
     if (provider === 'firebase') {
@@ -74,7 +79,11 @@ export async function authMiddleware(req, res, next) {
     }
     return next();
   } catch (error) {
-    console.error('Error verifying token (authMiddleware):', error);
+    console.error('Error verifying token (authMiddleware):', error && (error.message || error));
+    // Distinguish firebase auth errors
+    if (error && error.code && String(error.code).startsWith('auth/')) {
+      return res.status(401).json({ error: 'Invalid Firebase ID token', code: error.code, message: error.message });
+    }
     return res.status(401).json({ error: 'Invalid or expired token', code: 'auth/invalid-token' });
   }
 }

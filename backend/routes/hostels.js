@@ -1,11 +1,12 @@
 import express from 'express';
 import admin from 'firebase-admin';
-import { verifyAnyToken } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/auth.js';
+import QRCode from 'qrcode';
 import { db } from '../config/firebase.js';
 import { createHostel, createStudent } from '../utils/idGenerator.js';
 
 const router = express.Router();
-// Public endpoint: allow anonymous student submissions via hostelDocId found in any user's hostels subcollection
+// Public endpoint: allow anonymous student submissions via hostelDocId but require ownerUserId
 // POST /api/public/hostels/:hostelDocId/students
 router.post('/public/hostels/:hostelDocId/students', async (req, res) => {
   try {
@@ -13,8 +14,7 @@ router.post('/public/hostels/:hostelDocId/students', async (req, res) => {
     if (!hostelDocId) return res.status(400).json({ success: false, error: 'Missing hostelDocId' });
 
     const studentData = req.body || {};
-    // Prefer explicit ownerUserId passed in query or body to avoid expensive/invalid collectionGroup queries
-    // Try query param first, then body
+    // Prefer explicit ownerUserId passed in query or body
     const ownerUserId = (req.query && req.query.ownerUserId) || (req.body && req.body.ownerUserId) || null;
     if (!ownerUserId) {
       return res.status(400).json({ success: false, error: 'ownerUserId is required for public submissions' });
@@ -69,6 +69,7 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
+// Apply auth middleware to all following routes that require authentication
 router.use(authMiddleware);
 
 // Upload QR image for hostel and store hosted URL on the hostel document
@@ -78,50 +79,25 @@ router.post('/users/me/hostels/:hostelId/qr', async (req, res) => {
     const userId = req.user.uid;
     const { hostelId } = req.params;
     if (!userId || !hostelId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
-
-    const { dataUrl } = req.body || {};
-    if (!dataUrl || typeof dataUrl !== 'string') {
-      return res.status(400).json({ success: false, error: 'Missing dataUrl in request body' });
-    }
-
     // Ensure hostel exists
     const hostelRef = db.collection('users').doc(userId).collection('hostels').doc(hostelId);
     const hostelSnap = await hostelRef.get();
     if (!hostelSnap.exists) return res.status(404).json({ success: false, error: 'Hostel not found' });
 
-    // Parse data URL: data:<mime>;base64,<data>
-    const match = dataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
-    if (!match) return res.status(400).json({ success: false, error: 'Invalid dataUrl format' });
+    // Generate QR code for the add-student URL
+    const publicBase = process.env.PUBLIC_BASE || process.env.FRONTEND_BASE || 'https://aatiya-gh.vercel.app';
+    const addUrl = `${publicBase}/hostel/${encodeURIComponent(hostelId)}/add-student?ownerUserId=${encodeURIComponent(userId)}`;
 
-    const mime = match[1];
-    const b64 = match[2];
-    const buffer = Buffer.from(b64, 'base64');
+    // Use qrcode to generate a data URL (PNG)
+    const qrDataUrl = await QRCode.toDataURL(addUrl, { width: 360, margin: 1 });
 
-    // Save to Firebase Storage
-    const bucket = admin.storage().bucket();
-    const filePath = `hostels/${userId}/${hostelId}/qr-${Date.now()}.png`;
-    const file = bucket.file(filePath);
+    // Persist QR data url on hostel document so it can be re-used
+    await hostelRef.update({ qrDataUrl, qrUpdatedAt: admin.firestore.FieldValue.serverTimestamp() });
 
-    await file.save(buffer, {
-      metadata: {
-        contentType: mime,
-      },
-      public: true,
-    });
-
-    // Make it public so it's easy to link (note: this sets public ACL)
-    try { await file.makePublic(); } catch (err) { /* ignore makePublic errors */ }
-
-    const bucketName = bucket.name;
-    const publicUrl = `https://storage.googleapis.com/${bucketName}/${encodeURI(filePath)}`;
-
-    // Persist URL on hostel document
-    await hostelRef.update({ qrUrl: publicUrl, qrUpdatedAt: admin.firestore.FieldValue.serverTimestamp() });
-
-    res.json({ success: true, data: { qrUrl: publicUrl } });
+    res.json({ success: true, data: { qrDataUrl } });
   } catch (error) {
     console.error('Error uploading hostel QR:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to upload QR' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to generate QR' });
   }
 });
 // Get hostels with student counts for the current user
