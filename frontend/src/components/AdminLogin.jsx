@@ -11,7 +11,34 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const styles = {
+  // Apply responsive styles
+const applyResponsiveStyles = (styleObj) => {
+  const result = { ...styleObj };
+  
+  // Remove media query properties
+  Object.keys(result).forEach(key => {
+    if (key.startsWith('@media')) {
+      delete result[key];
+    }
+  });
+
+  // Apply mobile styles if needed
+  if (window.innerWidth < 768) {
+    if (styleObj['@media (max-width: 768px)']) {
+      Object.assign(result, styleObj['@media (max-width: 768px)']);
+    }
+  }
+  
+  if (window.innerWidth < 480) {
+    if (styleObj['@media (max-width: 480px)']) {
+      Object.assign(result, styleObj['@media (max-width: 480px)']);
+    }
+  }
+
+  return result;
+};
+
+const styles = {
     container: {
       minHeight: '100vh',
       display: 'flex',
@@ -143,8 +170,9 @@ const AdminLogin = () => {
   // Store the raw token (no 'Bearer ' prefix)
   localStorage.setItem('token', idToken);
       
-      // Navigate after successful login
-      navigate('/dashboard');
+  // Navigate after successful login
+  // Use the admin dashboard route to match admin area routing
+  navigate('/admin/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       setError('Invalid email or password');
@@ -172,6 +200,7 @@ const AdminLogin = () => {
             value={credentials.username}
             onChange={handleChange}
             style={styles.input}
+            placeholder="Enter your email"
             required
             autoComplete="email"
             inputMode="email"
@@ -180,14 +209,30 @@ const AdminLogin = () => {
         </div>
         
         <div style={styles.inputGroup}>
-          <label style={styles.label}>Password</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <label style={styles.label}>Password</label>
+            <Link 
+              to="/forgot-password" 
+              style={{
+                fontSize: '0.875rem',
+                color: '#7c3aed',
+                textDecoration: 'none',
+                fontWeight: '500',
+                ':hover': {
+                  textDecoration: 'underline',
+                },
+              }}
+            >
+              Forgot Password?
+            </Link>
+          </div>
           <input
             type="password"
             name="password"
             value={credentials.password}
             onChange={handleChange}
             style={styles.input}
-            placeholder="Enter password"
+            placeholder="Enter your password"
             required
             autoComplete="current-password"
           />
@@ -212,15 +257,22 @@ const AdminLogin = () => {
           onTouchStart={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(0.98)')}
           onTouchEnd={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(1)')}
         >
-          {isLoading ? 'Signing in...' : 'Login'}
+          {isLoading ? 'Signing in...' : 'Sign In'}
         </button>
         
-        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <span style={{ color: '#6b7280' }}>Don't have an account? </span>
+        <div style={{
+          marginTop: '1.5rem',
+          textAlign: 'center',
+          color: '#4b5563',
+          fontSize: '0.9375rem',
+          paddingTop: '1rem',
+          borderTop: '1px solid #e5e7eb',
+        }}>
+          Don't have an account?{' '}
           <Link 
             to="/admin/register" 
             style={{
-              color: '#9333ea',
+              color: '#7c3aed',
               textDecoration: 'none',
               fontWeight: '600',
               ':hover': {

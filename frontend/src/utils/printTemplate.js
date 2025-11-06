@@ -87,9 +87,13 @@ export const renderStudentPrintHtml = (student = {}) => {
         <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">छात्रा से मिलने वाले का नाम / Allowed Visitors</h3>
         <div style="font-size:12px;">
           ${(() => {
-            const vals = [1,2,3,4].map(i => String(s[`allowedPerson${i}`] || '').trim()).filter(Boolean);
-            if (!vals.length) return '<div>--</div>';
-            return vals.map((v, idx) => `<div>${idx+1}. ${escape(v)}</div>`).join('');
+            const arr = [];
+            for (let i = 1; i <= 4; i++) {
+              const v = String(s[`allowedPerson${i}`] || '').trim();
+              if (v) arr.push(v);
+            }
+            if (arr.length === 0) return '';
+            return arr.map((name, idx) => `<div>${idx + 1}. ${escape(name)}</div>`).join('');
           })()}
         </div>
       </div>
