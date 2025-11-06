@@ -5,6 +5,7 @@ import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminRegister from "./components/AdminRegister";
 import StudentsPage from "./components/StudentsPage";
+import SubmissionSuccess from "./components/SubmissionSuccess";
 
 // Authentication wrapper
 const PrivateRoute = ({ children }) => {
@@ -67,9 +68,11 @@ export default function App() {
       } />
 
       <Route path="/hostel/:hostelId/add-student" element={
-        <PrivateRoute>
-          <StudentForm />
-        </PrivateRoute>
+        <StudentForm />
+      } />
+
+      <Route path="/submission-success" element={
+        <SubmissionSuccess />
       } />
 
       {/* Redirect all unknown routes to login */}

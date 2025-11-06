@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2 } from 'lucide-react';
+import QRCode from 'qrcode';
 import '../styles.css';
 
 // Use production URL if environment variable is not set
@@ -15,6 +16,8 @@ const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const [selectedHostel, setSelectedHostel] = useState(null);
   const [students, setStudents] = useState([]);
+  const [qrHostel, setQrHostel] = useState(null);
+  const [qrImageUrl, setQrImageUrl] = useState('');
   const navigate = useNavigate();
 
   // Helper to get Authorization header value. Accepts tokens stored as
@@ -242,6 +245,55 @@ useEffect(() => {
   // Handle view students for a hostel
   const handleViewStudents = (hostelId) => {
     navigate(`/hostel/${hostelId}/students`);
+  };
+
+  // Generate QR code for adding student to a specific hostel (local generation)
+  const generateQrForHostel = async (hostel) => {
+    if (!hostel || !hostel.id) return;
+    try {
+      const publicBase = window.location.origin || 'https://aatiya-gh.vercel.app';
+  // Include owner user id in the QR URL as a query param so public submissions can be attributed correctly
+  const ownerId = user?.uid || user?.id || (user && user.userId) || null;
+  const ownerQuery = ownerId ? `?ownerUserId=${encodeURIComponent(ownerId)}` : '';
+  const addUrl = `${publicBase}/hostel/${encodeURIComponent(hostel.id)}/add-student${ownerQuery}`;
+
+      // Generate a data URL (PNG) for the QR locally using the `qrcode` lib
+      const dataUrl = await QRCode.toDataURL(addUrl, { width: 360, margin: 1 });
+
+      // Upload dataUrl to backend to persist and get hosted URL
+      const authHeader = getAuthHeader();
+      let hostedUrl = dataUrl;
+      if (authHeader) {
+        try {
+          const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}/qr`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+            body: JSON.stringify({ dataUrl })
+          });
+          if (resp.ok) {
+            const payload = await resp.json();
+            hostedUrl = payload?.data?.qrDataUrl || payload?.data?.qrUrl || dataUrl;
+            // reflect stored URL on local state list for immediacy
+            setHostels(prev => prev.map(h => h.id === hostel.id ? { ...h, qrUrl: hostedUrl } : h));
+          } else {
+            console.warn('Failed to upload QR to backend, using local dataUrl');
+          }
+        } catch (err) {
+          console.warn('Error uploading QR to backend', err);
+        }
+      }
+
+      setQrHostel(hostel);
+      setQrImageUrl(hostedUrl);
+    } catch (err) {
+      console.error('Failed to generate QR code', err);
+      setError('Failed to generate QR code');
+    }
+  };
+
+  const closeQrModal = () => {
+    setQrHostel(null);
+    setQrImageUrl('');
   };
 
   // Handle add new hostel
@@ -1126,6 +1178,14 @@ useEffect(() => {
                         <ArrowRight size={16} />
                       </button>
                       <button
+                        onClick={() => generateQrForHostel(hostel)}
+                        className="btn btn-icon"
+                        style={{ ...styles.actionButton }}
+                        title="Generate QR for Add Student"
+                      >
+                        <UserPlus size={14} />
+                      </button>
+                      <button
                         onClick={() => {
                           const newName = prompt('Edit hostel name', hostel.name);
                           if (newName === null) return;
@@ -1202,6 +1262,33 @@ useEffect(() => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {/* QR Modal */}
+        {qrHostel && (
+          <div style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}} onClick={closeQrModal}>
+            <div onClick={(e) => e.stopPropagation()} style={{background: 'white', padding: '1rem', borderRadius: '0.75rem', maxWidth: '420px', width: '92%', textAlign: 'center'}}>
+              <h3 style={{marginTop:0, marginBottom: '0.5rem'}}>QR for {qrHostel.name || 'Hostel'}</h3>
+              <div style={{display: 'flex', justifyContent: 'center', marginBottom: '0.5rem'}}>
+                <img src={qrImageUrl} alt={`QR code for ${qrHostel.name}`} style={{width: '320px', height: '320px', maxWidth: '100%'}} />
+              </div>
+              <div style={{wordBreak: 'break-all', fontSize: '0.9rem', color: '#374151', marginBottom: '0.75rem'}}>
+                <small>
+                  {`${window.location.origin || 'https://aatiya-gh.vercel.app'}/hostel/${encodeURIComponent(qrHostel.id)}/add-student${user?.uid ? `?ownerUserId=${encodeURIComponent(user.uid)}` : ''}`}
+                </small>
+              </div>
+              <div style={{display: 'flex', gap: '0.5rem', justifyContent: 'center'}}>
+                <button className="btn btn-primary" onClick={() => { navigator.clipboard?.writeText(`${window.location.origin || 'https://aatiya-gh.vercel.app'}/hostel/${encodeURIComponent(qrHostel.id)}/add-student`); }}>
+                  Copy Link
+                </button>
+                <a className="btn btn-secondary" href={qrImageUrl} download={`hostel-${qrHostel.id}-qr.png`} style={{textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem 0.75rem', borderRadius: '0.375rem'}}>
+                  Download
+                </a>
+                <button className="btn" onClick={closeQrModal} style={{background: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '0.375rem'}}>
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

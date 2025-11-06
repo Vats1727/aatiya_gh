@@ -935,7 +935,8 @@ const HostelAdmissionForm = () => {
 
       // Submit form data
       let res;
-      const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token');
+  const authHeader = token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : null;
       const user = JSON.parse(localStorage.getItem('user') || 'null');
       // prefer hostelDocId from formData, fall back to query preHostelId
       const effectiveHostelId = formData.hostelDocId || preHostelId;
@@ -957,7 +958,7 @@ const HostelAdmissionForm = () => {
         // Admin creating a student under a hostel - use protected endpoint to get combinedId
         res = await fetch(`${API_BASE}/api/users/me/hostels/${effectiveHostelId}/students`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
           body: JSON.stringify(formDataWithStatus)
         });
       } else {
@@ -965,17 +966,29 @@ const HostelAdmissionForm = () => {
         if (editId && token && effectiveHostelId) {
           res = await fetch(`${API_BASE}/api/users/me/hostels/${effectiveHostelId}/students/${editId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
             body: JSON.stringify(formDataWithStatus)
           });
         } else {
-          const endpoint = editId ? `${API_BASE}/api/students/${editId}` : `${API_BASE}/api/students`;
-          const method = editId ? 'PUT' : 'POST';
-          res = await fetch(endpoint, {
+          // Anonymous/new student submission for a specific hostel -> use public endpoint that attaches student to hostel
+          if (!editId && !token && effectiveHostelId) {
+            // include ownerUserId in query if present so backend can attribute the hostel
+            const ownerParam = preOwnerUserId ? `?ownerUserId=${encodeURIComponent(preOwnerUserId)}` : '';
+            res = await fetch(`${API_BASE}/api/public/hostels/${effectiveHostelId}/students${ownerParam}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(formDataWithStatus)
+            });
+          } else {
+            // Fallback: top-level students collection (legacy)
+            const endpoint = editId ? `${API_BASE}/api/students/${editId}` : `${API_BASE}/api/students`;
+            const method = editId ? 'PUT' : 'POST';
+            res = await fetch(endpoint, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formDataWithStatus)
           });
+          }
         }
       }
       if (!res.ok) {
@@ -990,7 +1003,24 @@ const HostelAdmissionForm = () => {
         // backend returns { success: true, data: { combinedId, studentPath } }
         const combined = payload && ((payload.data && payload.data.combinedId) || payload.combinedId);
         alert(`Student created with Application no: ${combined || 'N/A'}`);
+        return;
       }
+
+      // Anonymous submission for a hostel -> navigate to confirmation page with combinedId and formData so user can download PDF
+      if (!editId && !token && effectiveHostelId) {
+        try {
+          const payload = await res.json();
+          const combined = payload && ((payload.data && payload.data.combinedId) || payload.combinedId) || null;
+          // Navigate to success page; pass form data so PDF can be generated client-side
+          navigate('/submission-success', { state: { combinedId: combined, formData: formDataWithStatus } });
+          return;
+        } catch (err) {
+          console.error('Failed to parse response for anonymous submission', err);
+          alert('Submission saved but failed to show confirmation.');
+          return;
+        }
+      }
+
       alert('Record updated successfully');
       // If this was an admin editing an existing record, go back to admin dashboard
       if (editId) {
@@ -998,8 +1028,7 @@ const HostelAdmissionForm = () => {
         return;
       }
 
-      // For student submissions (no editId) do NOT redirect to admin dashboard.
-      // Instead trigger the PDF download so the student can download their copy.
+      // Fallback: for legacy top-level student submissions or other cases, trigger PDF download
       try {
         await downloadStudentPdf(formDataWithStatus);
       } catch (err) {

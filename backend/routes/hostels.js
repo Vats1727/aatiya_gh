@@ -1,47 +1,72 @@
 import express from 'express';
 import admin from 'firebase-admin';
-import { verifyAnyToken } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/auth.js';
+import QRCode from 'qrcode';
 import { db } from '../config/firebase.js';
 import { createHostel, createStudent } from '../utils/idGenerator.js';
 
 const router = express.Router();
-
-// Apply auth middleware to all routes
-const authMiddleware = async (req, res, next) => {
-  // Skip auth for health check
-  if (req.path === '/health') return next();
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' });
-  }
-
-  const token = authHeader.split(' ')[1];
+// Public endpoint: allow anonymous student submissions via hostelDocId but require ownerUserId
+// POST /api/public/hostels/:hostelDocId/students
+router.post('/public/hostels/:hostelDocId/students', async (req, res) => {
   try {
-    const { provider, decoded } = await verifyAnyToken(token);
-    if (provider === 'firebase') {
-      req.user = {
-        uid: decoded.uid,
-        email: decoded.email,
-        role: decoded.role || 'user'
-      };
-    } else {
-      // JWT payload expected to contain userId and role
-      req.user = {
-        uid: decoded.userId || decoded.uid,
-        email: decoded.email,
-        role: decoded.role || 'user'
-      };
-    }
-    return next();
-  } catch (err) {
-    console.error('Error verifying token (any):', err);
-    return res.status(401).json({ success: false, error: 'Invalid token', code: 'INVALID_TOKEN' });
-  }
-};
+    const { hostelDocId } = req.params;
+    if (!hostelDocId) return res.status(400).json({ success: false, error: 'Missing hostelDocId' });
 
+    const studentData = req.body || {};
+    // Prefer explicit ownerUserId passed in query or body
+    const ownerUserId = (req.query && req.query.ownerUserId) || (req.body && req.body.ownerUserId) || null;
+    if (!ownerUserId) {
+      return res.status(400).json({ success: false, error: 'ownerUserId is required for public submissions' });
+    }
+
+    // Ensure the hostel exists under the provided owner
+    const hostelRef = db.collection('users').doc(ownerUserId).collection('hostels').doc(hostelDocId);
+    const hostelSnap = await hostelRef.get();
+    if (!hostelSnap.exists) return res.status(404).json({ success: false, error: 'Hostel not found for provided owner' });
+
+    // Use transactional helper to create the student under the owner's hostel
+    const result = await createStudent(db, ownerUserId, hostelDocId, studentData);
+    // result: { studentRef, combinedId }
+    res.status(201).json({ success: true, data: { combinedId: result.combinedId, studentPath: result.studentRef.path } });
+  } catch (err) {
+    console.error('Error creating public student for hostel:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to create student' });
+  }
+});
+
+// Use imported auth middleware for protected routes
+// (authMiddleware is imported from ../middleware/auth.js)
 router.use(authMiddleware);
 
+// Upload QR image for hostel and store hosted URL on the hostel document
+// POST /api/users/me/hostels/:hostelId/qr
+router.post('/users/me/hostels/:hostelId/qr', async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { hostelId } = req.params;
+    if (!userId || !hostelId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
+    // Ensure hostel exists
+    const hostelRef = db.collection('users').doc(userId).collection('hostels').doc(hostelId);
+    const hostelSnap = await hostelRef.get();
+    if (!hostelSnap.exists) return res.status(404).json({ success: false, error: 'Hostel not found' });
+
+    // Generate QR code for the add-student URL
+    const publicBase = process.env.PUBLIC_BASE || process.env.FRONTEND_BASE || 'https://aatiya-gh.vercel.app';
+    const addUrl = `${publicBase}/hostel/${encodeURIComponent(hostelId)}/add-student?ownerUserId=${encodeURIComponent(userId)}`;
+
+    // Use qrcode to generate a data URL (PNG)
+    const qrDataUrl = await QRCode.toDataURL(addUrl, { width: 360, margin: 1 });
+
+    // Persist QR data url on hostel document so it can be re-used
+    await hostelRef.update({ qrDataUrl, qrUpdatedAt: admin.firestore.FieldValue.serverTimestamp() });
+
+    res.json({ success: true, data: { qrDataUrl } });
+  } catch (error) {
+    console.error('Error uploading hostel QR:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to generate QR' });
+  }
+});
 // Get hostels with student counts for the current user
 router.get('/users/me/hostels', async (req, res) => {
   try {
