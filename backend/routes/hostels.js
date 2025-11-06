@@ -5,8 +5,35 @@ import { db } from '../config/firebase.js';
 import { createHostel, createStudent } from '../utils/idGenerator.js';
 
 const router = express.Router();
+// Public endpoint: allow anonymous student submissions via hostelDocId found in any user's hostels subcollection
+// POST /api/public/hostels/:hostelDocId/students
+router.post('/public/hostels/:hostelDocId/students', async (req, res) => {
+  try {
+    const { hostelDocId } = req.params;
+    if (!hostelDocId) return res.status(400).json({ success: false, error: 'Missing hostelDocId' });
 
-// Apply auth middleware to all routes
+    const studentData = req.body || {};
+    // Find the hostel document using a collectionGroup query to locate the hostel across all users
+    const q = await db.collectionGroup('hostels').where(admin.firestore.FieldPath.documentId(), '==', hostelDocId).limit(1).get();
+    if (q.empty) return res.status(404).json({ success: false, error: 'Hostel not found' });
+
+    const hostelDoc = q.docs[0];
+    // owner userId is the parent of the hostels collection: /users/{userId}/hostels/{hostelDocId}
+    const userDocRef = hostelDoc.ref.parent.parent;
+    if (!userDocRef || !userDocRef.id) return res.status(500).json({ success: false, error: 'Owner not found for hostel' });
+    const ownerUserId = userDocRef.id;
+
+    // Use transactional helper to create the student under the owner's hostel
+    const result = await createStudent(db, ownerUserId, hostelDocId, studentData);
+    // result: { studentRef, combinedId }
+    res.status(201).json({ success: true, data: { combinedId: result.combinedId, studentPath: result.studentRef.path } });
+  } catch (err) {
+    console.error('Error creating public student for hostel:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to create student' });
+  }
+});
+
+// Apply auth middleware to all other routes
 const authMiddleware = async (req, res, next) => {
   // Skip auth for health check
   if (req.path === '/health') return next();
