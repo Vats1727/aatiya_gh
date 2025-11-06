@@ -252,6 +252,9 @@ const StudentsPage = () => {
       <div className="card" style={styles.tableContainer}>
         <div style={styles.tableHeader}>
           <h3>Students</h3>
+          <div style={styles.resultCountTop}>
+            Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of {filteredStudents.length} students
+          </div>
         </div>
         
         {filteredStudents.length === 0 ? (
@@ -399,11 +402,7 @@ const StudentsPage = () => {
           </div>
         )}
         
-        <div style={styles.resultCount}>
-          Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-{
-            Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)
-          } of {filteredStudents.length} students
-        </div>
+        {/* result count moved to table header (top-right) */}
       </div>
     </div>
   );
@@ -839,6 +838,12 @@ const styles = {
     fontSize: '0.875rem',
     marginTop: '0.5rem',
     padding: '0 0.5rem',
+  },
+  resultCountTop: {
+    marginLeft: 'auto',
+    color: '#6b7280',
+    fontSize: '0.875rem',
+    textAlign: 'right'
   },
   
   // Empty State

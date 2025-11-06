@@ -148,7 +148,7 @@ export const renderRulesHtml = (student = {}) => {
   const formattedDate = formatDateDDMMYYYY(s.admissionDate);
 
   return `
-    <div style="max-width:900px;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;min-height:297mm;position:relative;">
+    <div style="max-width:900px;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;min-height:297mm;position:relative;page-break-before:always;">
       <div style="text-align:center;border-bottom:2px solid #4f46e5;padding-bottom:10px;margin-bottom:12px;">
         <h2 style="color:#4f46e5;margin:0;font-size:18px;">हॉस्टल नियम एवं शर्तें / HOSTEL RULES AND REGULATIONS</h2>
       </div>
