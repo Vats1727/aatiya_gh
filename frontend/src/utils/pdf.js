@@ -16,14 +16,16 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
   // Helper to render a single html snippet to PDF (adds page when needed)
   const renderSnippetToPdf = async (pdf, snippetHtml, isFirstPage) => {
     // Create offscreen container for this snippet
-    const snippetContainer = document.createElement('div');
-    snippetContainer.style.position = 'fixed';
-    snippetContainer.style.left = '-9999px';
-    snippetContainer.style.top = '0';
-    // Use a width that maps well to A4 at typical screen DPI
-    snippetContainer.style.width = '794px';
-    snippetContainer.style.padding = '16px';
-    snippetContainer.style.background = '#fff';
+  const snippetContainer = document.createElement('div');
+  snippetContainer.style.position = 'fixed';
+  snippetContainer.style.left = '-9999px';
+  snippetContainer.style.top = '0';
+  // Use a width that maps well to A4 at typical screen DPI and avoid
+  // additional padding so the rendered canvas matches the template height.
+  snippetContainer.style.width = '794px';
+  snippetContainer.style.padding = '0';
+  snippetContainer.style.boxSizing = 'border-box';
+  snippetContainer.style.background = '#fff';
     snippetContainer.innerHTML = snippetHtml;
     document.body.appendChild(snippetContainer);
 
@@ -89,13 +91,16 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
   if (usePreview) {
     container = previewEl;
   } else {
-    container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.style.width = '900px';
-    container.style.padding = '16px';
-    container.style.background = '#fff';
+  container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  // Match the snippet width used above and avoid extra padding to
+  // prevent accidental overflow when converting to canvas.
+  container.style.width = '794px';
+  container.style.padding = '0';
+  container.style.boxSizing = 'border-box';
+  container.style.background = '#fff';
     container.innerHTML = htmlString;
     document.body.appendChild(container);
     created = true;
