@@ -86,6 +86,8 @@ const HostelAdmissionForm = () => {
 
   const [showPreview, setShowPreview] = useState(false);
   const [hostels, setHostels] = useState([]);
+  const [translitNameHi, setTranslitNameHi] = useState('');
+  const [translitAddressHi, setTranslitAddressHi] = useState('');
   // Helper to resolve bilingual hostel name/address from available hostel records.
   const getHostelBilingual = (hostelId) => {
     const effectiveId = hostelId || formData.hostelDocId || preHostelId;
@@ -184,6 +186,51 @@ const HostelAdmissionForm = () => {
     };
     load();
   }, [editId]);
+
+  // Dynamic loader for Sanscript (transliteration) to show Hindi fallback when hostel record doesn't have name_hi
+  const loadSanscript = () => {
+    return new Promise((resolve, reject) => {
+      if (typeof window === 'undefined') return resolve(null);
+      if (window.Sanscript) return resolve(window.Sanscript);
+      const existing = document.querySelector('script[data-sanscript]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(window.Sanscript));
+        existing.addEventListener('error', (e) => reject(e));
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/sanscript@1.0.0/dist/sanscript.min.js';
+      s.async = true;
+      s.setAttribute('data-sanscript', '1');
+      s.onload = () => resolve(window.Sanscript);
+      s.onerror = (e) => reject(e);
+      document.head.appendChild(s);
+    });
+  };
+
+  // When hostels list or preHostelId changes, attempt to generate Hindi transliteration if missing
+  useEffect(() => {
+    const { nameEn = '', nameHi = '', addressEn = '', addressHi = '' } = getHostelBilingual(formData.hostelDocId || preHostelId) || {};
+    if (!nameEn) return;
+    if (nameHi) return; // already present
+    let mounted = true;
+    loadSanscript().then((Sanscript) => {
+      try {
+        if (!mounted) return;
+        if (Sanscript && Sanscript.t) {
+          const hi = Sanscript.t(String(nameEn), 'itrans', 'devanagari');
+          setTranslitNameHi(hi);
+        }
+        if (Sanscript && Sanscript.t && addressEn && !addressHi) {
+          const ahi = Sanscript.t(String(addressEn), 'itrans', 'devanagari');
+          setTranslitAddressHi(ahi);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, [hostels, formData.hostelDocId, preHostelId]);
 
   // If authenticated, load hostels for current user to allow admin additions
   useEffect(() => {
@@ -1102,9 +1149,9 @@ const HostelAdmissionForm = () => {
               <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '2px solid #4f46e5', paddingBottom: '10px' }}>
                 {(() => {
                   const { nameEn = '', nameHi = '', addressEn = '', addressHi = '' } = getHostelBilingual(formData.hostelDocId || preHostelId) || {};
-                  const headerHi = nameHi || nameEn || 'आतिया गर्ल्स हॉस्टल';
-                  const headerEn = nameEn || (nameHi ? '' : 'ATIYA GIRLS HOSTEL');
-                  const addressLine = addressHi ? `${addressHi} / ${addressEn || ''}` : (addressEn || 'रामपाड़ा कटिहार / Rampada Katihar');
+                  const headerHi = nameHi || translitNameHi || nameEn || 'आतिया गर्ल्स हॉस्टल';
+                  const headerEn = nameEn || (nameHi || translitNameHi ? '' : 'ATIYA GIRLS HOSTEL');
+                  const addressLine = (addressHi || translitAddressHi) ? `${addressHi || translitAddressHi} / ${addressEn || ''}` : (addressEn || 'रामपाड़ा कटिहार / Rampada Katihar');
                   return (
                     <>
                       <h1 style={{ color: '#4f46e5', margin: '5px 0', fontSize: '28px' }}>{headerHi}</h1>
@@ -1494,9 +1541,9 @@ const HostelAdmissionForm = () => {
           <div style={responsiveStyles.header}>
             {(() => {
               const { nameEn = '', nameHi = '', addressEn = '', addressHi = '' } = getHostelBilingual(formData.hostelDocId || preHostelId) || {};
-              const headerHi = nameHi || nameEn || 'आतिया गर्ल्स हॉस्टल';
-              const headerEn = nameEn || (nameHi ? '' : 'ATIYA GIRLS HOSTEL');
-              const addressLine = addressHi ? `${addressHi} / ${addressEn || ''}` : (addressEn || 'रामपाड़ा कटिहार / Rampada Katihar');
+              const headerHi = nameHi || translitNameHi || nameEn || 'आतिया गर्ल्स हॉस्टल';
+              const headerEn = nameEn || (nameHi || translitNameHi ? '' : 'ATIYA GIRLS HOSTEL');
+              const addressLine = (addressHi || translitAddressHi) ? `${addressHi || translitAddressHi} / ${addressEn || ''}` : (addressEn || 'रामपाड़ा कटिहार / Rampada Katihar');
               return (
                 <>
                   <h1 style={responsiveStyles.h1}>{headerHi}</h1>

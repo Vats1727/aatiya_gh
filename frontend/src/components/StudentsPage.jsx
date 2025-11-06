@@ -20,6 +20,8 @@ const StudentsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOption, setSortOption] = useState('name_asc');
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
+  const [translitNameHi, setTranslitNameHi] = useState('');
+  const [translitAddressHi, setTranslitAddressHi] = useState('');
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640);
@@ -71,6 +73,46 @@ const StudentsPage = () => {
 
     fetchStudents();
   }, [hostelId]);
+
+  // Dynamic loader for Sanscript (transliteration) to show Hindi fallback when hostel record doesn't have name_hi
+  const loadSanscript = () => {
+    return new Promise((resolve, reject) => {
+      if (typeof window === 'undefined') return resolve(null);
+      if (window.Sanscript) return resolve(window.Sanscript);
+      const existing = document.querySelector('script[data-sanscript]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(window.Sanscript));
+        existing.addEventListener('error', (e) => reject(e));
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/sanscript@1.0.0/dist/sanscript.min.js';
+      s.async = true;
+      s.setAttribute('data-sanscript', '1');
+      s.onload = () => resolve(window.Sanscript);
+      s.onerror = (e) => reject(e);
+      document.head.appendChild(s);
+    });
+  };
+
+  // When hostel name exists but there's no Hindi stored, generate a phonetic Hindi fallback for display
+  useEffect(() => {
+    if (!hostel || !hostel.name) return;
+    if (hostel.name_hi) return; // already present
+    let mounted = true;
+    loadSanscript().then((Sanscript) => {
+      try {
+        if (!mounted) return;
+        if (Sanscript && Sanscript.t) {
+          const hi = Sanscript.t(String(hostel.name), 'itrans', 'devanagari');
+          setTranslitNameHi(hi);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, [hostel && hostel.name, hostel && hostel.name_hi]);
 
   // Fetch hostels list for current user and resolve the hostel name if available
   useEffect(() => {
@@ -288,9 +330,16 @@ const StudentsPage = () => {
       })()}
       <div className="header" style={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', flexWrap: 'wrap' }}>
-          <h1 style={styles.title}>
-            {hostel?.name ? `${hostel.name} - Student list` : 'Hostel Students'}
-          </h1>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>
+              { (hostel && (hostel.name_hi || translitNameHi)) ? (hostel.name_hi || translitNameHi) : (hostel?.name || 'Hostel Students') }
+            </div>
+            {hostel?.name && (
+              <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>
+                {hostel.name} - Student list
+              </div>
+            )}
+          </div>
           
           <button 
             onClick={handleAddStudent}
