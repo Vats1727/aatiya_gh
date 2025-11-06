@@ -53,10 +53,9 @@ const HostelAdmissionForm = () => {
   });
 
   // Dynamic lists for visitors and coaching entries (max 4 each)
-  // ensure at least one visitor field is available by default
+  // start with one empty visitor and one coaching entry by default
   const [allowedVisitors, setAllowedVisitors] = useState(() => ['']);
 
-  // ensure at least one coaching entry is available by default
   const [coachingList, setCoachingList] = useState(() => [{ name: '', address: 'rajkot', start: '', end: '' }]);
 
   // helper: format 24h 'HH:MM' to 12-hour with AM/PM
