@@ -331,14 +331,20 @@ const StudentsPage = () => {
       <div className="header" style={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>
-              { (hostel && (hostel.name_hi || translitNameHi)) ? (hostel.name_hi || translitNameHi) : (hostel?.name || 'Hostel Students') }
-            </div>
-            {hostel?.name && (
-              <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>
-                {hostel.name} - Student list
-              </div>
-            )}
+            {(() => {
+              const hi = (hostel && (hostel.name_hi || translitNameHi)) || '';
+              const en = hostel?.name || '';
+              const normHi = String(hi).trim();
+              const normEn = String(en).trim();
+              const showBoth = normHi && normEn && normHi !== normEn;
+              return (
+                <>
+                  <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{normHi || normEn || 'Hostel Students'}</div>
+                  {showBoth && <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{normEn} - Student list</div>}
+                  {!normHi && normEn && <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{normEn} - Student list</div>}
+                </>
+              );
+            })()}
           </div>
           
           <button 
@@ -430,7 +436,7 @@ const StudentsPage = () => {
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                       <div style={styles.avatar}>{String((student.studentName || 'U').charAt(0)).toUpperCase()}</div>
                       <div>
-                        <div style={styles.nameText}>{student.studentName || student.name || 'N/A'}</div>
+                          <div style={styles.nameText}>{student.studentName || student.name || 'N/A'}</div>
                         <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{student.mobile1 || 'N/A'}</div>
                       </div>
                     </div>

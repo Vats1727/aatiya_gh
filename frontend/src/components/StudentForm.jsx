@@ -1152,11 +1152,23 @@ const HostelAdmissionForm = () => {
                   const headerHi = nameHi || translitNameHi || nameEn || 'आतिया गर्ल्स हॉस्टल';
                   const headerEn = nameEn || (nameHi || translitNameHi ? '' : 'ATIYA GIRLS HOSTEL');
                   const addressLine = (addressHi || translitAddressHi) ? `${addressHi || translitAddressHi} / ${addressEn || ''}` : (addressEn || 'रामपाड़ा कटिहार / Rampada Katihar');
+                  // Avoid showing identical English/Hindi lines twice (e.g., both 'Anapurna')
+                  const normHi = (headerHi || '').trim();
+                  const normEn = (headerEn || '').trim();
+                  const showBoth = normHi && normEn && (normHi !== normEn);
+                  // If addressLine is duplicated like 'Kerala / Kerala', simplify to single value
+                  const simplifiedAddress = (() => {
+                    try {
+                      const parts = String(addressLine || '').split('/').map(p => p.trim()).filter(Boolean);
+                      if (parts.length === 2 && parts[0] === parts[1]) return parts[0];
+                    } catch (e) {}
+                    return addressLine;
+                  })();
                   return (
                     <>
                       <h1 style={{ color: '#4f46e5', margin: '5px 0', fontSize: '28px' }}>{headerHi}</h1>
-                      <h2 style={{ color: '#4f46e5', margin: '5px 0', fontSize: '20px' }}>{headerEn}</h2>
-                      <p style={{ margin: '5px 0', fontSize: '16px', color: '#666' }}>{addressLine}</p>
+                      {showBoth && <h2 style={{ color: '#4f46e5', margin: '5px 0', fontSize: '20px' }}>{headerEn}</h2>}
+                      <p style={{ margin: '5px 0', fontSize: '16px', color: '#666' }}>{simplifiedAddress}</p>
                     </>
                   );
                 })()}

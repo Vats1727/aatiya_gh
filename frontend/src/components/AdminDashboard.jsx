@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
+import HindiKeyboard from './HindiKeyboard';
 
 // Dynamic loader for Sanscript transliteration library (loads from CDN at runtime)
 const loadSanscript = () => {
@@ -37,6 +38,8 @@ const AdminDashboard = () => {
   const HOSTELS_PER_PAGE = 8;
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
   const translitTimers = useRef({ name: null, address: null });
+  const [showHindiKeyboard, setShowHindiKeyboard] = useState(false);
+  const [keyboardTarget, setKeyboardTarget] = useState(null); // 'name_hi' or 'address_hi'
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640);
@@ -1160,14 +1163,17 @@ const fetchHostels = async () => {
                 style={applyResponsiveStyles(styles.input)}
                 required
               />
-              <input
-                name="name_hi"
-                className="input"
-                value={newHostel.name_hi}
-                onChange={(e) => setNewHostel(prev => ({ ...prev, name_hi: e.target.value }))}
-                placeholder="Hostel name (Hindi)"
-                style={applyResponsiveStyles(styles.input)}
-              />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  name="name_hi"
+                  className="input"
+                  value={newHostel.name_hi}
+                  onChange={(e) => setNewHostel(prev => ({ ...prev, name_hi: e.target.value }))}
+                  placeholder="Hostel name (Hindi)"
+                  style={applyResponsiveStyles(styles.input)}
+                />
+                <button type="button" onClick={() => { setKeyboardTarget('name_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
+              </div>
               <input
                 name="address"
                 className="input"
@@ -1193,14 +1199,17 @@ const fetchHostels = async () => {
                 style={applyResponsiveStyles(styles.input)}
                 required
               />
-              <input
-                name="address_hi"
-                className="input"
-                value={newHostel.address_hi}
-                onChange={(e) => setNewHostel(prev => ({ ...prev, address_hi: e.target.value }))}
-                placeholder="Address (Hindi)"
-                style={applyResponsiveStyles(styles.input)}
-              />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  name="address_hi"
+                  className="input"
+                  value={newHostel.address_hi}
+                  onChange={(e) => setNewHostel(prev => ({ ...prev, address_hi: e.target.value }))}
+                  placeholder="Address (Hindi)"
+                  style={applyResponsiveStyles(styles.input)}
+                />
+                <button type="button" onClick={() => { setKeyboardTarget('address_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
+              </div>
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
                 <button
@@ -1215,6 +1224,27 @@ const fetchHostels = async () => {
             </form>
           </div>
         )}
+
+        <HindiKeyboard
+          visible={showHindiKeyboard}
+          onInsert={(char) => {
+            if (!keyboardTarget) return;
+            setNewHostel(prev => ({ ...prev, [keyboardTarget]: (prev[keyboardTarget] || '') + char }));
+          }}
+          onBackspace={() => {
+            if (!keyboardTarget) return;
+            setNewHostel(prev => ({ ...prev, [keyboardTarget]: (prev[keyboardTarget] || '').slice(0, -1) }));
+          }}
+          onSpace={() => {
+            if (!keyboardTarget) return;
+            setNewHostel(prev => ({ ...prev, [keyboardTarget]: (prev[keyboardTarget] || '') + ' ' }));
+          }}
+          onClear={() => {
+            if (!keyboardTarget) return;
+            setNewHostel(prev => ({ ...prev, [keyboardTarget]: '' }));
+          }}
+          onClose={() => { setShowHindiKeyboard(false); setKeyboardTarget(null); }}
+        />
 
         <div style={applyResponsiveStyles(styles.header)}>
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%'}}>
