@@ -8,11 +8,13 @@ export const downloadStudentPdf = async (studentData) => {
   const rulesHtml = renderRulesHtml ? renderRulesHtml(studentData) : '';
 
   // Combine into a single HTML string so the PDF generator renders both pages.
-  // The form HTML itself now enforces a page-break-after and is constrained
-  // to a single A4 page (height + overflow:hidden). The rules HTML also
-  // contains a page-break-before for compatibility. Concatenate directly
-  // to avoid adding duplicate empty pages.
-  const combinedHtml = `${formHtml}${rulesHtml}`;
+  // The PDF generator looks for an explicit empty divider with a
+  // `page-break-before` style to split the HTML into separate render
+  // snippets. Insert that divider so we render the form and rules as two
+  // independent canvases (this prevents any part of the rules from
+  // appearing on the first rendered page).
+  const pageBreakDivider = '<div style="page-break-before: always;"></div>';
+  const combinedHtml = `${formHtml}${pageBreakDivider}${rulesHtml}`;
 
   // Create a meaningful filename
   const studentName = studentData.studentName || 'student';
