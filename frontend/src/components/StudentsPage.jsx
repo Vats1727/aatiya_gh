@@ -237,7 +237,7 @@ const StudentsPage = () => {
       <div className="header" style={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', flexWrap: 'wrap' }}>
           <h1 style={styles.title}>
-            {hostel?.name ? `${hostel.name} - Students` : 'Hostel Students'}
+            {hostel?.name ? `${hostel.name} - Student list` : 'Hostel Students'}
           </h1>
           
           <button 
@@ -251,8 +251,6 @@ const StudentsPage = () => {
         </div>
       </div>
       
-      <p style={styles.address}>{hostel?.address}</p>
-
       {/* Search and Filter Section */}
       <div style={styles.searchFilterContainer}>
         <div style={styles.searchContainer}>
