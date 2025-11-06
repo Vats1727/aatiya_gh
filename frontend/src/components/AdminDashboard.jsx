@@ -282,81 +282,123 @@ useEffect(() => {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-      padding: '1.5rem 1rem',
+      padding: '1rem',
       boxSizing: 'border-box',
       width: '100%',
       overflowX: 'hidden',
+      '@media (min-width: 481px)': {
+        padding: '1.25rem',
+      },
+      '@media (min-width: 769px)': {
+        padding: '1.5rem',
+      },
     },
     content: {
-      maxWidth: '1200px',
+      maxWidth: '100%',
       margin: '0 auto',
       width: '100%',
       boxSizing: 'border-box',
+      padding: '0 0.5rem',
+      '@media (min-width: 481px)': {
+        maxWidth: '100%',
+        padding: '0 1rem',
+      },
+      '@media (min-width: 769px)': {
+        maxWidth: '1200px',
+        padding: '0',
+      },
     },
     header: {
       background: 'white',
-      padding: '1.25rem',
-      borderRadius: '1rem',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      marginBottom: '1.5rem',
+      padding: '1rem',
+      borderRadius: '0.75rem',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+      marginBottom: '1.25rem',
       display: 'flex',
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: 'column',
       gap: '1rem',
+      '@media (min-width: 481px)': {
+        padding: '1.25rem',
+        borderRadius: '1rem',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        marginBottom: '1.5rem',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      },
     },
     title: {
       color: '#db2777',
-      fontSize: '1.5rem',
+      fontSize: '1.25rem',
       fontWeight: 'bold',
       margin: 0,
       lineHeight: '1.3',
+      textAlign: 'center',
+      width: '100%',
+      '@media (min-width: 481px)': {
+        fontSize: '1.5rem',
+        width: 'auto',
+        textAlign: 'left',
+      },
     },
     headerActions: {
       display: 'flex',
-      gap: '0.75rem',
-      flexWrap: 'wrap',
-      alignItems: 'center',
-      '@media (max-width: 600px)': {
-        width: '100%',
-        flexDirection: 'column',
-        gap: '0.5rem',
+      flexDirection: 'column',
+      gap: '0.5rem',
+      width: '100%',
+      '@media (min-width: 481px)': {
+        flexDirection: 'row',
+        gap: '0.75rem',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        width: 'auto',
       },
     },
     searchContainer: {
       display: 'flex',
-      gap: '0.75rem',
-      flexWrap: 'wrap',
-      marginBottom: '1.5rem',
-      '@media (max-width: 600px)': {
-        flexDirection: 'column',
-        gap: '0.5rem',
-        width: '100%',
+      flexDirection: 'column',
+      gap: '0.5rem',
+      marginBottom: '1rem',
+      width: '100%',
+      '@media (min-width: 481px)': {
+        flexDirection: 'row',
+        gap: '0.75rem',
+        marginBottom: '1.5rem',
       },
     },
     searchInput: {
-      flex: 1,
-      minWidth: '200px',
+      width: '100%',
       padding: '0.5rem 1rem',
       border: '1px solid #e5e7eb',
       borderRadius: '0.5rem',
       fontSize: '0.9375rem',
+      boxSizing: 'border-box',
       '&:focus': {
         outline: 'none',
         borderColor: '#8b5cf6',
         boxShadow: '0 0 0 2px rgba(168, 85, 247, 0.2)',
       },
-      '@media (max-width: 600px)': {
-        width: '100%',
+      '@media (min-width: 481px)': {
+        minWidth: '200px',
+        flex: 1,
       },
     },
     card: {
       background: 'white',
       borderRadius: '0.75rem',
-      padding: '1.5rem',
-      marginBottom: '1.5rem',
+      padding: '1rem',
+      marginBottom: '1.25rem',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      width: '100%',
+      boxSizing: 'border-box',
+      '@media (min-width: 481px)': {
+        padding: '1.25rem',
+        marginBottom: '1.5rem',
+      },
+      '@media (min-width: 769px)': {
+        padding: '1.5rem',
+      },
     },
     form: {
       display: 'flex',
@@ -391,13 +433,31 @@ useEffect(() => {
     },
     hostelGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-      gap: '1.25rem',
-      marginTop: '1.5rem',
+      gridTemplateColumns: '1fr',
+      gap: '1rem',
+      marginTop: '1rem',
+      '@media (min-width: 481px)': {
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '1.25rem',
+        marginTop: '1.5rem',
+      },
+      '@media (min-width: 1025px)': {
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+      },
     },
     hostelCard: {
       background: '#f9fafb',
-      padding: '1.25rem',
+      padding: '1rem',
+      borderRadius: '0.75rem',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      },
+      '@media (min-width: 481px)': {
+        padding: '1.25rem',
+      },
       borderRadius: '0.75rem',
       border: '1px solid #e5e7eb',
       transition: 'all 0.2s ease',
@@ -769,63 +829,71 @@ useEffect(() => {
           <div style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
             gap: '1rem',
-            marginBottom: '1rem'
+            width: '100%'
           }}>
             <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              backgroundColor: '#8b5cf6',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '1.5rem',
-              fontWeight: 'bold'
+              gap: '1rem'
             }}>
-              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
-            <div>
-              <h2 style={{
-                margin: 0,
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: '#8b5cf6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
                 fontSize: '1.25rem',
-                fontWeight: '600',
-                color: '#1f2937'
+                fontWeight: 'bold'
               }}>
-                {user?.name || 'User'}
-              </h2>
-              <p style={{
-                margin: '0.25rem 0 0',
-                color: '#6b7280',
-                fontSize: '0.9375rem'
-              }}>
-                {user?.email || ''}
-              </p>
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <div>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  color: '#1f2937'
+                }}>
+                  {user?.name || 'User'}
+                </h2>
+                <p style={{
+                  margin: '0.25rem 0 0',
+                  color: '#6b7280',
+                  fontSize: '0.9375rem'
+                }}>
+                  {user?.email || ''}
+                </p>
+              </div>
             </div>
-          </div>
-          <div style={{
-            display: 'flex',
-            gap: '0.75rem',
-            flexWrap: 'wrap'
-          }}>
-            <button
-              onClick={() => setShowAddHostel(true)}
-              className="btn btn-primary"
-              style={{
-                ...applyResponsiveStyles(styles.addButton),
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                '@media (max-width: 600px)': { flex: 1 }
-              }}
-              type="button"
-            >
-              <Home size={18} className="mr-2" />
-              New Hostel
-            </button>
+            <div style={{
+              display: 'flex',
+              gap: '0.75rem',
+              flexWrap: 'nowrap',
+              alignItems: 'center'
+            }}>
+              <button
+                onClick={() => setShowAddHostel(true)}
+                className="btn btn-primary"
+                style={{
+                  ...applyResponsiveStyles(styles.addButton),
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  '@media (max-width: 600px)': { flex: 1 }
+                }}
+                type="button"
+              >
+                <Home size={18} className="mr-2" />
+                New Hostel
+              </button>
 
-            <button onClick={handleLogout} className="btn btn-secondary" style={applyResponsiveStyles(styles.logoutButton)} title="Logout">
-              <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
-            </button>
+              <button onClick={handleLogout} className="btn btn-secondary" style={applyResponsiveStyles(styles.logoutButton)} title="Logout">
+                <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
+              </button>
+            </div>
           </div>
         </div>
 
