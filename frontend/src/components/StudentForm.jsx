@@ -935,7 +935,8 @@ const HostelAdmissionForm = () => {
 
       // Submit form data
       let res;
-      const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token');
+  const authHeader = token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : null;
       const user = JSON.parse(localStorage.getItem('user') || 'null');
       // prefer hostelDocId from formData, fall back to query preHostelId
       const effectiveHostelId = formData.hostelDocId || preHostelId;
@@ -957,7 +958,7 @@ const HostelAdmissionForm = () => {
         // Admin creating a student under a hostel - use protected endpoint to get combinedId
         res = await fetch(`${API_BASE}/api/users/me/hostels/${effectiveHostelId}/students`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
           body: JSON.stringify(formDataWithStatus)
         });
       } else {
@@ -965,7 +966,7 @@ const HostelAdmissionForm = () => {
         if (editId && token && effectiveHostelId) {
           res = await fetch(`${API_BASE}/api/users/me/hostels/${effectiveHostelId}/students/${editId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
             body: JSON.stringify(formDataWithStatus)
           });
         } else {
@@ -983,10 +984,10 @@ const HostelAdmissionForm = () => {
             const endpoint = editId ? `${API_BASE}/api/students/${editId}` : `${API_BASE}/api/students`;
             const method = editId ? 'PUT' : 'POST';
             res = await fetch(endpoint, {
-              method,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(formDataWithStatus)
-            });
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formDataWithStatus)
+          });
           }
         }
       }
