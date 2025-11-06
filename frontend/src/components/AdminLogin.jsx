@@ -169,6 +169,21 @@ const styles = {
 
   // Store the raw token (no 'Bearer ' prefix)
   localStorage.setItem('token', idToken);
+  // Decode token payload and store a lightweight user profile for UI
+  try {
+    const payloadPart = idToken.split('.')[1];
+    if (payloadPart) {
+      const padded = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const json = decodeURIComponent(atob(padded).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      const payload = JSON.parse(json);
+      const profile = { name: payload.name || payload.displayName || payload.email?.split?.('@')?.[0] || '', email: payload.email };
+      localStorage.setItem('user', JSON.stringify(profile));
+    }
+  } catch (e) {
+    // ignore decode errors
+  }
       
   // Navigate after successful login
   // Use the admin dashboard route to match admin area routing
