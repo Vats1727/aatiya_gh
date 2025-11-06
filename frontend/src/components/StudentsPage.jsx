@@ -80,17 +80,12 @@ const StudentsPage = () => {
   const updateStudentStatus = async (studentId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-<<<<<<< HEAD
       if (!token) {
         navigate('/admin');
         return { success: false, error: 'Not authenticated' };
       }
       
       const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
-=======
-      if (!token) return alert('Not authenticated');
-      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/status`, {
->>>>>>> 7b075585e70c5870001eb3dc24f00efde5b8787a
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ status: newStatus })
