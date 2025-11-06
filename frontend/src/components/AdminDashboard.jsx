@@ -338,11 +338,13 @@ useEffect(() => {
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: '1rem',
       },
       '@media (min-width: 769px)': {
-        padding: '1.25rem',
+        padding: '1rem 1.5rem',
         borderRadius: '1rem',
         marginBottom: '1.5rem',
+        flexWrap: 'nowrap',
       },
     },
     title: {
@@ -378,7 +380,7 @@ useEffect(() => {
       '@media (min-width: 481px)': {
         flexDirection: 'row',
         gap: '0.5rem',
-        flexWrap: 'wrap',
+        flexWrap: 'nowrap',
         alignItems: 'center',
         width: 'auto',
         marginLeft: 'auto',
@@ -943,7 +945,12 @@ useEffect(() => {
             <div style={{
               display: 'flex',
               gap: '0.75rem',
-              flexWrap: 'nowrap',
+              width: '100%',
+              '@media (min-width: 481px)': {
+                width: 'auto',
+                flexWrap: 'nowrap',
+              },
+              flexWrap: 'wrap',
               alignItems: 'center'
             }}>
               <button
@@ -951,17 +958,33 @@ useEffect(() => {
                 className="btn btn-primary"
                 style={{
                   ...applyResponsiveStyles(styles.addButton),
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                  '@media (max-width: 600px)': { flex: 1 }
+                  flex: 1,
+                  minWidth: '120px',
+                  '@media (min-width: 481px)': {
+                    flex: '0 1 auto',
+                  }
                 }}
                 type="button"
               >
-                <Home size={18} className="mr-2" />
+                <Home size={16} style={{ marginRight: '6px' }} />
                 New Hostel
               </button>
 
-              <button onClick={handleLogout} className="btn btn-secondary" style={applyResponsiveStyles(styles.logoutButton)} title="Logout">
-                <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
+              <button 
+                onClick={handleLogout} 
+                className="btn btn-secondary" 
+                style={{
+                  ...applyResponsiveStyles(styles.logoutButton),
+                  flex: 1,
+                  minWidth: '120px',
+                  '@media (min-width: 481px)': {
+                    flex: '0 1 auto',
+                  }
+                }} 
+                title="Logout"
+              >
+                <LogOut size={16} style={{ marginRight: '6px' }} />
+                <span>Logout</span>
               </button>
             </div>
           </div>

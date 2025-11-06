@@ -126,6 +126,40 @@ const StudentsPage = () => {
     }
   };
 
+  // Move hooks to the top level
+  const filteredStudents = useMemo(() => {
+    if (loading) return [];
+    if (error) return [];
+    
+    return students.filter(student => {
+      const matchesSearch = searchTerm === '' || 
+        (student.studentName && student.studentName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (student.applicationNumber && student.applicationNumber.toString().includes(searchTerm)) ||
+        (student.combinedId && student.combinedId.toString().includes(searchTerm));
+      
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'pending' && (!student.status || student.status === 'pending')) ||
+        (statusFilter === 'approved' && student.status === 'approved') ||
+        (statusFilter === 'rejected' && student.status === 'rejected');
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [students, searchTerm, statusFilter, loading, error]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
+  const currentStudents = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredStudents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredStudents, currentPage]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   if (loading) {
     return (
       <div style={styles.container}>
@@ -151,36 +185,6 @@ const StudentsPage = () => {
     );
   }
 
-  // Filter and search logic
-  const filteredStudents = useMemo(() => {
-    return students.filter(student => {
-      const matchesSearch = searchTerm === '' || 
-        (student.studentName && student.studentName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (student.applicationNumber && student.applicationNumber.toString().includes(searchTerm)) ||
-        (student.combinedId && student.combinedId.toString().includes(searchTerm));
-      
-      const matchesStatus = statusFilter === 'all' || 
-        (statusFilter === 'pending' && (!student.status || student.status === 'pending')) ||
-        (statusFilter === 'approved' && student.status === 'approved') ||
-        (statusFilter === 'rejected' && student.status === 'rejected');
-      
-      return matchesSearch && matchesStatus;
-    });
-  }, [students, searchTerm, statusFilter]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
-  const currentStudents = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredStudents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredStudents, currentPage]);
-
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
 
   return (
     <div className="container" style={styles.container}>
