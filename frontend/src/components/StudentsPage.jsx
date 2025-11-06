@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download } from 'lucide-react';
 import { downloadStudentPdf } from '../utils/pdfUtils';
+import '../styles.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -65,7 +66,8 @@ const StudentsPage = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return alert('Not authenticated');
-      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/status`, {
+      // Use generic nested student PUT endpoint (backend handles partial updates)
+      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ status: newStatus })
@@ -119,7 +121,7 @@ const StudentsPage = () => {
           <strong>Error:</strong> {error}
         </div>
         <button 
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/admin/dashboard')}
           style={styles.backButton}
         >
           <ArrowLeft size={16} style={{ marginRight: '8px' }} />
@@ -130,16 +132,16 @@ const StudentsPage = () => {
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <div className="container" style={styles.container}>
+      <div className="header" style={styles.header}>
         <button 
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/admin/dashboard')}
           style={styles.backButton}
         >
           <ArrowLeft size={16} style={{ marginRight: '8px' }} />
           Back to Dashboard
         </button>
-        
+
         <h1 style={styles.title}>{hostel?.name || 'Hostel'} - Students</h1>
         
         <button 
@@ -153,7 +155,7 @@ const StudentsPage = () => {
       
       <p style={styles.address}>{hostel?.address}</p>
       
-      <div style={styles.tableContainer}>
+      <div className="card" style={styles.tableContainer}>
         <div style={styles.tableHeader}>
           <h3>Students</h3>
         </div>

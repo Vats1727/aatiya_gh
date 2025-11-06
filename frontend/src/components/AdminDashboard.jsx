@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2 } from 'lucide-react';
+import '../styles.css';
 
 // Use production URL if environment variable is not set
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onrender.com';
@@ -755,10 +756,10 @@ useEffect(() => {
   }
 
   return (
-    <div style={applyResponsiveStyles(styles.container)}>
-      <div style={applyResponsiveStyles(styles.content)}>
+    <div className="container" style={applyResponsiveStyles(styles.container)}>
+      <div className="content" style={applyResponsiveStyles(styles.content)}>
         {/* User Profile Section */}
-        <div style={{
+        <div className="card" style={{
           background: 'white',
           borderRadius: '0.75rem',
           padding: '1.5rem',
@@ -810,6 +811,7 @@ useEffect(() => {
           }}>
             <button
               onClick={() => setShowAddHostel(true)}
+              className="btn btn-primary"
               style={{
                 ...applyResponsiveStyles(styles.addButton),
                 background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
@@ -821,7 +823,7 @@ useEffect(() => {
               New Hostel
             </button>
 
-            <button onClick={handleLogout} style={applyResponsiveStyles(styles.logoutButton)} title="Logout">
+            <button onClick={handleLogout} className="btn btn-secondary" style={applyResponsiveStyles(styles.logoutButton)} title="Logout">
               <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
             </button>
           </div>
@@ -829,11 +831,12 @@ useEffect(() => {
 
         {/* Inline Add Hostel form shown on this page */}
         {showAddHostel && (
-          <div style={applyResponsiveStyles(styles.card)}>
+          <div className="card" style={applyResponsiveStyles(styles.card)}>
             <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>Add New Hostel</h3>
-            <form onSubmit={handleAddHostel} style={applyResponsiveStyles(styles.form)}>
+            <form onSubmit={handleAddHostel} className="form" style={applyResponsiveStyles(styles.form)}>
               <input
                 name="name"
+                className="input"
                 value={newHostel.name}
                 onChange={(e) => setNewHostel(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Hostel name"
@@ -842,16 +845,18 @@ useEffect(() => {
               />
               <input
                 name="address"
+                className="input"
                 value={newHostel.address}
                 onChange={(e) => setNewHostel(prev => ({ ...prev, address: e.target.value }))}
                 placeholder="Address"
                 style={applyResponsiveStyles(styles.input)}
                 required
               />
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button type="submit" style={applyResponsiveStyles(styles.submitButton)}>Add Hostel</button>
+              <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>Add Hostel</button>
                 <button
                   type="button"
+                  className="btn btn-secondary"
                   onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '' }); setError(''); }}
                   style={{ ...applyResponsiveStyles(styles.logoutButton), background: '#6b7280' }}
                 >
@@ -866,7 +871,7 @@ useEffect(() => {
           <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
         </div>
 
-        <div style={applyResponsiveStyles(styles.tableContainer)}>
+        <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
           <table style={{
             ...applyResponsiveStyles(styles.table),
             width: '100%',
@@ -887,6 +892,7 @@ useEffect(() => {
                     <td style={styles.td}>
                       <button
                         onClick={() => handleViewStudents(hostel.id)}
+                        className="btn btn-icon btn-primary"
                         style={{ ...styles.actionButton, ...styles.editButton }}
                         title="View Students"
                       >
@@ -912,6 +918,7 @@ useEffect(() => {
                             setHostels(prev => prev.map(h => h.id === hostel.id ? { ...h, ...updated } : h));
                           }).catch(err => { console.error(err); alert('Failed to update hostel'); });
                         }}
+                        className="btn btn-icon btn-secondary"
                         style={{ ...styles.actionButton }}
                         title="Edit Hostel"
                       >
@@ -929,6 +936,7 @@ useEffect(() => {
                             setHostels(prev => prev.filter(h => h.id !== hostel.id));
                           }).catch(err => { console.error(err); alert('Failed to delete hostel'); });
                         }}
+                        className="btn btn-icon btn-danger"
                         style={{ ...styles.actionButton }}
                         title="Delete Hostel"
                       >
@@ -942,7 +950,7 @@ useEffect(() => {
         </div>
 
         {selectedHostel && (
-          <div style={applyResponsiveStyles(styles.tableContainer)}>
+          <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
             <table style={{
               ...applyResponsiveStyles(styles.table),
               width: '100%',
