@@ -120,12 +120,24 @@ export const renderRulesHtml = (student = {}) => {
   const s = student || {};
   const escape = (v) => String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+  // local date formatter (DD/MM/YYYY)
+  const formatDateDDMMYYYY = (d) => {
+    if (!d) return '';
+    const dt = new Date(d);
+    if (isNaN(dt)) return String(d);
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const yy = dt.getFullYear();
+    return `${dd}/${mm}/${yy}`;
+  };
+
   const parentName = s.fatherName || s.motherName || '';
   const daughterName = s.studentName || '';
   const village = s.village || '';
   const post = s.post || '';
   const police = s.policeStation || '';
   const district = s.district || '';
+  const formattedDate = formatDateDDMMYYYY(s.admissionDate);
 
   return `
     <div style="max-width:900px;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;min-height:297mm;position:relative;">
@@ -135,7 +147,7 @@ export const renderRulesHtml = (student = {}) => {
 
       <div style="font-size:14px;line-height:1.8;margin-top:10px;text-align:justify;color:#111827">
         <p style="margin-bottom:12px;">
-          मैं <strong>${escape(parentName)}</strong> अपनी पुत्री / बहन <strong>${escape(daughterName)}</strong> ग्राम <strong>${escape(village)}</strong> पो॰ <strong>${escape(post)}</strong> थाना <strong>${escape(police)}</strong> जिला <strong>${escape(district)}</strong> को अपनी मर्ज़ी से आतिया गर्ल्स हॉस्टल में रख रहा/रही हूँ। मैं और मेरी पुत्री / बहन यह <strong>दोनों</strong> शपथ लेते हैं कि हॉस्टल के निम्नलिखित नियमों का पालन करेंगे।
+          मैं <strong>${escape(parentName)}</strong> अपनी पुत्री / बहन <strong>${escape(daughterName)}</strong> ग्राम <strong>${escape(village)}</strong> पो॰ <strong>${escape(post)}</strong> थाना <strong>${escape(police)}</strong> जिला <strong>${escape(district)}</strong> को अपनी मर्ज़ी से आतिया गर्ल्स हॉस्टल में रख रहा/रही हूँ। मैं और मेरी पुत्री / बहन यह <u>${escape(formattedDate) || ''}</u> शपथ लेते हैं कि हॉस्टल के निम्नलिखित नियमों का पालन करेंगे।
         </p>
       </div>
 
