@@ -70,24 +70,36 @@ const StudentsPage = () => {
   const updateStudentStatus = async (studentId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return alert('Not authenticated');
-      // Use generic nested student PUT endpoint (backend handles partial updates)
+      if (!token) {
+        navigate('/admin');
+        return { success: false, error: 'Not authenticated' };
+      }
+      
       const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify({ status: newStatus })
       });
+      
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || 'Failed to update status');
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to update status');
       }
+      
       const updated = await res.json();
+      
       // Update local state
-      setStudents(prev => prev.map(s => (s.id === updated.id || s.id === studentId ? { ...s, ...updated } : s)));
+      setStudents(prev => prev.map(s => 
+        s.id === updated.id || s.id === studentId ? { ...s, ...updated } : s
+      ));
+      
       return { success: true, data: updated };
     } catch (err) {
       console.error('Failed to update status', err);
-      alert('Failed to update status');
+      setError(err.message || 'Failed to update student status');
       return { success: false, error: err };
     }
   };
@@ -189,63 +201,66 @@ const StudentsPage = () => {
   return (
     <div className="container" style={styles.container}>
       <div className="header" style={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', flexWrap: 'wrap' }}>
-          <button 
-            onClick={() => navigate('/admin/dashboard')}
-            style={styles.backButton}
-            aria-label="Back to Dashboard"
-          >
-            <ArrowLeft size={18} style={{ marginRight: '6px', flexShrink: 0 }} />
-            <span>Back to Dashboard</span>
-          </button>
-
-          <h1 style={styles.title}>
-            {hostel?.name ? `${hostel.name} - Students` : 'Hostel Students'}
-          </h1>
+        <div style={styles.headerContent}>
+          <div style={styles.headerLeft}>
+            <h1 style={styles.title}>
+              {hostel?.name ? `${hostel.name} - Students` : 'Hostel Students'}
+            </h1>
+            <p style={styles.address}>{hostel?.address}</p>
+          </div>
           
-          <button 
-            onClick={handleAddStudent}
-            style={styles.addButton}
-            aria-label="Add New Student"
-          >
-            <UserPlus size={18} style={{ marginRight: '6px', flexShrink: 0 }} />
-            <span>Add Student</span>
-          </button>
+          <div style={styles.headerActions}>
+            <button 
+              onClick={() => navigate('/admin/dashboard')}
+              style={styles.backButton}
+              aria-label="Back to Dashboard"
+            >
+              <ArrowLeft size={16} style={{ marginRight: '6px', flexShrink: 0 }} />
+              <span>Back</span>
+            </button>
+            
+            <button 
+              onClick={handleAddStudent}
+              style={styles.addButton}
+              aria-label="Add New Student"
+            >
+              <UserPlus size={16} style={{ marginRight: '6px', flexShrink: 0 }} />
+              <span>Add Student</span>
+            </button>
+          </div>
         </div>
-      </div>
-      
-      <p style={styles.address}>{hostel?.address}</p>
 
-      {/* Search and Filter Section */}
-      <div style={styles.searchFilterContainer}>
-        <div style={styles.searchContainer}>
-          <Search size={18} style={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder="Search by name or application number..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page when searching
-            }}
-            style={styles.searchInput}
-          />
-        </div>
-        
-        <div style={styles.filterContainer}>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setCurrentPage(1); // Reset to first page when changing filter
-            }}
-            style={styles.statusFilter}
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Accepted</option>
-            <option value="rejected">Rejected</option>
-          </select>
+        {/* Search and Filter Section */}
+        <div style={styles.searchFilterContainer}>
+          <div style={styles.searchContainer}>
+            <Search size={16} style={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search by name or application number..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={styles.searchInput}
+            />
+          </div>
+          
+          <div style={styles.filterContainer}>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={styles.statusFilter}
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Accepted</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
         </div>
       </div>
       
@@ -408,6 +423,7 @@ const StudentsPage = () => {
     </div>
   );
 };
+
 
 const styles = {
   container: {
@@ -582,31 +598,12 @@ const styles = {
   },
   header: {
     background: 'white',
-    padding: '0.875rem 1rem',
+    padding: '1rem',
     borderRadius: '0.75rem',
     boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-    marginBottom: '1rem',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.875rem',
+    marginBottom: '1.5rem',
     position: 'relative',
     zIndex: 10,
-    '@media (min-width: 481px)': {
-      padding: '1rem 1.25rem',
-      borderRadius: '0.875rem',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-      marginBottom: '1.25rem',
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '1rem',
-    },
-    '@media (min-width: 769px)': {
-      padding: '1rem 1.5rem',
-      borderRadius: '1rem',
-      marginBottom: '1.5rem',
-    },
     '&::before': {
       content: '""',
       position: 'absolute',
@@ -617,14 +614,31 @@ const styles = {
       background: 'linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%)',
       borderTopLeftRadius: '0.75rem',
       borderTopRightRadius: '0.75rem',
-      '@media (min-width: 481px)': {
-        borderTopLeftRadius: '0.875rem',
-        borderTopRightRadius: '0.875rem',
-      },
-      '@media (min-width: 769px)': {
-        borderTopLeftRadius: '1rem',
-        borderTopRightRadius: '1rem',
-      },
+    },
+  },
+  headerContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+    width: '100%',
+    '@media (min-width: 768px)': {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+  },
+  headerLeft: {
+    flex: 1,
+    minWidth: 0,
+  },
+  headerActions: {
+    display: 'flex',
+    gap: '0.75rem',
+    marginTop: '0.5rem',
+    flexWrap: 'wrap',
+    '@media (min-width: 481px)': {
+      marginTop: 0,
+      flexWrap: 'nowrap',
     },
   },
   backButton: {
@@ -641,10 +655,11 @@ const styles = {
     fontSize: '0.875rem',
     lineHeight: '1.25',
     transition: 'all 0.2s ease',
-    width: '100%',
+    minWidth: '100px',
     boxSizing: 'border-box',
     position: 'relative',
     zIndex: 1,
+    whiteSpace: 'nowrap',
     '&:hover': {
       background: '#f1f5f9',
       borderColor: '#cbd5e1',
@@ -655,35 +670,26 @@ const styles = {
       transform: 'translateY(0)',
       boxShadow: 'none'
     },
-    '@media (min-width: 481px)': {
-      width: 'auto',
-      padding: '0.5rem 1rem',
-      justifyContent: 'flex-start',
-    },
-    '@media (min-width: 769px)': {
-      padding: '0.5rem 1.125rem',
-    },
+    '@media (max-width: 480px)': {
+      padding: '0.5rem 0.75rem',
+      fontSize: '0.8125rem',
+    }
   },
   title: {
     fontSize: '1.25rem',
     fontWeight: '700',
     color: '#6b21a8',
     margin: 0,
-    padding: '0.25rem 0',
-    flex: 1,
-    textAlign: 'center',
+    padding: 0,
+    textAlign: 'left',
     position: 'relative',
     zIndex: 1,
     textOverflow: 'ellipsis',
     overflow: 'hidden',
     whiteSpace: 'nowrap',
-    '@media (min-width: 375px)': {
-      fontSize: '1.375rem',
-    },
+    lineHeight: '1.3',
     '@media (min-width: 481px)': {
       fontSize: '1.5rem',
-      textAlign: 'left',
-      padding: '0 1rem',
     },
     '@media (min-width: 768px)': {
       fontSize: '1.625rem',
@@ -726,21 +732,15 @@ const styles = {
   },
   address: {
     color: '#6b7280',
-    marginTop: '0.25rem',
-    marginBottom: '1rem',
+    margin: '0.25rem 0 0',
     fontSize: '0.875rem',
-    textAlign: 'center',
-    padding: '0 0.5rem',
-    lineHeight: '1.5',
+    lineHeight: '1.4',
     maxWidth: '100%',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    '@media (min-width: 481px)': {
-      textAlign: 'left',
-      marginLeft: '0.5rem',
-      marginTop: '0.5rem',
-      marginBottom: '1.5rem',
+    '@media (max-width: 480px)': {
+      fontSize: '0.8125rem',
     },
   },
   // Search and Filter Styles
@@ -748,17 +748,25 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '1rem',
-    marginBottom: '1.5rem',
-    '@media (min-width: 640px)': {
+    marginTop: '1rem',
+    paddingTop: '1rem',
+    borderTop: '1px solid #f0f0f0',
+    '@media (min-width: 481px)': {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
+      justifyContent: 'space-between',
     },
   },
   searchContainer: {
     position: 'relative',
     flex: 1,
-    maxWidth: '400px',
+    minWidth: '200px',
+    '@media (min-width: 481px)': {
+      maxWidth: '350px',
+    },
+    '@media (min-width: 768px)': {
+      maxWidth: '400px',
+    },
   },
   searchIcon: {
     position: 'absolute',
