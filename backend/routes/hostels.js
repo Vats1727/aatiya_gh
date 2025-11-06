@@ -35,41 +35,8 @@ router.post('/public/hostels/:hostelDocId/students', async (req, res) => {
   }
 });
 
-// Apply auth middleware to all other routes
-const authMiddleware = async (req, res, next) => {
-  // Skip auth for health check
-  if (req.path === '/health') return next();
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  try {
-    const { provider, decoded } = await verifyAnyToken(token);
-    if (provider === 'firebase') {
-      req.user = {
-        uid: decoded.uid,
-        email: decoded.email,
-        role: decoded.role || 'user'
-      };
-    } else {
-      // JWT payload expected to contain userId and role
-      req.user = {
-        uid: decoded.userId || decoded.uid,
-        email: decoded.email,
-        role: decoded.role || 'user'
-      };
-    }
-    return next();
-  } catch (err) {
-    console.error('Error verifying token (any):', err);
-    return res.status(401).json({ success: false, error: 'Invalid token', code: 'INVALID_TOKEN' });
-  }
-};
-
-// Apply auth middleware to all following routes that require authentication
+// Use imported auth middleware for protected routes
+// (authMiddleware is imported from ../middleware/auth.js)
 router.use(authMiddleware);
 
 // Upload QR image for hostel and store hosted URL on the hostel document
