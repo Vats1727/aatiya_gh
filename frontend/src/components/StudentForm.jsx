@@ -65,6 +65,32 @@ const HostelAdmissionForm = () => {
 
   const [coachingList, setCoachingList] = useState(() => []);
 
+  // helper: format 24h 'HH:MM' to 12-hour with AM/PM
+  const formatTime12 = (t) => {
+    if (!t) return '';
+    try {
+      const parts = String(t).split(':');
+      if (parts.length < 2) return t;
+      let hh = parseInt(parts[0], 10);
+      const mm = (parts[1] || '00').padStart(2, '0');
+      const suffix = hh >= 12 ? 'PM' : 'AM';
+      hh = hh % 12 === 0 ? 12 : hh % 12;
+      return `${hh}:${mm} ${suffix}`;
+    } catch (e) {
+      return t;
+    }
+  };
+
+  const formatDateDDMMYYYY = (d) => {
+    if (!d) return '';
+    const dt = new Date(d);
+    if (isNaN(dt)) return String(d);
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const yy = dt.getFullYear();
+    return `${dd}/${mm}/${yy}`;
+  };
+
   const [showPreview, setShowPreview] = useState(false);
   const [hostels, setHostels] = useState([]);
   const location = useLocation();
@@ -1045,7 +1071,7 @@ const HostelAdmissionForm = () => {
                 <p style={{ margin: '5px 0', fontSize: '16px', color: '#666' }}>रामपाड़ा कटिहार / Rampada Katihar</p>
                 <p style={{ margin: '10px 0', fontSize: '18px', fontWeight: 'bold', color: '#333' }}>नामांकन फॉर्म / ADMISSION FORM</p>
                 <div style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
-                  Admission Date: {new Date(formData.admissionDate || new Date()).toLocaleDateString('en-IN')}
+                  Admission Date: {formatDateDDMMYYYY(formData.admissionDate || new Date())}
                 </div>
               </div>
 
@@ -1181,10 +1207,10 @@ const HostelAdmissionForm = () => {
                   {(coachingList && coachingList.length > 0) ? (
                     coachingList.map((c, i) => (
                       <div key={i} style={{ marginBottom: '6px' }}>
-                        <strong>कोचिंग {i + 1}:</strong> {c.name || formData[`coaching${i+1}Name`] || '-'}
-                        &nbsp; - &nbsp; समय: { (c.start || formData[`coaching${i+1}Start`] || '') }{(c.start || formData[`coaching${i+1}Start`]) && (c.end || formData[`coaching${i+1}End`]) ? ` - ${ (c.end || formData[`coaching${i+1}End`]) }` : ''}
-                        &nbsp; - &nbsp; पता: {c.address || formData[`coaching${i+1}Address`] || 'rajkot'}
-                      </div>
+                          <strong>कोचिंग {i + 1}:</strong> {c.name || formData[`coaching${i+1}Name`] || '-'}
+                          &nbsp; - &nbsp; समय: { formatTime12(c.start || formData[`coaching${i+1}Start`] || '') }{(c.start || formData[`coaching${i+1}Start`]) && (c.end || formData[`coaching${i+1}End`]) ? ` - ${ formatTime12(c.end || formData[`coaching${i+1}End`]) }` : ''}
+                          &nbsp; - &nbsp; पता: {c.address || formData[`coaching${i+1}Address`] || 'rajkot'}
+                        </div>
                     ))
                   ) : (
                     <div style={{ color: '#6b7280' }}>No coaching entries.</div>
@@ -1211,15 +1237,19 @@ const HostelAdmissionForm = () => {
                     justifyContent: 'center',
                     backgroundColor: '#f9fafb'
                   }}>
-                    <img 
-                      src={formData.parentPhoto || PlaceholderImage} 
-                      alt="Parent" 
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: '100px',
-                        objectFit: 'contain'
-                      }} 
-                    />
+                      {formData.parentPhoto ? (
+                        <img 
+                          src={formData.parentPhoto}
+                          alt="Parent" 
+                          style={{
+                            maxWidth: '100%',
+                            maxHeight: '100px',
+                            objectFit: 'contain'
+                          }} 
+                        />
+                      ) : (
+                        <div style={{width: '100%',height: '100%',display: 'flex',alignItems: 'center',justifyContent: 'center',color: '#9ca3af',fontWeight: 600}}>stick Passport size photo</div>
+                      )}
                   </div>
                   <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
                     पिता/माता का फोटो / Parent Photo
@@ -1238,15 +1268,19 @@ const HostelAdmissionForm = () => {
                     justifyContent: 'center',
                     backgroundColor: '#f9fafb'
                   }}>
-                    <img 
-                      src={formData.studentPhoto || PlaceholderImage} 
-                      alt="Student" 
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: '100px',
-                        objectFit: 'contain'
-                      }} 
-                    />
+                    {formData.studentPhoto ? (
+                      <img 
+                        src={formData.studentPhoto}
+                        alt="Student" 
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '100px',
+                          objectFit: 'contain'
+                        }} 
+                      />
+                    ) : (
+                      <div style={{width: '100%',height: '100%',display: 'flex',alignItems: 'center',justifyContent: 'center',color: '#9ca3af',fontWeight: 600}}>stick Passport size photo</div>
+                    )}
                   </div>
                   <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
                     छात्रा का फोटो / Student Photo
@@ -1271,16 +1305,17 @@ const HostelAdmissionForm = () => {
                     borderTop: '1px solid #000',
                     width: '200px',
                     margin: '0 auto',
-                    paddingTop: '5px'
+                    paddingTop: '4px',
+                    minHeight: '36px'
                   }}>
-                    <p style={{ margin: '5px 0', fontSize: '14px', fontWeight: '500' }}>
+                    <p style={{ margin: '2px 0', fontSize: '14px', fontWeight: '500' }}>
                       {formData.parentSignature || 'Parent/Guardian Name'}
                     </p>
-                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
+                    <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#666' }}>
                       पिता / माता का हस्ताक्षर / Parent's Signature
                     </p>
-                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
-                      दिनांक / Date: {new Date().toLocaleDateString('en-IN')}
+                    <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#666' }}>
+                      दिनांक / Date: {formatDateDDMMYYYY(formData.admissionDate || new Date())}
                     </p>
                   </div>
                 </div>
@@ -1290,16 +1325,17 @@ const HostelAdmissionForm = () => {
                     borderTop: '1px solid #000',
                     width: '200px',
                     margin: '0 auto',
-                    paddingTop: '5px'
+                    paddingTop: '4px',
+                    minHeight: '36px'
                   }}>
-                    <p style={{ margin: '5px 0', fontSize: '14px', fontWeight: '500' }}>
+                    <p style={{ margin: '2px 0', fontSize: '14px', fontWeight: '500' }}>
                       {formData.studentSignature || 'Student Name'}
                     </p>
-                    <p style={{ margin: '0', fontSize: '12px', color: '#666' }}>
+                    <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#666' }}>
                       छात्रा का हस्ताक्षर / Student's Signature
                     </p>
-                    <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
-                      दिनांक / Date: {new Date().toLocaleDateString('en-IN')}
+                    <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#666' }}>
+                      दिनांक / Date: {formatDateDDMMYYYY(formData.admissionDate || new Date())}
                     </p>
                   </div>
                 </div>
@@ -1329,7 +1365,7 @@ const HostelAdmissionForm = () => {
               
               <div style={{ marginBottom: '18px', fontSize: '15px', lineHeight: '1.7', textAlign: 'justify' }}>
                 <p>
-                  मैं {formData.fatherName || formData.motherName || '_____'} अपनी पुत्री / बहन {formData.studentName || '_____'} ग्राम {formData.village || '_____'} पो॰ {formData.post || '_____'} थाना {formData.policeStation || '_____'} जिला {formData.district || '_____'} को अपना मर्ज़ी से आतिया गर्ल्स हॉस्टल में रख रहा हूँ। मैं और मेरी पुत्री / बहन यह <u>{formatDate(formData.admissionDate || '') || '____/__/____'}</u> षपथ लेते हैं कि हॉस्टल के निम्नलिखित नियमों का पालन करेंगे।
+                  मैं {formData.fatherName || formData.motherName || '_____'} अपनी पुत्री / बहन {formData.studentName || '_____'} ग्राम {formData.village || '_____'} पो॰ {formData.post || '_____'} थाना {formData.policeStation || '_____'} जिला {formData.district || '_____'} को अपना मर्ज़ी से आतिया गर्ल्स हॉस्टल में रख रहा हूँ। मैं और मेरी पुत्री / बहन यह <u>{formatDateDDMMYYYY(formData.admissionDate) || '____/__/____'}</u> षपथ लेते हैं कि हॉस्टल के निम्नलिखित नियमों का पालन करेंगे।
                 </p>
               </div>
 
@@ -1354,6 +1390,23 @@ const HostelAdmissionForm = () => {
                 <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह का शुल्क लिया जाएगा।</p>
               </div>
               
+              {/* Hostel Incharge Signature */}
+              {/* Parent and Student signatures at bottom of Page 2 */}
+              <div style={{position: 'absolute', left: '24px', right: '24px', bottom: '80px', display: 'flex', justifyContent: 'space-between', gap: '16px'}}>
+                <div style={{textAlign: 'left', width: '45%'}}>
+                  <div style={{borderTop: '1px solid #000', paddingTop: '4px', minHeight: '36px'}}>
+                    <p style={{margin: '2px 0', fontSize: '14px', fontWeight: 500}}>{formData.parentSignature || ''}</p>
+                    <p style={{margin: '2px 0 0', fontSize: '12px', color: '#666'}}>पिता/माता का हस्ताक्षर / Parent Signature</p>
+                  </div>
+                </div>
+                <div style={{textAlign: 'right', width: '45%'}}>
+                  <div style={{borderTop: '1px solid #000', paddingTop: '4px', minHeight: '36px'}}>
+                    <p style={{margin: '2px 0', fontSize: '14px', fontWeight: 500}}>{formData.studentSignature || ''}</p>
+                    <p style={{margin: '2px 0 0', fontSize: '12px', color: '#666'}}>छात्रा का हस्ताक्षर / Student Signature</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Hostel Incharge Signature */}
               <div style={{
                 position: 'absolute',
