@@ -56,11 +56,11 @@ export const renderStudentPrintHtml = (student = {}) => {
 
   <div style="margin-bottom:10px">
         <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">व्यक्तिगत जानकारी / Personal Information</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
           <div><strong>छात्रा का नाम:</strong> ${escape(s.studentName)}</div>
           <div><strong>माता का नाम:</strong> ${escape(s.motherName)}</div>
           <div><strong>पिता का नाम:</strong> ${escape(s.fatherName)}</div>
-          <div><strong>जन्म तिथि:</strong> ${escape(s.dob)}</div>
+          <div><strong>जन्म तिथि:</strong> ${escape(formatDateDDMMYYYY(s.dob))}</div>
         </div>
       </div>
 
@@ -86,7 +86,11 @@ export const renderStudentPrintHtml = (student = {}) => {
       <div style="margin-bottom:10px">
         <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">छात्रा से मिलने वाले का नाम / Allowed Visitors</h3>
         <div style="font-size:12px;">
-          ${[1,2,3,4].map(i => `<div>${i}. ${escape(s[`allowedPerson${i}`]) || ''}</div>`).join('')}
+          ${(() => {
+            const vals = [1,2,3,4].map(i => String(s[`allowedPerson${i}`] || '').trim()).filter(Boolean);
+            if (!vals.length) return '<div>--</div>';
+            return vals.map((v, idx) => `<div>${idx+1}. ${escape(v)}</div>`).join('');
+          })()}
         </div>
       </div>
 

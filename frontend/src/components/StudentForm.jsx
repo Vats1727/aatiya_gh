@@ -53,17 +53,11 @@ const HostelAdmissionForm = () => {
   });
 
   // Dynamic lists for visitors and coaching entries (max 4 each)
-  const [allowedVisitors, setAllowedVisitors] = useState(() => {
-    const arr = [];
-    for (let i = 1; i <= 4; i++) {
-      const v = '';
-      // initial values will be populated when edit loads
-      if (v) arr.push(v);
-    }
-    return arr;
-  });
+  // ensure at least one visitor field is available by default
+  const [allowedVisitors, setAllowedVisitors] = useState(() => ['']);
 
-  const [coachingList, setCoachingList] = useState(() => []);
+  // ensure at least one coaching entry is available by default
+  const [coachingList, setCoachingList] = useState(() => [{ name: '', address: 'rajkot', start: '', end: '' }]);
 
   // helper: format 24h 'HH:MM' to 12-hour with AM/PM
   const formatTime12 = (t) => {
