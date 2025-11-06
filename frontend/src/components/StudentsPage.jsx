@@ -47,6 +47,7 @@ const StudentsPage = () => {
         if (data.data && data.data.length > 0) {
           setHostel({
             id: hostelId,
+            // prefer explicit hostelName stored on student doc, fallback to fetch
             name: data.data[0].hostelName || 'Hostel',
             address: data.data[0].hostelAddress || ''
           });
@@ -61,6 +62,31 @@ const StudentsPage = () => {
     };
 
     fetchStudents();
+  }, [hostelId]);
+
+  // Fetch hostels list for current user and resolve the hostel name if available
+  useEffect(() => {
+    const fetchHostelsForName = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch(`${API_BASE}/api/users/me/hostels`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        });
+        if (!res.ok) return;
+        const payload = await res.json();
+        const list = payload.data || [];
+        const found = list.find(h => String(h.id) === String(hostelId));
+        if (found) {
+          setHostel(prev => ({ ...(prev || {}), id: hostelId, name: found.name || found.displayName || found.hostelName || prev?.name || 'Hostel', address: found.address || prev?.address || '' }));
+        }
+      } catch (err) {
+        // ignore errors — we already have fallback from student docs
+        console.warn('Could not fetch hostels for name resolution', err);
+      }
+    };
+
+    fetchHostelsForName();
   }, [hostelId]);
 
   const handleAddStudent = () => {
