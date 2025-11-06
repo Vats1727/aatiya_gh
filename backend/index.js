@@ -23,10 +23,14 @@ if (!db) {
 
 // Middleware
 app.use(cors({
-  origin: '*',
+  origin: [
+    'https://aatiya-gh.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(bodyParser.json({ limit: '10mb' }));
