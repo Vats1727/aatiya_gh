@@ -32,6 +32,21 @@ const AdminDashboard = () => {
     return raw.startsWith('Bearer ') ? raw.slice(7) : raw;
   };
 
+    // Decode a JWT payload (no validation) to extract common fields as a
+    // quick fallback when the /me endpoint doesn't return a name.
+    const decodeJwtPayload = (token) => {
+      try {
+        if (!token) return null;
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+        const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const decoded = atob(payload);
+        return JSON.parse(decoded);
+      } catch (e) {
+        return null;
+      }
+    };
+
 // Fetch user profile function. Try multiple backend endpoints and response shapes
 // to be tolerant of environments that return { data: user } or { user }.
 const fetchUserProfile = async () => {
@@ -75,6 +90,25 @@ const fetchUserProfile = async () => {
     }
 
     if (!userObj) {
+      // Try to fallback to any cached user in localStorage
+      const cached = (() => {
+        try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { return null; }
+      })();
+      if (cached) {
+        setUser(cached);
+        return;
+      }
+
+      // As a last resort, decode token payload for name/email
+      const raw = getRawToken();
+      const payload = decodeJwtPayload(raw);
+      if (payload) {
+        const fallback = { name: payload.name || payload.displayName || payload.email || payload.sub };
+        setUser(fallback);
+        try { localStorage.setItem('user', JSON.stringify(fallback)); } catch (e) { /* ignore */ }
+        return;
+      }
+
       console.error('fetchUserProfile: no user returned', lastErr);
       setError('Failed to load user profile');
       return;
@@ -82,8 +116,13 @@ const fetchUserProfile = async () => {
 
     // If the profile is nested under a `profile` or similar key, try to extract
     const resolved = userObj.profile || userObj;
-    setUser(resolved);
-    try { localStorage.setItem('user', JSON.stringify(resolved)); } catch (e) { /* ignore */ }
+    // Normalize name/email fields and cache
+    const normalized = {
+      ...resolved,
+      name: resolved.name || resolved.displayName || resolved.fullName || resolved.email?.split?.('@')?.[0] || resolved.uid || resolved.id,
+    };
+    setUser(normalized);
+    try { localStorage.setItem('user', JSON.stringify(normalized)); } catch (e) { /* ignore */ }
   } catch (err) {
     console.error('Error fetching user profile:', err);
     if (err.message && (err.message.includes('401') || err.message.includes('unauthorized'))) {
@@ -949,7 +988,10 @@ useEffect(() => {
                 fontSize: '1.25rem',
                 fontWeight: 'bold'
               }}>
-                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                {(() => {
+                  const display = user?.name || user?.displayName || user?.fullName || (user?.email && user.email.split('@')[0]) || 'U';
+                  return String(display).charAt(0).toUpperCase();
+                })()}
               </div>
               <div>
                 <h2 style={{
@@ -958,7 +1000,7 @@ useEffect(() => {
                   fontWeight: '600',
                   color: '#1f2937'
                 }}>
-                  {user?.name || 'User'}
+                  {user?.name || user?.displayName || user?.fullName || (user?.email && user.email.split('@')[0]) || 'User'}
                 </h2>
                 <p style={{
                   margin: '0.25rem 0 0',
