@@ -52,6 +52,19 @@ const HostelAdmissionForm = () => {
     admissionDate: new Date().toISOString().split('T')[0]
   });
 
+  // Dynamic lists for visitors and coaching entries (max 4 each)
+  const [allowedVisitors, setAllowedVisitors] = useState(() => {
+    const arr = [];
+    for (let i = 1; i <= 4; i++) {
+      const v = '';
+      // initial values will be populated when edit loads
+      if (v) arr.push(v);
+    }
+    return arr;
+  });
+
+  const [coachingList, setCoachingList] = useState(() => []);
+
   const [showPreview, setShowPreview] = useState(false);
   const [hostels, setHostels] = useState([]);
   const location = useLocation();
@@ -110,6 +123,29 @@ const HostelAdmissionForm = () => {
           parentSignature: data.parentSignature || prev.parentSignature,
           admissionDate: data.admissionDate || prev.admissionDate,
         }));
+        // populate dynamic lists from edited data
+        try {
+          const visitors = [];
+          for (let i = 1; i <= 4; i++) {
+            const val = data[`allowedPerson${i}`];
+            if (val) visitors.push(val);
+          }
+          if (visitors.length) setAllowedVisitors(visitors);
+
+          const cList = [];
+          for (let i = 1; i <= 4; i++) {
+            const name = data[`coaching${i}Name`];
+            const address = data[`coaching${i}Address`];
+            const start = data[`coaching${i}Start`];
+            const end = data[`coaching${i}End`];
+            if (name || address || start || end) {
+              cList.push({ name: name || '', address: address || '', start: start || '', end: end || '' });
+            }
+          }
+          if (cList.length) setCoachingList(cList);
+        } catch (e) {
+          // ignore
+        }
       } catch (err) {
         console.error('Failed to load student for edit', err);
         alert('Failed to load student for editing');
@@ -860,8 +896,20 @@ const HostelAdmissionForm = () => {
       submitButton.innerHTML = 'Saving...';
       
       // Prepare form data with status and timestamps
+      const fd = { ...formData };
+      // Map allowed visitors into allowedPerson1..4
+      for (let i = 0; i < 4; i++) {
+        fd[`allowedPerson${i + 1}`] = (allowedVisitors && allowedVisitors[i]) || fd[`allowedPerson${i + 1}`] || '';
+      }
+      // Map coachingList into coaching fields (name, address, start, end)
+      for (let i = 0; i < 4; i++) {
+        fd[`coaching${i + 1}Name`] = (coachingList && coachingList[i] && coachingList[i].name) || fd[`coaching${i + 1}Name`] || '';
+        fd[`coaching${i + 1}Address`] = (coachingList && coachingList[i] && coachingList[i].address) || fd[`coaching${i + 1}Address`] || '';
+        fd[`coaching${i + 1}Start`] = (coachingList && coachingList[i] && coachingList[i].start) || fd[`coaching${i + 1}Start`] || '';
+        fd[`coaching${i + 1}End`] = (coachingList && coachingList[i] && coachingList[i].end) || fd[`coaching${i + 1}End`] || '';
+      }
       const formDataWithStatus = {
-        ...formData,
+        ...fd,
         status: 'pending',
         submittedAt: new Date().toISOString()
       };
@@ -1262,6 +1310,12 @@ const HostelAdmissionForm = () => {
                 borderBottom: '2px solid #4f46e5'
               }}>हॉस्टल नियम एवं शर्तें / HOSTEL RULES AND REGULATIONS</h2>
               
+              <div style={{ marginBottom: '18px', fontSize: '15px', lineHeight: '1.7', textAlign: 'justify' }}>
+                <p>
+                  मैं {formData.fatherName || formData.motherName || '_____'} अपनी पुत्री / बहन {formData.studentName || '_____'} ग्राम {formData.village || '_____'} पो॰ {formData.post || '_____'} थाना {formData.policeStation || '_____'} जिला {formData.district || '_____'} को अपना मर्ज़ी से आतिया गर्ल्स हॉस्टल में रख रहा हूँ। मैं और मेरी पुत्री / बहन यह <u>{formatDate(formData.admissionDate || '') || '____/__/____'}</u> षपथ लेते हैं कि हॉस्टल के निम्नलिखित नियमों का पालन करेंगे।
+                </p>
+              </div>
+
               <div style={{
                 fontSize: '14px',
                 lineHeight: '1.8',
@@ -1612,20 +1666,61 @@ const HostelAdmissionForm = () => {
               छात्रा से मिलने वाले का नाम / Names of Persons Allowed to Meet
             </h3>
             <div style={responsiveStyles.gridTwo}>
-              {[1, 2, 3, 4].map((num) => (
-                <div key={num} style={responsiveStyles.formGroup}>
-                  <label style={responsiveStyles.label}>
-                    व्यक्ति {num} / Person {num}
-                  </label>
-                  <input
-                    type="text"
-                    name={`allowedPerson${num}`}
-                    value={formData[`allowedPerson${num}`]}
-                    onChange={handleInputChange}
-                    style={responsiveStyles.input}
-                  />
+              {allowedVisitors && allowedVisitors.length > 0 ? (
+                allowedVisitors.map((name, idx) => (
+                  <div key={idx} style={responsiveStyles.formGroup}>
+                    <label style={responsiveStyles.label}>व्यक्ति {idx + 1} / Person {idx + 1}</label>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          const arr = [...allowedVisitors];
+                          arr[idx] = v;
+                          setAllowedVisitors(arr);
+                          // keep formData in sync for preview/submission
+                          setFormData(prev => ({ ...prev, [`allowedPerson${idx + 1}`]: v }));
+                        }}
+                        style={responsiveStyles.input}
+                      />
+                      <button type="button" onClick={() => {
+                        const arr = [...allowedVisitors];
+                        arr.splice(idx, 1);
+                        setAllowedVisitors(arr);
+                        // update formData allowedPerson fields
+                        const newFd = { ...formData };
+                        for (let i = 0; i < 4; i++) {
+                          newFd[`allowedPerson${i + 1}`] = arr[i] || '';
+                        }
+                        setFormData(newFd);
+                      }} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>Remove</button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={responsiveStyles.formGroup}>
+                  <div style={{ color: '#6b7280' }}>No visitors added yet.</div>
                 </div>
-              ))}
+              )}
+
+              <div style={responsiveStyles.formGroup}>
+                <label style={responsiveStyles.label}>&nbsp;</label>
+                <div>
+                  <button type="button" onClick={() => {
+                    if ((allowedVisitors || []).length >= 4) return;
+                    const arr = [...(allowedVisitors || []), ''];
+                    setAllowedVisitors(arr);
+                    const newFd = { ...formData };
+                    for (let i = 0; i < 4; i++) {
+                      newFd[`allowedPerson${i + 1}`] = arr[i] || '';
+                    }
+                    setFormData(newFd);
+                  }} style={{ padding: '8px 12px', borderRadius: 6, background: '#8b5cf6', color: '#fff', border: 'none' }} disabled={(allowedVisitors || []).length >= 4}>
+                    Add Visitor
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1635,37 +1730,100 @@ const HostelAdmissionForm = () => {
               <GraduationCap size={20} style={{display: 'inline', marginRight: '0.5rem'}} />
               कोचिंग विवरण / Coaching Details
             </h3>
-            {[1, 2, 3, 4].map((num) => (
-              <div key={num} style={responsiveStyles.coachingCard}>
-                <p style={responsiveStyles.coachingTitle}>कोचिंग {num} / Coaching {num}</p>
-                <div style={responsiveStyles.gridTwo}>
-                  <div style={responsiveStyles.formGroup}>
-                    <label style={responsiveStyles.label}>
-                      नाम एवं समय / Name & Time
-                    </label>
-                    <input
-                      type="text"
-                      name={`coaching${num}Name`}
-                      value={formData[`coaching${num}Name`]}
-                      onChange={handleInputChange}
-                      style={responsiveStyles.input}
-                    />
-                  </div>
-                  <div style={responsiveStyles.formGroup}>
-                    <label style={responsiveStyles.label}>
-                      पता / Address
-                    </label>
-                    <input
-                      type="text"
-                      name={`coaching${num}Address`}
-                      value={formData[`coaching${num}Address`]}
-                      onChange={handleInputChange}
-                      style={responsiveStyles.input}
-                    />
+            {(coachingList && coachingList.length > 0) ? (
+              coachingList.map((c, idx) => (
+                <div key={idx} style={responsiveStyles.coachingCard}>
+                  <p style={responsiveStyles.coachingTitle}>कोचिंग {idx + 1} / Coaching {idx + 1}</p>
+                  <div style={responsiveStyles.gridTwo}>
+                    <div style={responsiveStyles.formGroup}>
+                      <label style={responsiveStyles.label}>नाम / Name</label>
+                      <input
+                        type="text"
+                        value={c.name}
+                        onChange={(e) => {
+                          const arr = [...coachingList]; arr[idx] = { ...arr[idx], name: e.target.value }; setCoachingList(arr);
+                          // keep formData in sync
+                          setFormData(prev => ({ ...prev, [`coaching${idx + 1}Name`]: e.target.value }));
+                        }}
+                        style={responsiveStyles.input}
+                      />
+                    </div>
+                    <div style={responsiveStyles.formGroup}>
+                      <label style={responsiveStyles.label}>समय (Start) / Start Time</label>
+                      <input
+                        type="time"
+                        value={c.start || ''}
+                        onChange={(e) => {
+                          const arr = [...coachingList]; arr[idx] = { ...arr[idx], start: e.target.value }; setCoachingList(arr);
+                          setFormData(prev => ({ ...prev, [`coaching${idx + 1}Start`]: e.target.value }));
+                        }}
+                        style={responsiveStyles.input}
+                      />
+                    </div>
+                    <div style={responsiveStyles.formGroup}>
+                      <label style={responsiveStyles.label}>समय (End) / End Time</label>
+                      <input
+                        type="time"
+                        value={c.end || ''}
+                        onChange={(e) => {
+                          const arr = [...coachingList]; arr[idx] = { ...arr[idx], end: e.target.value }; setCoachingList(arr);
+                          setFormData(prev => ({ ...prev, [`coaching${idx + 1}End`]: e.target.value }));
+                        }}
+                        style={responsiveStyles.input}
+                      />
+                    </div>
+                    <div style={responsiveStyles.formGroup}>
+                      <label style={responsiveStyles.label}>पता / Address</label>
+                      <input
+                        type="text"
+                        value={c.address}
+                        onChange={(e) => {
+                          const arr = [...coachingList]; arr[idx] = { ...arr[idx], address: e.target.value }; setCoachingList(arr);
+                          setFormData(prev => ({ ...prev, [`coaching${idx + 1}Address`]: e.target.value }));
+                        }}
+                        style={responsiveStyles.input}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button type="button" onClick={() => {
+                        const arr = [...coachingList]; arr.splice(idx, 1); setCoachingList(arr);
+                        const newFd = { ...formData };
+                        for (let i = 0; i < 4; i++) {
+                          newFd[`coaching${i + 1}Name`] = arr[i]?.name || '';
+                          newFd[`coaching${i + 1}Address`] = arr[i]?.address || '';
+                          newFd[`coaching${i + 1}Start`] = arr[i]?.start || '';
+                          newFd[`coaching${i + 1}End`] = arr[i]?.end || '';
+                        }
+                        setFormData(newFd);
+                      }} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>Remove</button>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div style={responsiveStyles.formGroup}><div style={{ color: '#6b7280' }}>No coaching entries added.</div></div>
+            )}
+
+            <div style={responsiveStyles.formGroup}>
+              <label style={responsiveStyles.label}>&nbsp;</label>
+              <div>
+                <button type="button" onClick={() => {
+                  if ((coachingList || []).length >= 4) return;
+                  const arr = [...(coachingList || []), { name: '', address: 'rajkot', start: '', end: '' }];
+                  setCoachingList(arr);
+                  const newFd = { ...formData };
+                  for (let i = 0; i < 4; i++) {
+                    newFd[`coaching${i + 1}Name`] = arr[i]?.name || '';
+                    newFd[`coaching${i + 1}Address`] = arr[i]?.address || '';
+                    newFd[`coaching${i + 1}Start`] = arr[i]?.start || '';
+                    newFd[`coaching${i + 1}End`] = arr[i]?.end || '';
+                  }
+                  setFormData(newFd);
+                }} style={{ padding: '8px 12px', borderRadius: 6, background: '#8b5cf6', color: '#fff', border: 'none' }} disabled={(coachingList || []).length >= 4}>
+                  Add Coaching
+                </button>
               </div>
-            ))}
+            </div>
           </div>
 
           {/* Signatures */}
