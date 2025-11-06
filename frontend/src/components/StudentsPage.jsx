@@ -201,7 +201,7 @@ const StudentsPage = () => {
                 </div>
               </div>
               <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
-                <button onClick={() => navigate('/admin/dashboard')} style={{padding:'0.5rem 0.75rem',borderRadius:8,border:'none',background:'#06b6d4',color:'white',cursor:'pointer'}}>Student list</button>
+                <button onClick={() => navigate('/admin/dashboard')} style={{padding:'0.5rem 0.75rem',borderRadius:8,border:'none',background:'#06b6d4',color:'white',cursor:'pointer'}}>Hostel list</button>
                 <button onClick={() => { localStorage.removeItem('token'); navigate('/admin'); }} style={{padding:'0.5rem 0.75rem',borderRadius:8,border:'none',background:'#ef4444',color:'white',cursor:'pointer'}}>Logout</button>
               </div>
             </div>

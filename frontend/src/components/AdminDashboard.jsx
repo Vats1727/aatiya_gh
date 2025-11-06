@@ -1073,6 +1073,9 @@ useEffect(() => {
                 width: '100%',
               }}
             >
+              <button onClick={() => navigate('/admin/dashboard')} className="btn btn-primary" style={{...applyResponsiveStyles(styles.addButton), minWidth: '120px', background: '#06b6d4'}} title="Hostel List">
+                <Users size={16} style={{ marginRight: '6px' }} /> Hostel List
+              </button>
               <button onClick={handleLogout} className="btn btn-secondary" style={{...applyResponsiveStyles(styles.logoutButton), minWidth: '100px'}} title="Logout">
                 <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
               </button>
