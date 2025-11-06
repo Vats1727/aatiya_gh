@@ -188,37 +188,33 @@ const StudentsPage = () => {
 
   return (
     <div className="container" style={styles.container}>
-      <div className="header" style={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', flexWrap: 'wrap' }}>
-          <button 
-            onClick={() => navigate('/admin/dashboard')}
-            style={styles.backButton}
-            aria-label="Back to Dashboard"
-          >
-            <ArrowLeft size={18} style={{ marginRight: '6px', flexShrink: 0 }} />
-            <span>Back to Dashboard</span>
-          </button>
-
-          <h1 style={styles.title}>
-            {hostel?.name ? `${hostel.name} - Students` : 'Hostel Students'}
-          </h1>
-          
-          <button 
-            onClick={handleAddStudent}
-            style={styles.addButton}
-            aria-label="Add New Student"
-          >
-            <UserPlus size={18} style={{ marginRight: '6px', flexShrink: 0 }} />
-            <span>Add Student</span>
-          </button>
-        </div>
+      <div className="header" style={{...styles.header, flexDirection: 'row', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', justifyContent: 'space-between'}}>
+        <button 
+          onClick={() => navigate('/admin/dashboard')}
+          style={styles.backButton}
+          aria-label="Back to Dashboard"
+        >
+          <ArrowLeft size={18} style={{ marginRight: '6px', flexShrink: 0 }} />
+          <span>Back to Dashboard</span>
+        </button>
+        <h1 style={{...styles.title, margin: 0}}>
+          {hostel?.name ? `${hostel.name} - Students` : 'Hostel Students'}
+        </h1>
+        <button 
+          onClick={handleAddStudent}
+          style={styles.addButton}
+          aria-label="Add New Student"
+        >
+          <UserPlus size={18} style={{ marginRight: '6px', flexShrink: 0 }} />
+          <span>Add Student</span>
+        </button>
       </div>
-      
+
       <p style={styles.address}>{hostel?.address}</p>
 
-      {/* Search and Filter Section */}
-      <div style={styles.searchFilterContainer}>
-        <div style={styles.searchContainer}>
+      {/* Search and Filter Section - single row */}
+      <div style={{display: 'flex', flexDirection: 'row', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center'}}>
+        <div style={{...styles.searchContainer, flex: 1, minWidth: '220px'}}>
           <Search size={18} style={styles.searchIcon} />
           <input
             type="text"
@@ -231,8 +227,7 @@ const StudentsPage = () => {
             style={styles.searchInput}
           />
         </div>
-        
-        <div style={styles.filterContainer}>
+        <div style={{...styles.filterContainer, minWidth: '120px'}}>
           <select
             value={statusFilter}
             onChange={(e) => {
@@ -248,12 +243,70 @@ const StudentsPage = () => {
           </select>
         </div>
       </div>
-      
+
+      {/* Pagination above table, right-aligned */}
+      {filteredStudents.length > ITEMS_PER_PAGE && (
+        <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '0.5rem', gap: '0.5rem'}}>
+          <button 
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            style={{
+              ...styles.pageButton,
+              opacity: currentPage === 1 ? 0.5 : 1,
+              cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+            }}
+            aria-label="Previous page"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (currentPage <= 3) {
+              pageNum = i + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = currentPage - 2 + i;
+            }
+            if (pageNum > totalPages) return null;
+            return (
+              <button
+                key={pageNum}
+                onClick={() => handlePageChange(pageNum)}
+                style={{
+                  ...styles.pageButton,
+                  ...(currentPage === pageNum ? styles.activePageButton : {})
+                }}
+                aria-label={`Page ${pageNum}`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+          <button 
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            style={{
+              ...styles.pageButton,
+              opacity: currentPage === totalPages ? 0.5 : 1,
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+            }}
+            aria-label="Next page"
+          >
+            <ChevronRight size={18} />
+          </button>
+          <div style={styles.pageInfo}>
+            Page {currentPage} of {totalPages}
+          </div>
+        </div>
+      )}
+
       <div className="card" style={styles.tableContainer}>
         <div style={styles.tableHeader}>
           <h3>Students</h3>
         </div>
-        
         {filteredStudents.length === 0 ? (
           <div style={styles.emptyState}>
             <p>No students found matching your criteria.</p>
@@ -271,134 +324,16 @@ const StudentsPage = () => {
             </thead>
             <tbody>
               {currentStudents.map((student, index) => {
-                // Compute application number display:
-                // preferred: student.applicationNumber
-                // else if student.combinedId exists (e.g. "02/0001") show without slash -> "020001"
-                // else if student.studentId and hostel.hostelId available, join them
-                const computedAppNo = (() => {
-                  if (student.applicationNumber) return student.applicationNumber;
-                    if (student.combinedId) return String(student.combinedId).replace(/\//g, '');
-                  // some records may store studentId and hostelId separately
-                  const hostelCode = student.hostelId || (hostel && hostel.hostelId) || null;
-                  if (student.studentId && hostelCode) return `${String(hostelCode)}${String(student.studentId)}`;
-                  return 'N/A';
-                })();
-
+                // ...existing code...
                 return (
                 <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
-                  <td style={styles.td}>{computedAppNo}</td>
-                  <td style={styles.td}>
-                    <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
-                  </td>
-                  <td style={styles.td}>
-                    <span style={{...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {})}}>
-                      {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
-                    </span>
-                  </td>
-                  <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
-                  <td style={styles.td}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Accept">
-                        <Check size={16} />
-                      </button>
-                      <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton }} title="Reject">
-                        <X size={16} />
-                      </button>
-                      <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
-                        <Edit size={16} />
-                      </button>
-                      <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
-                        <Download size={16} />
-                      </button>
-                      <button onClick={async () => {
-                          if (!confirm('Delete this student? This cannot be undone.')) return;
-                          try {
-                            const token = localStorage.getItem('token');
-                            const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-                            if (!res.ok) throw new Error('Delete failed');
-                            setStudents(prev => prev.filter(s => s.id !== student.id));
-                          } catch (err) {
-                            console.error('Delete failed', err);
-                            alert('Failed to delete student');
-                          }
-                        }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete">
-                        <Trash2 size={16} />
-                      </button>
-                      
-                    </div>
-                  </td>
+                  {/* ...existing code... */}
                 </tr>
               );
             })}
             </tbody>
           </table>
         )}
-        
-        {/* Pagination */}
-        {filteredStudents.length > ITEMS_PER_PAGE && (
-          <div style={styles.pagination}>
-            <button 
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              style={{
-                ...styles.pageButton,
-                opacity: currentPage === 1 ? 0.5 : 1,
-                cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
-              }}
-              aria-label="Previous page"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              // Show first page, last page, current page, and pages around current page
-              let pageNum;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (currentPage <= 3) {
-                pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = currentPage - 2 + i;
-              }
-              
-              if (pageNum > totalPages) return null;
-              
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => handlePageChange(pageNum)}
-                  style={{
-                    ...styles.pageButton,
-                    ...(currentPage === pageNum ? styles.activePageButton : {})
-                  }}
-                  aria-label={`Page ${pageNum}`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-            
-            <button 
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              style={{
-                ...styles.pageButton,
-                opacity: currentPage === totalPages ? 0.5 : 1,
-                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
-              }}
-              aria-label="Next page"
-            >
-              <ChevronRight size={18} />
-            </button>
-            
-            <div style={styles.pageInfo}>
-              Page {currentPage} of {totalPages}
-            </div>
-          </div>
-        )}
-        
         <div style={styles.resultCount}>
           Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-{
             Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)

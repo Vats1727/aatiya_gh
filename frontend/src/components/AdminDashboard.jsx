@@ -896,18 +896,24 @@ useEffect(() => {
           marginBottom: '1.5rem',
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
         }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '1rem',
-            width: '100%'
-          }}>
-            <div style={{
+          <div
+            className="profile-navbar"
+            style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '1rem'
-            }}>
+              flexDirection: 'column',
+              gap: '1rem',
+              width: '100%',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                width: '100%',
+                justifyContent: 'flex-start',
+              }}
+            >
               <div style={{
                 width: '48px',
                 height: '48px',
@@ -940,19 +946,24 @@ useEffect(() => {
                 </p>
               </div>
             </div>
-            <div style={{
-              display: 'flex',
-              gap: '0.75rem',
-              flexWrap: 'nowrap',
-              alignItems: 'center'
-            }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: '0.75rem',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                width: '100%',
+              }}
+            >
               <button
                 onClick={() => setShowAddHostel(true)}
                 className="btn btn-primary"
                 style={{
                   ...applyResponsiveStyles(styles.addButton),
                   background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                  '@media (max-width: 600px)': { flex: 1 }
+                  flex: 1,
+                  minWidth: '120px',
                 }}
                 type="button"
               >
@@ -960,11 +971,25 @@ useEffect(() => {
                 New Hostel
               </button>
 
-              <button onClick={handleLogout} className="btn btn-secondary" style={applyResponsiveStyles(styles.logoutButton)} title="Logout">
+              <button onClick={handleLogout} className="btn btn-secondary" style={{...applyResponsiveStyles(styles.logoutButton), flex: 1, minWidth: '100px'}} title="Logout">
                 <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
               </button>
             </div>
           </div>
+          <style>{`
+            @media (min-width: 481px) {
+              .profile-navbar {
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                gap: 1rem !important;
+              }
+              .profile-navbar > div:last-child {
+                justify-content: flex-end !important;
+                width: auto !important;
+              }
+            }
+          `}</style>
         </div>
 
         {/* Inline Add Hostel form shown on this page */}
