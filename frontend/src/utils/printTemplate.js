@@ -12,7 +12,8 @@ export const renderStudentPrintHtml = (student = {}) => {
   const photoBlock = (label, src) => `
     <div style="text-align:center">
       <div style="font-weight:600;margin-bottom:6px;font-size:12px;color:#374151">${label}</div>
-      ${src ? `<img src="${src}" style="width:128px;height:128px;object-fit:cover;border-radius:6px;" />` : `<div style="width:128px;height:128px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-radius:6px;color:#9ca3af;font-weight:600">stick Passport size photo</div>`}
+      <!-- Always render placeholder for PDF to avoid embedding images which inflate PDF size -->
+      <div style="width:128px;height:128px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-radius:6px;color:#9ca3af;font-weight:600">stick Passport size photo</div>
     </div>
   `;
 
