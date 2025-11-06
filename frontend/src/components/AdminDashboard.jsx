@@ -32,37 +32,61 @@ const AdminDashboard = () => {
     return raw.startsWith('Bearer ') ? raw.slice(7) : raw;
   };
 
-// Fetch user profile function
+// Fetch user profile function. Try multiple backend endpoints and response shapes
+// to be tolerant of environments that return { data: user } or { user }.
 const fetchUserProfile = async () => {
-    try {
-      const authHeader = getAuthHeader();
-      const rawToken = getRawToken();
-      if (!authHeader || !rawToken) {
-        navigate('/admin');
-        return;
-      }
-
-      const response = await fetch(`${API_BASE}/api/auth/me`, {
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json'
-        }
-      });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/admin');
-        return;
-      }
-      throw new Error('Failed to fetch user profile');
+  try {
+    const authHeader = getAuthHeader();
+    const rawToken = getRawToken();
+    if (!authHeader || !rawToken) {
+      navigate('/admin');
+      return;
     }
 
-    const userObj = await response.json();
-    setUser(userObj);
+    const endpoints = [`${API_BASE}/api/auth/me`, `${API_BASE}/api/users/me`, `${API_BASE}/api/me`];
+    let lastErr = null;
+    let userObj = null;
+
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep, {
+          headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+        });
+
+        if (!res.ok) {
+          // If unauthorized, bail out immediately
+          if (res.status === 401) {
+            localStorage.removeItem('token');
+            navigate('/admin');
+            return;
+          }
+          lastErr = new Error(`Failed to fetch user profile from ${ep} (status ${res.status})`);
+          continue;
+        }
+
+        const payload = await res.json();
+        // Normalize various possible shapes
+        userObj = payload?.data || payload?.user || payload || null;
+        break;
+      } catch (innerErr) {
+        lastErr = innerErr;
+        continue;
+      }
+    }
+
+    if (!userObj) {
+      console.error('fetchUserProfile: no user returned', lastErr);
+      setError('Failed to load user profile');
+      return;
+    }
+
+    // If the profile is nested under a `profile` or similar key, try to extract
+    const resolved = userObj.profile || userObj;
+    setUser(resolved);
+    try { localStorage.setItem('user', JSON.stringify(resolved)); } catch (e) { /* ignore */ }
   } catch (err) {
     console.error('Error fetching user profile:', err);
-    if (err.message.includes('401') || err.message.includes('unauthorized')) {
+    if (err.message && (err.message.includes('401') || err.message.includes('unauthorized'))) {
       localStorage.removeItem('token');
       navigate('/admin');
     }
