@@ -11,6 +11,9 @@ const AdminDashboard = () => {
   const [hostels, setHostels] = useState([]);
   const [showAddHostel, setShowAddHostel] = useState(false);
   const [newHostel, setNewHostel] = useState({ name: '', address: '' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const HOSTELS_PER_PAGE = 8;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
@@ -177,28 +180,7 @@ const fetchHostels = async () => {
   }
 };
 
-// Use effect for initial load
-useEffect(() => {
-  const loadInitialData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/admin');
-        return;
-      }
-      await fetchUserProfile();
-      await fetchHostels();
-    } catch (err) {
-      console.error('Error loading initial data:', err);
-      if (err.message.includes('401')) {
-        localStorage.removeItem('token');
-        navigate('/admin');
-      }
-    }
-  };
-
-  loadInitialData();
-}, [navigate]);
+// NOTE: initial auth+data fetching consolidated in the checkAuthAndFetchData effect below
 
   // Fetch students for a specific hostel
   const fetchStudents = async (hostelId) => {
@@ -297,6 +279,7 @@ useEffect(() => {
   };
 
   // Handle add new hostel
+  // Handle add or edit hostel. If newHostel.id exists we perform PUT, else POST
   const handleAddHostel = async (e) => {
     e.preventDefault();
     if (!newHostel.name || !newHostel.address) {
@@ -312,28 +295,43 @@ useEffect(() => {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/api/users/me/hostels`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authHeader
-        },
-        body: JSON.stringify(newHostel)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create hostel');
+      if (newHostel.id) {
+        // Edit existing hostel
+        const response = await fetch(`${API_BASE}/api/users/me/hostels/${newHostel.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader
+          },
+          body: JSON.stringify({ name: newHostel.name, address: newHostel.address })
+        });
+        if (!response.ok) throw new Error('Failed to update hostel');
+        const payload = await response.json();
+        const updated = payload?.data || payload;
+        setHostels(prev => prev.map(h => h.id === updated.id || h.id === newHostel.id ? { ...h, ...updated } : h));
+      } else {
+        // Create new hostel
+        const response = await fetch(`${API_BASE}/api/users/me/hostels`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader
+          },
+          body: JSON.stringify({ name: newHostel.name, address: newHostel.address })
+        });
+        if (!response.ok) throw new Error('Failed to create hostel');
+        const data = await response.json();
+        const created = data?.hostel || data?.data || data;
+        setHostels(prev => [...prev, created]);
       }
 
-  const data = await response.json();
-  // backend might return { hostel } or { data: hostel } or the hostel directly
-  const created = data?.hostel || data?.data || data;
-  setHostels(prev => [...prev, created]);
       setNewHostel({ name: '', address: '' });
       setShowAddHostel(false);
       setError('');
+      setCurrentPage(1);
     } catch (err) {
-      setError('Failed to create hostel. Please try again.');
+      console.error('Hostel save failed', err);
+      setError('Failed to save hostel. Please try again.');
     }
   };
 
@@ -344,9 +342,7 @@ useEffect(() => {
   };
 
   // Fetch data on component mount
-  useEffect(() => {
-    fetchHostels();
-  }, []);
+  // Removed redundant fetchHostels call to avoid double-loading and UI flicker.
 
   // Check authentication and fetch data on component mount
   useEffect(() => {
@@ -392,6 +388,11 @@ useEffect(() => {
 
     checkAuthAndFetchData();
   }, [navigate]);
+
+  // Helpers for search + pagination UI
+  const filteredHostels = hostels.filter(h => (h.name || '').toLowerCase().includes(searchTerm.toLowerCase().trim()));
+  const totalPages = Math.max(1, Math.ceil(filteredHostels.length / HOSTELS_PER_PAGE));
+  const paginatedHostels = filteredHostels.slice((currentPage - 1) * HOSTELS_PER_PAGE, (currentPage - 1) * HOSTELS_PER_PAGE + HOSTELS_PER_PAGE);
 
   const styles = {
     container: {
@@ -956,13 +957,13 @@ useEffect(() => {
     const appliedStyles = { ...styleObj };
 
     // Handle media query styles
-    if (window.innerWidth <= 1024) {
+    if (window.innerWidth <= 1024 && styleObj['@media (max-width: 1024px)']) {
       Object.assign(appliedStyles, styleObj['@media (max-width: 1024px)']);
     }
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth <= 768 && styleObj['@media (max-width: 768px)']) {
       Object.assign(appliedStyles, styleObj['@media (max-width: 768px)']);
     }
-    if (window.innerWidth <= 480) {
+    if (window.innerWidth <= 480 && styleObj['@media (max-width: 480px)']) {
       Object.assign(appliedStyles, styleObj['@media (max-width: 480px)']);
     }
 
@@ -976,28 +977,6 @@ useEffect(() => {
 
     return cleanStyles;
   };
-
-  if (loading) {
-    return (
-      <div style={applyResponsiveStyles(styles.container)}>
-        <div style={applyResponsiveStyles(styles.content)}>
-          <div style={applyResponsiveStyles(styles.loading)}>Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={applyResponsiveStyles(styles.container)}>
-        <div style={applyResponsiveStyles(styles.content)}>
-          <div style={applyResponsiveStyles(styles.error)}>
-            <strong>Error:</strong> {error}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container" style={applyResponsiveStyles(styles.container)}>
@@ -1100,7 +1079,7 @@ useEffect(() => {
         {/* Inline Add Hostel form shown on this page */}
         {showAddHostel && (
           <div className="card" style={applyResponsiveStyles(styles.card)}>
-            <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>Add New Hostel</h3>
+            <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>{newHostel.id ? 'Edit Hostel' : 'Add New Hostel'}</h3>
             <form onSubmit={handleAddHostel} className="form" style={applyResponsiveStyles(styles.form)}>
               <input
                 name="name"
@@ -1121,7 +1100,7 @@ useEffect(() => {
                 required
               />
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>Add Hostel</button>
+                <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -1140,7 +1119,7 @@ useEffect(() => {
             <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
             <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
               <button
-                onClick={() => setShowAddHostel(true)}
+                onClick={() => { setNewHostel({ name: '', address: '' }); setShowAddHostel(true); }}
                 className="btn btn-primary"
                 style={{
                   ...applyResponsiveStyles(styles.addButton),
@@ -1157,6 +1136,17 @@ useEffect(() => {
         </div>
 
         <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem' }}>
+            <input
+              type="search"
+              placeholder="Search hostels by name..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              style={{ ...applyResponsiveStyles(styles.searchInput), maxWidth: 420 }}
+            />
+            <div style={{ color: '#6b7280' }}>{filteredHostels.length} hostels</div>
+          </div>
+
           <table style={{
             ...applyResponsiveStyles(styles.table),
             width: '100%',
@@ -1170,7 +1160,7 @@ useEffect(() => {
                 </tr>
             </thead>
             <tbody>
-                {hostels.map((hostel, idx) => (
+                {paginatedHostels.map((hostel, idx) => (
                   <tr key={hostel.id}>
                     <td style={styles.td}>{hostel.name}</td>
                     <td style={styles.td}>{hostel.studentCount ?? hostel.studentsCount ?? 0}</td>
@@ -1193,23 +1183,9 @@ useEffect(() => {
                       </button>
                       <button
                         onClick={() => {
-                          const newName = prompt('Edit hostel name', hostel.name);
-                          if (newName === null) return;
-                          const newAddress = prompt('Edit hostel address', hostel.address || '');
-                          if (newAddress === null) return;
-                          // Call backend to update hostel
-                          const token = localStorage.getItem('token');
-                          fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': token && token.startsWith('Bearer ') ? token : `Bearer ${token}` },
-                            body: JSON.stringify({ name: newName, address: newAddress })
-                          }).then(res => {
-                            if (!res.ok) throw new Error('Failed to update hostel');
-                            return res.json();
-                          }).then(payload => {
-                            const updated = payload.data || payload;
-                            setHostels(prev => prev.map(h => h.id === hostel.id ? { ...h, ...updated } : h));
-                          }).catch(err => { console.error(err); alert('Failed to update hostel'); });
+                          // Open inline edit form populated with selected hostel
+                          setNewHostel({ id: hostel.id, name: hostel.name || '', address: hostel.address || '' });
+                          setShowAddHostel(true);
                         }}
                         className="btn btn-icon btn-secondary"
                         style={{ ...styles.actionButton }}
@@ -1220,10 +1196,10 @@ useEffect(() => {
                       <button
                         onClick={() => {
                           if (!confirm('Delete this hostel? This will remove the hostel and its students.')) return;
-                          const token = localStorage.getItem('token');
+                          const token = getAuthHeader();
                           fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
                             method: 'DELETE',
-                            headers: { 'Authorization': token && token.startsWith('Bearer ') ? token : `Bearer ${token}` }
+                            headers: { 'Authorization': token }
                           }).then(res => {
                             if (!res.ok) throw new Error('Failed to delete hostel');
                             setHostels(prev => prev.filter(h => h.id !== hostel.id));
@@ -1240,6 +1216,15 @@ useEffect(() => {
                 ))}
             </tbody>
           </table>
+
+          {/* Pagination controls */}
+          {filteredHostels.length > HOSTELS_PER_PAGE && (
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', padding: '0.75rem' }}>
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '0.5rem 0.75rem' }}>Prev</button>
+              <div style={{ padding: '0.25rem 0.75rem' }}>{currentPage} / {totalPages}</div>
+              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: '0.5rem 0.75rem' }}>Next</button>
+            </div>
+          )}
         </div>
 
         {selectedHostel && (
