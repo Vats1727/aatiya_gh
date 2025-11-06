@@ -69,8 +69,10 @@ export default function createAuthRouter(db) {
       if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
       const userDoc = await db.collection('users').doc(req.user.userId).get();
       if (!userDoc.exists) return res.status(404).json({ error: 'User not found' });
-      const d = userDoc.data();
-      res.json({ id: userDoc.id, fullName: d.fullName, username: d.username, role: d.role });
+    const d = userDoc.data();
+    // Prefer displayName if set, otherwise fall back to fullName
+    const displayName = d.displayName || d.fullName || d.username || null;
+    res.json({ id: userDoc.id, displayName, fullName: d.fullName, username: d.username, role: d.role });
     } catch (err) {
       console.error('GET /api/auth/me error', err);
       res.status(500).json({ error: String(err) });
