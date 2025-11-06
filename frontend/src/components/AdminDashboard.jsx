@@ -1,250 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, Users, Plus, Menu, X, Home, UserPlus, LogOut, Edit, Trash2 } from 'lucide-react';
-
-// Base styles
-const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: '#f8fafc',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-  },
-  header: {
-    backgroundColor: '#1e40af',
-    color: 'white',
-    padding: '1rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-  },
-  menuButton: {
-    background: 'none',
-    border: 'none',
-    color: 'white',
-    cursor: 'pointer',
-    display: 'none',
-    padding: '0.5rem',
-    borderRadius: '0.25rem',
-    ':hover': {
-      backgroundColor: 'rgba(255,255,255,0.1)',
-    },
-    '@media (max-width: 768px)': {
-      display: 'block',
-    },
-  },
-  main: {
-    display: 'flex',
-    flex: 1,
-    overflow: 'hidden',
-  },
-  sidebar: {
-    width: '280px',
-    backgroundColor: 'white',
-    borderRight: '1px solid #e2e8f0',
-    padding: '1.5rem 0',
-    transition: 'transform 0.3s ease-in-out',
-    '@media (max-width: 768px)': {
-      position: 'fixed',
-      top: '64px',
-      left: 0,
-      bottom: 0,
-      zIndex: 90,
-      transform: 'translateX(-100%)',
-      '&.open': {
-        transform: 'translateX(0)',
-      },
-    },
-  },
-  sidebarHeader: {
-    padding: '0 1.5rem 1.5rem',
-    borderBottom: '1px solid #e2e8f0',
-    marginBottom: '1rem',
-  },
-  userInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-  },
-  avatar: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    backgroundColor: '#3b82f6',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '1.25rem',
-  },
-  nav: {
-    padding: '0 0.5rem',
-  },
-  navItem: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0.75rem 1.5rem',
-    color: '#4b5563',
-    textDecoration: 'none',
-    borderRadius: '0.5rem',
-    margin: '0.25rem 0.75rem',
-    transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: '#f1f5f9',
-      color: '#1e40af',
-    },
-    '&.active': {
-      backgroundColor: '#dbeafe',
-      color: '#1e40af',
-      fontWeight: '500',
-    },
-  },
-  navIcon: {
-    marginRight: '0.75rem',
-    width: '20px',
-    height: '20px',
-  },
-  content: {
-    flex: 1,
-    padding: '2rem',
-    overflowY: 'auto',
-    '@media (max-width: 768px)': {
-      padding: '1rem',
-    },
-  },
-  pageHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2rem',
-    flexWrap: 'wrap',
-    gap: '1rem',
-  },
-  pageTitle: {
-    fontSize: '1.5rem',
-    fontWeight: '600',
-    color: '#1f2937',
-    margin: 0,
-  },
-  button: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0.625rem 1.25rem',
-    borderRadius: '0.5rem',
-    border: 'none',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    fontSize: '0.9375rem',
-    '&:disabled': {
-      opacity: 0.7,
-      cursor: 'not-allowed',
-    },
-  },
-  primaryButton: {
-    backgroundColor: '#1e40af',
-    color: 'white',
-    '&:hover:not(:disabled)': {
-      backgroundColor: '#1e3a8a',
-      transform: 'translateY(-1px)',
-    },
-  },
-  dangerButton: {
-    backgroundColor: '#dc2626',
-    color: 'white',
-    '&:hover:not(:disabled)': {
-      backgroundColor: '#b91c1c',
-      transform: 'translateY(-1px)',
-    },
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: '0.75rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    overflow: 'hidden',
-    marginBottom: '1.5rem',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    ':hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-    },
-  },
-  cardHeader: {
-    padding: '1.25rem 1.5rem',
-    borderBottom: '1px solid #e5e7eb',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardTitle: {
-    margin: 0,
-    fontSize: '1.125rem',
-    fontWeight: '600',
-    color: '#111827',
-  },
-  cardBody: {
-    padding: '1.5rem',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '1.5rem',
-    '@media (max-width: 1024px)': {
-      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-    },
-    '@media (max-width: 480px)': {
-      gridTemplateColumns: '1fr',
-    },
-  },
-  listItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.75rem 0',
-    borderBottom: '1px solid #e5e7eb',
-    '&:last-child': {
-      borderBottom: 'none',
-    },
-  },
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    zIndex: 80,
-    display: 'none',
-    '@media (max-width: 768px)': {
-      '&.open': {
-        display: 'block',
-      },
-    },
-  },
-  loading: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '200px',
-    color: '#6b7280',
-  },
-  error: {
-    backgroundColor: '#fef2f2',
-    color: '#dc2626',
-    padding: '1rem',
-    borderRadius: '0.5rem',
-    marginBottom: '1.5rem',
-    border: '1px solid #fecaca',
-  },
-  // Add more styles as needed
-};
+import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2 } from 'lucide-react';
+import '../styles.css';
 
 // Use production URL if environment variable is not set
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onrender.com';
@@ -258,31 +15,7 @@ const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const [selectedHostel, setSelectedHostel] = useState(null);
   const [students, setStudents] = useState([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
-  const sidebarRef = useRef(null);
-  const menuButtonRef = useRef(null);
-
-  // Close sidebar when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (sidebarOpen && 
-          !sidebarRef.current.contains(event.target) && 
-          !menuButtonRef.current.contains(event.target)) {
-        setSidebarOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [sidebarOpen]);
-
-  // Close sidebar when route changes
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [navigate]);
 
   // Helper to get Authorization header value. Accepts tokens stored as
   // either raw JWT or prefixed with "Bearer ".
@@ -549,81 +282,175 @@ useEffect(() => {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-      padding: '1.5rem 1rem',
+      padding: '0.75rem',
       boxSizing: 'border-box',
       width: '100%',
       overflowX: 'hidden',
+      position: 'relative',
+      '@media (min-width: 481px)': {
+        padding: '1rem',
+      },
+      '@media (min-width: 769px)': {
+        padding: '1.25rem',
+      },
+      '@media (min-width: 1024px)': {
+        padding: '1.5rem',
+      },
     },
     content: {
-      maxWidth: '1200px',
+      maxWidth: '100%',
       margin: '0 auto',
       width: '100%',
       boxSizing: 'border-box',
+      padding: '0 0.25rem',
+      '@media (min-width: 375px)': {
+        padding: '0 0.5rem',
+      },
+      '@media (min-width: 481px)': {
+        maxWidth: '100%',
+        padding: '0 1rem',
+      },
+      '@media (min-width: 769px)': {
+        maxWidth: '1200px',
+        padding: '0 0.5rem',
+      },
+      '@media (min-width: 1025px)': {
+        padding: '0',
+      },
     },
     header: {
       background: 'white',
-      padding: '1.25rem',
-      borderRadius: '1rem',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      marginBottom: '1.5rem',
+      padding: '0.875rem',
+      borderRadius: '0.75rem',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+      marginBottom: '1rem',
       display: 'flex',
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '1rem',
+      flexDirection: 'column',
+      gap: '0.75rem',
+      position: 'relative',
+      zIndex: 10,
+      '@media (min-width: 481px)': {
+        padding: '1rem',
+        borderRadius: '0.875rem',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.08)',
+        marginBottom: '1.25rem',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      },
+      '@media (min-width: 769px)': {
+        padding: '1.25rem',
+        borderRadius: '1rem',
+        marginBottom: '1.5rem',
+      },
     },
     title: {
       color: '#db2777',
-      fontSize: '1.5rem',
-      fontWeight: 'bold',
+      fontSize: '1.125rem',
+      fontWeight: '700',
       margin: 0,
       lineHeight: '1.3',
+      textAlign: 'center',
+      width: '100%',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      '@media (min-width: 375px)': {
+        fontSize: '1.25rem',
+      },
+      '@media (min-width: 481px)': {
+        fontSize: '1.375rem',
+        width: 'auto',
+        textAlign: 'left',
+        flex: 1,
+        minWidth: 0,
+      },
+      '@media (min-width: 769px)': {
+        fontSize: '1.5rem',
+      },
     },
     headerActions: {
       display: 'flex',
-      gap: '0.75rem',
-      flexWrap: 'wrap',
-      alignItems: 'center',
-      '@media (max-width: 600px)': {
-        width: '100%',
-        flexDirection: 'column',
+      flexDirection: 'column',
+      gap: '0.5rem',
+      width: '100%',
+      '@media (min-width: 481px)': {
+        flexDirection: 'row',
         gap: '0.5rem',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        width: 'auto',
+        marginLeft: 'auto',
+      },
+      '@media (min-width: 640px)': {
+        gap: '0.75rem',
       },
     },
     searchContainer: {
       display: 'flex',
-      gap: '0.75rem',
-      flexWrap: 'wrap',
-      marginBottom: '1.5rem',
-      '@media (max-width: 600px)': {
-        flexDirection: 'column',
+      flexDirection: 'column',
+      gap: '0.5rem',
+      marginBottom: '1rem',
+      width: '100%',
+      position: 'relative',
+      '@media (min-width: 481px)': {
+        flexDirection: 'row',
         gap: '0.5rem',
-        width: '100%',
+        marginBottom: '1.25rem',
+      },
+      '@media (min-width: 640px)': {
+        gap: '0.75rem',
+        marginBottom: '1.5rem',
       },
     },
     searchInput: {
-      flex: 1,
-      minWidth: '200px',
-      padding: '0.5rem 1rem',
+      width: '100%',
+      padding: '0.5rem 0.875rem',
       border: '1px solid #e5e7eb',
       borderRadius: '0.5rem',
       fontSize: '0.9375rem',
+      boxSizing: 'border-box',
+      minHeight: '42px',
+      WebkitAppearance: 'none',
       '&:focus': {
         outline: 'none',
         borderColor: '#8b5cf6',
         boxShadow: '0 0 0 2px rgba(168, 85, 247, 0.2)',
       },
-      '@media (max-width: 600px)': {
-        width: '100%',
+      '&::placeholder': {
+        color: '#9ca3af',
+        opacity: 1,
+      },
+      '@media (min-width: 375px)': {
+        padding: '0.5rem 1rem',
+      },
+      '@media (min-width: 481px)': {
+        minWidth: '200px',
+        flex: 1,
       },
     },
     card: {
       background: 'white',
       borderRadius: '0.75rem',
-      padding: '1.5rem',
-      marginBottom: '1.5rem',
+      padding: '1rem',
+      marginBottom: '1rem',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      width: '100%',
+      boxSizing: 'border-box',
+      position: 'relative',
+      overflow: 'hidden',
+      '@media (min-width: 481px)': {
+        padding: '1.125rem',
+        marginBottom: '1.25rem',
+      },
+      '@media (min-width: 769px)': {
+        padding: '1.25rem',
+        marginBottom: '1.5rem',
+      },
+      '@media (min-width: 1024px)': {
+        padding: '1.5rem',
+      },
     },
     form: {
       display: 'flex',
@@ -658,19 +485,55 @@ useEffect(() => {
     },
     hostelGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-      gap: '1.25rem',
-      marginTop: '1.5rem',
+      gridTemplateColumns: '1fr',
+      gap: '0.875rem',
+      marginTop: '0.75rem',
+      '@media (min-width: 420px)': {
+        gap: '1rem',
+        marginTop: '1rem',
+      },
+      '@media (min-width: 481px)': {
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '1rem',
+        marginTop: '1.25rem',
+      },
+      '@media (min-width: 640px)': {
+        gap: '1.25rem',
+      },
+      '@media (min-width: 1024px)': {
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '1.5rem',
+        marginTop: '1.5rem',
+      },
     },
     hostelCard: {
-      background: '#f9fafb',
-      padding: '1.25rem',
+      background: '#ffffff',
+      padding: '1rem',
       borderRadius: '0.75rem',
       border: '1px solid #e5e7eb',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
       transition: 'all 0.2s ease',
+      position: 'relative',
+      overflow: 'hidden',
       '&:hover': {
         transform: 'translateY(-2px)',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+      },
+      '@media (min-width: 481px)': {
+        padding: '1.125rem',
+      },
+      '@media (min-width: 769px)': {
+        padding: '1.25rem',
+      },
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '4px',
+        background: 'linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%)',
+        opacity: 0.9,
       },
     },
     viewButton: {
@@ -1023,10 +886,10 @@ useEffect(() => {
   }
 
   return (
-    <div style={applyResponsiveStyles(styles.container)}>
-      <div style={applyResponsiveStyles(styles.content)}>
+    <div className="container" style={applyResponsiveStyles(styles.container)}>
+      <div className="content" style={applyResponsiveStyles(styles.content)}>
         {/* User Profile Section */}
-        <div style={{
+        <div className="card" style={{
           background: 'white',
           borderRadius: '0.75rem',
           padding: '1.5rem',
@@ -1036,72 +899,82 @@ useEffect(() => {
           <div style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
             gap: '1rem',
-            marginBottom: '1rem'
+            width: '100%'
           }}>
             <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              backgroundColor: '#8b5cf6',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '1.5rem',
-              fontWeight: 'bold'
+              gap: '1rem'
             }}>
-              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
-            <div>
-              <h2 style={{
-                margin: 0,
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: '#8b5cf6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
                 fontSize: '1.25rem',
-                fontWeight: '600',
-                color: '#1f2937'
+                fontWeight: 'bold'
               }}>
-                {user?.name || 'User'}
-              </h2>
-              <p style={{
-                margin: '0.25rem 0 0',
-                color: '#6b7280',
-                fontSize: '0.9375rem'
-              }}>
-                {user?.email || ''}
-              </p>
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <div>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  color: '#1f2937'
+                }}>
+                  {user?.name || 'User'}
+                </h2>
+                <p style={{
+                  margin: '0.25rem 0 0',
+                  color: '#6b7280',
+                  fontSize: '0.9375rem'
+                }}>
+                  {user?.email || ''}
+                </p>
+              </div>
             </div>
-          </div>
-          <div style={{
-            display: 'flex',
-            gap: '0.75rem',
-            flexWrap: 'wrap'
-          }}>
-            <button
-              onClick={() => setShowAddHostel(true)}
-              style={{
-                ...applyResponsiveStyles(styles.addButton),
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                '@media (max-width: 600px)': { flex: 1 }
-              }}
-              type="button"
-            >
-              <Home size={18} className="mr-2" />
-              New Hostel
-            </button>
+            <div style={{
+              display: 'flex',
+              gap: '0.75rem',
+              flexWrap: 'nowrap',
+              alignItems: 'center'
+            }}>
+              <button
+                onClick={() => setShowAddHostel(true)}
+                className="btn btn-primary"
+                style={{
+                  ...applyResponsiveStyles(styles.addButton),
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  '@media (max-width: 600px)': { flex: 1 }
+                }}
+                type="button"
+              >
+                <Home size={18} className="mr-2" />
+                New Hostel
+              </button>
 
-            <button onClick={handleLogout} style={applyResponsiveStyles(styles.logoutButton)} title="Logout">
-              <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
-            </button>
+              <button onClick={handleLogout} className="btn btn-secondary" style={applyResponsiveStyles(styles.logoutButton)} title="Logout">
+                <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Inline Add Hostel form shown on this page */}
         {showAddHostel && (
-          <div style={applyResponsiveStyles(styles.card)}>
+          <div className="card" style={applyResponsiveStyles(styles.card)}>
             <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>Add New Hostel</h3>
-            <form onSubmit={handleAddHostel} style={applyResponsiveStyles(styles.form)}>
+            <form onSubmit={handleAddHostel} className="form" style={applyResponsiveStyles(styles.form)}>
               <input
                 name="name"
+                className="input"
                 value={newHostel.name}
                 onChange={(e) => setNewHostel(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Hostel name"
@@ -1110,98 +983,112 @@ useEffect(() => {
               />
               <input
                 name="address"
+                className="input"
                 value={newHostel.address}
                 onChange={(e) => setNewHostel(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="Hostel address"
+                placeholder="Address"
                 style={applyResponsiveStyles(styles.input)}
                 required
               />
-              <button 
-                type="submit" 
-                style={applyResponsiveStyles(styles.primaryButton)}
-                disabled={!newHostel.name || !newHostel.address}
-              >
-                Add Hostel
-              </button>
+              <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>Add Hostel</button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '' }); setError(''); }}
+                  style={{ ...applyResponsiveStyles(styles.logoutButton), background: '#6b7280' }}
+                >
+                  Cancel
+                </button>
+              </div>
             </form>
           </div>
         )}
 
-          {/* Hostels List */}
-          <div style={applyResponsiveStyles(styles.card)}>
-            <h3 style={{ margin: 0, marginBottom: '1rem', color: '#6b21a8' }}>Your Hostels</h3>
-            {hostels.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#6b7280' }}>No hostels found. Add your first hostel above.</p>
-            ) : (
-              <div style={applyResponsiveStyles(styles.tableContainer)}>
-                <table style={applyResponsiveStyles(styles.table)}>
-                  <thead>
-                    <tr>
-                      <th style={applyResponsiveStyles(styles.th)}>Name</th>
-                      <th style={applyResponsiveStyles(styles.th)}>Address</th>
-                      <th style={applyResponsiveStyles(styles.th)}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {hostels.map((hostel) => (
-                      <tr key={hostel.id}>
-                        <td style={applyResponsiveStyles(styles.td)}>{hostel.name}</td>
-                        <td style={applyResponsiveStyles(styles.td)}>{hostel.address || 'N/A'}</td>
-                        <td style={applyResponsiveStyles(styles.td)}>
-                          <button
-                            onClick={() => handleViewStudents(hostel.id)}
-                            style={applyResponsiveStyles(styles.actionButton)}
-                            title="View Students"
-                          >
-                            <Users size={14} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setNewHostel({ name: hostel.name, address: hostel.address });
-                              setSelectedHostel(hostel);
-                              setShowAddHostel(true);
-                            }}
-                            style={applyResponsiveStyles(styles.actionButton)}
-                            title="Edit Hostel"
-                          >
-                            <Edit size={14} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (!confirm('Delete this hostel? This will remove the hostel and its students.')) return;
-                              const token = localStorage.getItem('token');
-                              fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
-                                method: 'DELETE',
-                                headers: { 
-                                  'Authorization': token && token.startsWith('Bearer ') ? token : `Bearer ${token}`,
-                                  'Content-Type': 'application/json'
-                                }
-                              })
-                              .then(res => {
-                                if (!res.ok) throw new Error('Failed to delete hostel');
-                                setHostels(prev => prev.filter(h => h.id !== hostel.id));
-                              })
-                              .catch(err => { 
-                                console.error('Delete error:', err); 
-                                alert('Failed to delete hostel'); 
-                              });
-                            }}
-                            style={applyResponsiveStyles({ ...styles.actionButton, color: '#dc2626' })}
-                            title="Delete Hostel"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+        <div style={applyResponsiveStyles(styles.header)}>
+          <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
+        </div>
+
+        <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
+          <table style={{
+            ...applyResponsiveStyles(styles.table),
+            width: '100%',
+            borderCollapse: 'collapse'
+          }}>
+            <thead>
+                <tr>
+                  <th style={styles.th}>Hostel Name</th>
+                  <th style={styles.th}>Number of Students</th>
+                  <th style={styles.th}>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {hostels.map((hostel, idx) => (
+                  <tr key={hostel.id}>
+                    <td style={styles.td}>{hostel.name}</td>
+                    <td style={styles.td}>{hostel.studentCount ?? hostel.studentsCount ?? 0}</td>
+                    <td style={styles.td}>
+                      <button
+                        onClick={() => handleViewStudents(hostel.id)}
+                        className="btn btn-icon btn-primary"
+                        style={{ ...styles.actionButton, ...styles.editButton }}
+                        title="View Students"
+                      >
+                        <ArrowRight size={16} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newName = prompt('Edit hostel name', hostel.name);
+                          if (newName === null) return;
+                          const newAddress = prompt('Edit hostel address', hostel.address || '');
+                          if (newAddress === null) return;
+                          // Call backend to update hostel
+                          const token = localStorage.getItem('token');
+                          fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': token && token.startsWith('Bearer ') ? token : `Bearer ${token}` },
+                            body: JSON.stringify({ name: newName, address: newAddress })
+                          }).then(res => {
+                            if (!res.ok) throw new Error('Failed to update hostel');
+                            return res.json();
+                          }).then(payload => {
+                            const updated = payload.data || payload;
+                            setHostels(prev => prev.map(h => h.id === hostel.id ? { ...h, ...updated } : h));
+                          }).catch(err => { console.error(err); alert('Failed to update hostel'); });
+                        }}
+                        className="btn btn-icon btn-secondary"
+                        style={{ ...styles.actionButton }}
+                        title="Edit Hostel"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!confirm('Delete this hostel? This will remove the hostel and its students.')) return;
+                          const token = localStorage.getItem('token');
+                          fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': token && token.startsWith('Bearer ') ? token : `Bearer ${token}` }
+                          }).then(res => {
+                            if (!res.ok) throw new Error('Failed to delete hostel');
+                            setHostels(prev => prev.filter(h => h.id !== hostel.id));
+                          }).catch(err => { console.error(err); alert('Failed to delete hostel'); });
+                        }}
+                        className="btn btn-icon btn-danger"
+                        style={{ ...styles.actionButton }}
+                        title="Delete Hostel"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
 
         {selectedHostel && (
-          <div style={applyResponsiveStyles(styles.tableContainer)}>
+          <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
             <table style={{
               ...applyResponsiveStyles(styles.table),
               width: '100%',
