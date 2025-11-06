@@ -1,7 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
+
+// Dynamic loader for Sanscript transliteration library (loads from CDN at runtime)
+const loadSanscript = () => {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') return resolve(null);
+    if (window.Sanscript) return resolve(window.Sanscript);
+    const existing = document.querySelector('script[data-sanscript]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(window.Sanscript));
+      existing.addEventListener('error', (e) => reject(e));
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/sanscript@1.0.0/dist/sanscript.min.js';
+    s.async = true;
+    s.setAttribute('data-sanscript', '1');
+    s.onload = () => resolve(window.Sanscript);
+    s.onerror = (e) => reject(e);
+    document.head.appendChild(s);
+  });
+};
 import '../styles.css';
 
 // Use production URL if environment variable is not set
@@ -15,6 +36,7 @@ const AdminDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const HOSTELS_PER_PAGE = 8;
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
+  const translitTimers = useRef({ name: null, address: null });
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640);
@@ -1116,7 +1138,24 @@ const fetchHostels = async () => {
                 name="name"
                 className="input"
                 value={newHostel.name}
-                onChange={(e) => setNewHostel(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => {
+                  const val = e.target.value || '';
+                  setNewHostel(prev => ({ ...prev, name: val }));
+                  // debounce transliteration
+                  if (translitTimers.current.name) clearTimeout(translitTimers.current.name);
+                  translitTimers.current.name = setTimeout(() => {
+                    loadSanscript().then((Sanscript) => {
+                      try {
+                        if (Sanscript && Sanscript.t) {
+                          const hi = Sanscript.t(val, 'itrans', 'devanagari');
+                          setNewHostel(prev => ({ ...prev, name_hi: hi }));
+                        }
+                      } catch (err) {
+                        // fallback: do nothing
+                      }
+                    }).catch(() => {/* ignore load errors */});
+                  }, 350);
+                }}
                 placeholder="Hostel name (English)"
                 style={applyResponsiveStyles(styles.input)}
                 required
@@ -1133,7 +1172,23 @@ const fetchHostels = async () => {
                 name="address"
                 className="input"
                 value={newHostel.address}
-                onChange={(e) => setNewHostel(prev => ({ ...prev, address: e.target.value }))}
+                onChange={(e) => {
+                  const val = e.target.value || '';
+                  setNewHostel(prev => ({ ...prev, address: val }));
+                  if (translitTimers.current.address) clearTimeout(translitTimers.current.address);
+                  translitTimers.current.address = setTimeout(() => {
+                    loadSanscript().then((Sanscript) => {
+                      try {
+                        if (Sanscript && Sanscript.t) {
+                          const hi = Sanscript.t(val, 'itrans', 'devanagari');
+                          setNewHostel(prev => ({ ...prev, address_hi: hi }));
+                        }
+                      } catch (err) {
+                        // ignore
+                      }
+                    }).catch(() => {/* ignore */});
+                  }, 350);
+                }}
                 placeholder="Address (English)"
                 style={applyResponsiveStyles(styles.input)}
                 required
