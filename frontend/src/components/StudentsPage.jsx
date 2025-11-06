@@ -19,6 +19,13 @@ const StudentsPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOption, setSortOption] = useState('name_asc');
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 640);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -357,6 +364,59 @@ const StudentsPage = () => {
           <div style={styles.emptyState}>
             <p>No students found matching your criteria.</p>
           </div>
+        ) : isMobile ? (
+          <div style={styles.studentsGrid}>
+            {currentStudents.map((student, index) => {
+              const computedAppNo = (() => {
+                if (student.applicationNumber) return student.applicationNumber;
+                if (student.combinedId) return String(student.combinedId).replace(/\//g, '');
+                const hostelCode = student.hostelId || (hostel && hostel.hostelId) || null;
+                if (student.studentId && hostelCode) return `${String(hostelCode)}${String(student.studentId)}`;
+                return 'N/A';
+              })();
+
+              return (
+                <div key={student.id} style={styles.studentCard}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <div style={styles.avatar}>{String((student.studentName || 'U').charAt(0)).toUpperCase()}</div>
+                      <div>
+                        <div style={styles.nameText}>{student.studentName || student.name || 'N/A'}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{student.mobile1 || 'N/A'}</div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ marginBottom: 8 }}>
+                        <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
+                          {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{computedAppNo}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
+                    <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Accept"><Check size={16} /></button>
+                    <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Reject"><X size={16} /></button>
+                    <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
+                    <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
+                    <button onClick={async () => {
+                      if (!confirm('Delete this student? This cannot be undone.')) return;
+                      try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                        if (!res.ok) throw new Error('Delete failed');
+                        setStudents(prev => prev.filter(s => s.id !== student.id));
+                      } catch (err) {
+                        console.error('Delete failed', err);
+                        alert('Failed to delete student');
+                      }
+                    }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete"><Trash2 size={16} /></button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <table style={styles.table}>
             <thead>
@@ -370,14 +430,9 @@ const StudentsPage = () => {
             </thead>
             <tbody>
               {currentStudents.map((student, index) => {
-                // Compute application number display:
-                // preferred: student.applicationNumber
-                // else if student.combinedId exists (e.g. "02/0001") show without slash -> "020001"
-                // else if student.studentId and hostel.hostelId available, join them
                 const computedAppNo = (() => {
                   if (student.applicationNumber) return student.applicationNumber;
-                    if (student.combinedId) return String(student.combinedId).replace(/\//g, '');
-                  // some records may store studentId and hostelId separately
+                  if (student.combinedId) return String(student.combinedId).replace(/\//g, '');
                   const hostelCode = student.hostelId || (hostel && hostel.hostelId) || null;
                   if (student.studentId && hostelCode) return `${String(hostelCode)}${String(student.studentId)}`;
                   return 'N/A';
@@ -397,7 +452,6 @@ const StudentsPage = () => {
                   <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                   <td style={styles.td}>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      {/* Keep accept/reject buttons in DOM to preserve layout; hide them when already accepted */}
                       <button
                         onClick={() => handleAccept(student)}
                         style={{
@@ -564,9 +618,10 @@ const styles = {
   },
   table: {
     width: '100%',
-    minWidth: '600px', // Ensures table doesn't get too narrow on small screens
+    // allow table to shrink on small screens; mobile will use card layout instead
+    minWidth: 'auto',
     borderCollapse: 'collapse',
-    tableLayout: 'fixed',
+    tableLayout: 'auto',
   },
   th: {
     padding: '0.75rem 1rem',

@@ -14,6 +14,13 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const HOSTELS_PER_PAGE = 8;
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 640);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
@@ -729,7 +736,8 @@ const fetchHostels = async () => {
     },
     table: {
       width: '100%',
-      minWidth: '800px',
+      // allow table to shrink on smaller viewports; mobile will use card/grid layout
+      minWidth: 'auto',
       borderCollapse: 'separate',
       borderSpacing: 0,
     },
@@ -1161,75 +1169,92 @@ const fetchHostels = async () => {
             <div style={{ color: '#6b7280' }}>{filteredHostels.length} hostels</div>
           </div>
 
-          <table style={{
-            ...applyResponsiveStyles(styles.table),
-            width: '100%',
-            borderCollapse: 'collapse'
-          }}>
-            <thead>
-                <tr>
-                  <th style={styles.th}>Hostel Name</th>
-                  <th style={styles.th}>Number of Students</th>
-                  <th style={styles.th}>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {paginatedHostels.map((hostel, idx) => (
-                  <tr key={hostel.id}>
-                    <td style={styles.td}>{hostel.name}</td>
-                    <td style={styles.td}>{hostel.studentCount ?? hostel.studentsCount ?? 0}</td>
-                    <td style={styles.td}>
-                      <button
-                        onClick={() => handleViewStudents(hostel.id)}
-                        className="btn btn-icon btn-primary"
-                        style={{ ...styles.actionButton, ...styles.editButton }}
-                        title="View Students"
-                      >
-                        <ArrowRight size={16} />
-                      </button>
-                      <button
-                        onClick={() => generateQrForHostel(hostel)}
-                        className="btn btn-icon"
-                        style={{ ...styles.actionButton }}
-                        title="Generate QR for Add Student"
-                      >
-                        <UserPlus size={14} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          // Open inline edit form populated with selected hostel
-                          setNewHostel({ id: hostel.id, name: hostel.name || '', address: hostel.address || '' });
-                          setShowAddHostel(true);
-                        }}
-                        className="btn btn-icon btn-secondary"
-                        style={{ ...styles.actionButton }}
-                        title="Edit Hostel"
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (!confirm('Delete this hostel? This will remove the hostel and its students.')) return;
-                          const token = getAuthHeader();
-                          fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
-                            method: 'DELETE',
-                            headers: { 'Authorization': token }
-                          }).then(res => {
-                            if (!res.ok) throw new Error('Failed to delete hostel');
-                            setHostels(prev => prev.filter(h => h.id !== hostel.id));
-                          }).catch(err => { console.error(err); alert('Failed to delete hostel'); });
-                        }}
-                        className="btn btn-icon btn-danger"
-                        style={{ ...styles.actionButton }}
-                        title="Delete Hostel"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
+          {isMobile ? (
+            <div style={applyResponsiveStyles(styles.hostelGrid)}>
+              {paginatedHostels.map((hostel) => (
+                <div key={hostel.id} style={applyResponsiveStyles(styles.hostelCard)}>
+                  <h4 style={{ margin: 0, fontSize: '1rem', color: '#111827' }}>{hostel.name}</h4>
+                  <div style={{ color: '#6b7280', marginTop: 6 }}>{hostel.address || ''}</div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
+                    <button onClick={() => handleViewStudents(hostel.id)} className="btn btn-primary" style={{ ...styles.viewButton, flex: 1 }}>
+                      View Students
+                    </button>
+                    <button onClick={() => generateQrForHostel(hostel)} className="btn" style={{ padding: '0.5rem' }} title="QR"><UserPlus size={16} /></button>
+                    <button onClick={() => { setNewHostel({ id: hostel.id, name: hostel.name || '', address: hostel.address || '' }); setShowAddHostel(true); }} className="btn" style={{ padding: '0.5rem' }} title="Edit"><Edit size={16} /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <table style={{
+              ...applyResponsiveStyles(styles.table),
+              width: '100%',
+              borderCollapse: 'collapse'
+            }}>
+              <thead>
+                  <tr>
+                    <th style={styles.th}>Hostel Name</th>
+                    <th style={styles.th}>Number of Students</th>
+                    <th style={styles.th}>Actions</th>
                   </tr>
-                ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                  {paginatedHostels.map((hostel, idx) => (
+                    <tr key={hostel.id}>
+                      <td style={styles.td}>{hostel.name}</td>
+                      <td style={styles.td}>{hostel.studentCount ?? hostel.studentsCount ?? 0}</td>
+                      <td style={styles.td}>
+                        <button
+                          onClick={() => handleViewStudents(hostel.id)}
+                          className="btn btn-icon btn-primary"
+                          style={{ ...styles.actionButton, ...styles.editButton }}
+                          title="View Students"
+                        >
+                          <ArrowRight size={16} />
+                        </button>
+                        <button
+                          onClick={() => generateQrForHostel(hostel)}
+                          className="btn btn-icon"
+                          style={{ ...styles.actionButton }}
+                          title="Generate QR for Add Student"
+                        >
+                          <UserPlus size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setNewHostel({ id: hostel.id, name: hostel.name || '', address: hostel.address || '' });
+                            setShowAddHostel(true);
+                          }}
+                          className="btn btn-icon btn-secondary"
+                          style={{ ...styles.actionButton }}
+                          title="Edit Hostel"
+                        >
+                          <Edit size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!confirm('Delete this hostel? This will remove the hostel and its students.')) return;
+                            const token = getAuthHeader();
+                            fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
+                              method: 'DELETE',
+                              headers: { 'Authorization': token }
+                            }).then(res => {
+                              if (!res.ok) throw new Error('Failed to delete hostel');
+                              setHostels(prev => prev.filter(h => h.id !== hostel.id));
+                            }).catch(err => { console.error(err); alert('Failed to delete hostel'); });
+                          }}
+                          className="btn btn-icon btn-danger"
+                          style={{ ...styles.actionButton }}
+                          title="Delete Hostel"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
 
           {/* Pagination controls */}
           {filteredHostels.length > HOSTELS_PER_PAGE && (
