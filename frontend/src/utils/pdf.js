@@ -20,26 +20,27 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
     snippetContainer.style.position = 'fixed';
     snippetContainer.style.left = '-9999px';
     snippetContainer.style.top = '0';
-    // Use a width that maps well to A4 at typical screen DPI
-    snippetContainer.style.width = '794px';
-    snippetContainer.style.padding = '16px';
+    // Use a narrower width to reduce canvas pixels (maps to A4 at lower DPI)
+    snippetContainer.style.width = '595px';
+    snippetContainer.style.padding = '12px';
     snippetContainer.style.background = '#fff';
     snippetContainer.innerHTML = snippetHtml;
     document.body.appendChild(snippetContainer);
 
     try {
-      const canvas = await html2canvas(snippetContainer, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
+      // Render at scale 1 and export as JPEG to keep size small
+      const canvas = await html2canvas(snippetContainer, { scale: 1, useCORS: true, backgroundColor: '#ffffff' });
+      const imgData = canvas.toDataURL('image/jpeg', 0.7);
 
       const pageWidth = pdf.internal.pageSize.getWidth();
-      const imgProps = pdf.getImageProperties(imgData);
+  const imgProps = pdf.getImageProperties(imgData);
       const imgWidthMm = pageWidth;
       const imgHeightMm = (imgProps.height * imgWidthMm) / imgProps.width;
 
       if (!isFirstPage) pdf.addPage();
 
       if (imgHeightMm <= pdf.internal.pageSize.getHeight()) {
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidthMm, imgHeightMm);
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidthMm, imgHeightMm);
       } else {
         // Split long canvas into multiple PDF pages
         const pageHeight = pdf.internal.pageSize.getHeight();
@@ -53,10 +54,10 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
           pageCanvas.height = pageCanvasHeightPx;
           const ctx = pageCanvas.getContext('2d');
           ctx.drawImage(canvas, 0, positionPx, canvas.width, pageCanvasHeightPx, 0, 0, canvas.width, pageCanvasHeightPx);
-          const pageData = pageCanvas.toDataURL('image/png');
+          const pageData = pageCanvas.toDataURL('image/jpeg', 0.7);
           const pageImgProps = pdf.getImageProperties(pageData);
           const pageImgHeightMm = (pageImgProps.height * imgWidthMm) / pageImgProps.width;
-          pdf.addImage(pageData, 'PNG', 0, 0, imgWidthMm, pageImgHeightMm);
+          pdf.addImage(pageData, 'JPEG', 0, 0, imgWidthMm, pageImgHeightMm);
           remainingHeightPx -= pageCanvasHeightPx;
           positionPx += pageCanvasHeightPx;
           if (remainingHeightPx > 0) pdf.addPage();
@@ -71,17 +72,8 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
 
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
-  if (hasExplicitBreak) {
-    // Ignore on-screen preview in this mode and render each piece individually from htmlString
-    const parts = htmlString.split(/<div[^>]*page-break-before[^>]*><\/div>/i);
-    for (let i = 0; i < parts.length; i++) {
-      // Trim wrapper whitespace
-      const part = parts[i].trim();
-      await renderSnippetToPdf(pdf, part, i === 0);
-    }
-    pdf.save(fileName);
-    return { success: true };
-  }
+  // NOTE: do not split by explicit page-break markers; render the full HTML in a single pass
+  // This avoids introducing extra empty pages caused by splitting/rendering parts separately.
 
   // Fallback: capture preview or full HTML in a single pass (legacy behavior)
   let container;
@@ -93,8 +85,9 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
     container.style.position = 'fixed';
     container.style.left = '-9999px';
     container.style.top = '0';
-    container.style.width = '900px';
-    container.style.padding = '16px';
+    // Narrower width reduces canvas pixel size and PDF output
+    container.style.width = '595px';
+    container.style.padding = '12px';
     container.style.background = '#fff';
     container.innerHTML = htmlString;
     document.body.appendChild(container);
@@ -102,8 +95,9 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
   }
 
   try {
-    const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
-    const imgData = canvas.toDataURL('image/png');
+  // Render at scale 1 and export as JPEG to reduce size
+  const canvas = await html2canvas(container, { scale: 1, useCORS: true, backgroundColor: '#ffffff' });
+  const imgData = canvas.toDataURL('image/jpeg', 0.7);
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -113,7 +107,7 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
     const imgHeightMm = (imgProps.height * imgWidthMm) / imgProps.width;
 
     if (imgHeightMm <= pageHeight) {
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidthMm, imgHeightMm);
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidthMm, imgHeightMm);
     } else {
       // Split into pages
       const pxPerMm = canvas.height / imgHeightMm;
@@ -126,13 +120,14 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
         pageCanvas.height = pageCanvasHeightPx;
         const ctx = pageCanvas.getContext('2d');
         ctx.drawImage(canvas, 0, positionPx, canvas.width, pageCanvasHeightPx, 0, 0, canvas.width, pageCanvasHeightPx);
-        const pageData = pageCanvas.toDataURL('image/png');
+        const pageData = pageCanvas.toDataURL('image/jpeg', 0.7);
         const pageImgProps = pdf.getImageProperties(pageData);
         const pageImgHeightMm = (pageImgProps.height * imgWidthMm) / pageImgProps.width;
-        pdf.addImage(pageData, 'PNG', 0, 0, imgWidthMm, pageImgHeightMm);
+        pdf.addImage(pageData, 'JPEG', 0, 0, imgWidthMm, pageImgHeightMm);
         remainingHeightPx -= pageCanvasHeightPx;
         positionPx += pageCanvasHeightPx;
-        if (remainingHeightPx > 0) pdf.addPage();
+        // Avoid adding tiny trailing blank pages due to rounding
+        if (remainingHeightPx > 2) pdf.addPage();
       }
     }
 
