@@ -218,7 +218,7 @@ const AdminLogin = () => {
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
           <span style={{ color: '#6b7280' }}>Don't have an account? </span>
           <Link 
-            to="/register" 
+            to="/admin/register" 
             style={{
               color: '#9333ea',
               textDecoration: 'none',
