@@ -8,9 +8,8 @@ export const downloadStudentPdf = async (studentData) => {
   const rulesHtml = renderRulesHtml ? renderRulesHtml(studentData) : '';
 
   // Combine into a single HTML string so the PDF generator renders both pages.
-  // Note: `formHtml` already includes a page-break (page-break-after) so we must NOT
-  // add an extra empty page-break element here — doing so created an unwanted blank page.
-  const combinedHtml = `${formHtml}${rulesHtml}`;
+  // We add a single explicit page-break element between the form and rules pages.
+  const combinedHtml = `${formHtml}<div style="page-break-after: always; height:0; margin:0; padding:0;"></div>${rulesHtml}`;
 
   // Create a meaningful filename
   const studentName = studentData.studentName || 'student';

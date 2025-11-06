@@ -7,7 +7,8 @@ export const renderStudentPrintHtml = (student = {}) => {
   // Use the reference styles: two-page HTML (form page + affidavit/rules page).
   // Use A4 dimensions so the form occupies the full first page and rules always start on page 2
   // make the page container position:relative so we can absolutely position signatures
-  const pageStyle = `width:210mm;min-height:297mm;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;page-break-after:always;position:relative;`;
+  // Note: we avoid page-break-after here and add an explicit break between pages
+  const pageStyle = `width:210mm;min-height:297mm;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;position:relative;`;
 
   const photoBlock = (label, src) => `
     <div style="text-align:center">
