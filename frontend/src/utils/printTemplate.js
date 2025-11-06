@@ -12,9 +12,32 @@ export const renderStudentPrintHtml = (student = {}) => {
   const photoBlock = (label, src) => `
     <div style="text-align:center">
       <div style="font-weight:600;margin-bottom:6px;font-size:12px;color:#374151">${label}</div>
-      ${src ? `<img src="${src}" style="width:128px;height:128px;object-fit:cover;border-radius:6px;" />` : `<div style="width:128px;height:128px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-radius:6px;color:#9ca3af">No Photo</div>`}
+      ${src ? `<img src="${src}" style="width:128px;height:128px;object-fit:cover;border-radius:6px;" />` : `<div style="width:128px;height:128px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-radius:6px;color:#9ca3af;font-weight:600">stick Passport size photo</div>`}
     </div>
   `;
+
+  // helpers for time and date formatting
+  const formatTime12 = (t) => {
+    if (!t) return '';
+    // accept HH:MM (24h) or already formatted; try to split
+    const parts = String(t).split(':');
+    if (parts.length < 2) return t;
+    let hh = parseInt(parts[0], 10);
+    const mm = (parts[1] || '00').padStart(2, '0');
+    const suffix = hh >= 12 ? 'PM' : 'AM';
+    hh = hh % 12 === 0 ? 12 : hh % 12;
+    return `${hh}:${mm} ${suffix}`;
+  };
+
+  const formatDateDDMMYYYY = (d) => {
+    if (!d) return '';
+    const dt = new Date(d);
+    if (isNaN(dt)) return String(d);
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const yy = dt.getFullYear();
+    return `${dd}/${mm}/${yy}`;
+  };
 
   const formHtml = `
     <div style="${pageStyle}">
@@ -23,7 +46,7 @@ export const renderStudentPrintHtml = (student = {}) => {
         <h2 style="margin:0;font-size:20px;color:#ec4899">ATIYA GIRLS HOSTEL</h2>
         <p style="margin:6px 0;font-size:14px;color:#4b5563">रामपाड़ा कटिहार / Rampada Katihar</p>
         <div style="font-weight:700;margin-top:6px;font-size:16px;color:#111827">नामांकन फॉर्म / ADMISSION FORM</div>
-        <div style="font-size:12px;color:#6b7280;margin-top:6px">दिनांक / Date: ${escape(s.admissionDate)}</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:6px">दिनांक / Date: ${escape(formatDateDDMMYYYY(s.admissionDate))}</div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
@@ -73,8 +96,10 @@ export const renderStudentPrintHtml = (student = {}) => {
           ${[1,2,3,4].map(i => {
             const name = escape(s[`coaching${i}Name`]);
             const addr = escape(s[`coaching${i}Address`]);
-            const start = escape(s[`coaching${i}Start`]);
-            const end = escape(s[`coaching${i}End`]);
+            const startRaw = s[`coaching${i}Start`];
+            const endRaw = s[`coaching${i}End`];
+            const start = formatTime12(startRaw);
+            const end = formatTime12(endRaw);
             const timePart = (start || end) ? ` - समय: ${start || ''}${(start && end) ? ` - ${end}` : (end ? ` - ${end}` : '')}` : '';
             return (name || addr || start || end) ? `<div style="border-bottom:1px solid #e5e7eb;padding:6px 0;margin-bottom:6px"><strong>कोचिंग ${i}:</strong> ${name ? `नाम: ${name}` : ''}${timePart} ${addr ? ` - पता: ${addr}` : ''}</div>` : '';
           }).join('')}
@@ -83,8 +108,8 @@ export const renderStudentPrintHtml = (student = {}) => {
 
       <!-- Place a single student signature on the bottom-right of page 1 -->
       <div style="position:absolute;right:24px;bottom:24px;width:260px;text-align:right;">
-        <div style="border-top:2px solid #9ca3af;padding-top:8px;min-height:48px">${escape(s.studentSignature) || ''}</div>
-        <div style="font-size:12px;color:#666;margin-top:4px">छात्रा का हस्ताक्षर / Student Signature</div>
+        <div style="border-top:2px solid #9ca3af;padding-top:4px;min-height:36px">${escape(s.studentSignature) || ''}</div>
+        <div style="font-size:12px;color:#666;margin-top:2px">छात्रा का हस्ताक्षर / Student Signature</div>
       </div>
     </div>
   `;
