@@ -820,6 +820,10 @@ useEffect(() => {
               <Home size={18} className="mr-2" />
               New Hostel
             </button>
+
+            <button onClick={handleLogout} style={applyResponsiveStyles(styles.logoutButton)} title="Logout">
+              <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
+            </button>
           </div>
         </div>
 
@@ -869,28 +873,70 @@ useEffect(() => {
             borderCollapse: 'collapse'
           }}>
             <thead>
-              <tr>
-                <th style={styles.th}>Hostel Name</th>
-                <th style={styles.th}>Number of Students</th>
-                <th style={styles.th}>Actions</th>
-              </tr>
+                <tr>
+                  <th style={styles.th}>Hostel Name</th>
+                  <th style={styles.th}>Number of Students</th>
+                  <th style={styles.th}>Actions</th>
+                </tr>
             </thead>
             <tbody>
-              {hostels.map((hostel, idx) => (
-                <tr key={hostel.id}>
-                  <td style={styles.td}>{hostel.name}</td>
-                  <td style={styles.td}>{hostel.studentsCount}</td>
-                  <td style={styles.td}>
-                    <button
-                      onClick={() => handleViewStudents(hostel.id)}
-                      style={{ ...styles.actionButton, ...styles.editButton }}
-                      title="View Students"
-                    >
-                      <ArrowRight size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                {hostels.map((hostel, idx) => (
+                  <tr key={hostel.id}>
+                    <td style={styles.td}>{hostel.name}</td>
+                    <td style={styles.td}>{hostel.studentCount ?? hostel.studentsCount ?? 0}</td>
+                    <td style={styles.td}>
+                      <button
+                        onClick={() => handleViewStudents(hostel.id)}
+                        style={{ ...styles.actionButton, ...styles.editButton }}
+                        title="View Students"
+                      >
+                        <ArrowRight size={16} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newName = prompt('Edit hostel name', hostel.name);
+                          if (newName === null) return;
+                          const newAddress = prompt('Edit hostel address', hostel.address || '');
+                          if (newAddress === null) return;
+                          // Call backend to update hostel
+                          const token = localStorage.getItem('token');
+                          fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': token && token.startsWith('Bearer ') ? token : `Bearer ${token}` },
+                            body: JSON.stringify({ name: newName, address: newAddress })
+                          }).then(res => {
+                            if (!res.ok) throw new Error('Failed to update hostel');
+                            return res.json();
+                          }).then(payload => {
+                            const updated = payload.data || payload;
+                            setHostels(prev => prev.map(h => h.id === hostel.id ? { ...h, ...updated } : h));
+                          }).catch(err => { console.error(err); alert('Failed to update hostel'); });
+                        }}
+                        style={{ ...styles.actionButton }}
+                        title="Edit Hostel"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!confirm('Delete this hostel? This will remove the hostel and its students.')) return;
+                          const token = localStorage.getItem('token');
+                          fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': token && token.startsWith('Bearer ') ? token : `Bearer ${token}` }
+                          }).then(res => {
+                            if (!res.ok) throw new Error('Failed to delete hostel');
+                            setHostels(prev => prev.filter(h => h.id !== hostel.id));
+                          }).catch(err => { console.error(err); alert('Failed to delete hostel'); });
+                        }}
+                        style={{ ...styles.actionButton }}
+                        title="Delete Hostel"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

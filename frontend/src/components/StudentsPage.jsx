@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Edit, Trash2, Check, X, Download } from 'lucide-react';
+import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download } from 'lucide-react';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
@@ -18,60 +18,85 @@ const StudentsPage = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
+        
         if (!token) {
           navigate('/admin');
           return;
         }
-
-        const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        
+        // Fetch students for this hostel using the correct endpoint
+        const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
-        if (!res.ok) throw new Error('Failed to fetch students');
-        const data = await res.json();
+        
+        if (!response.ok) throw new Error('Failed to fetch students');
+        
+        const data = await response.json();
         setStudents(data.data || []);
+        
+        // If we have students, we can get hostel details from the first student or set a default
         if (data.data && data.data.length > 0) {
-          setHostel({ id: hostelId, name: data.data[0].hostelName || 'Hostel', address: data.data[0].hostelAddress || '' });
+          setHostel({
+            id: hostelId,
+            name: data.data[0].hostelName || 'Hostel',
+            address: data.data[0].hostelAddress || ''
+          });
         }
+        
       } catch (err) {
-        console.error('Error fetching students', err);
-        setError(err.message || String(err));
+        console.error('Error fetching data:', err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchStudents();
-  }, [hostelId, navigate]);
+  }, [hostelId]);
 
-  const handleAddStudent = () => navigate(`/hostel/${hostelId}/add-student`);
+  const handleAddStudent = () => {
+    navigate(`/hostel/${hostelId}/add-student`);
+  };
 
   const updateStudentStatus = async (studentId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) throw new Error('Not authenticated');
-      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/status`, {
+      if (!token) return alert('Not authenticated');
+      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus })
       });
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(txt || 'Failed to update status');
       }
       const updated = await res.json();
+      // Update local state
       setStudents(prev => prev.map(s => (s.id === updated.id || s.id === studentId ? { ...s, ...updated } : s)));
       return { success: true, data: updated };
     } catch (err) {
       console.error('Failed to update status', err);
+      alert('Failed to update status');
       return { success: false, error: err };
     }
   };
 
-  const handleAccept = async (student) => { await updateStudentStatus(student.id, 'approved'); };
-  const handleReject = async (student) => { await updateStudentStatus(student.id, 'rejected'); };
+  const handleAccept = async (student) => {
+    // backend expects 'approved'
+    await updateStudentStatus(student.id, 'approved');
+  };
+
+  const handleReject = async (student) => {
+    await updateStudentStatus(student.id, 'rejected');
+  };
 
   const handleDownload = async (student) => {
     try {
+      // student object should contain full form data saved earlier; pass directly to PDF util
       await downloadStudentPdf(student);
     } catch (err) {
       console.error('Download failed', err);
@@ -79,78 +104,117 @@ const StudentsPage = () => {
     }
   };
 
-  if (loading) return (
-    <div style={styles.container}>
-      <div style={styles.loading}>Loading...</div>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.loading}>Loading...</div>
+      </div>
+    );
+  }
 
-  if (error) return (
-    <div style={styles.container}>
-      <div style={styles.error}><strong>Error:</strong> {error}</div>
-      <button onClick={() => navigate(-1)} style={styles.backButton}>
-        <ArrowLeft size={16} style={{ marginRight: '8px' }} /> Back to Dashboard
-      </button>
-    </div>
-  );
+  if (error) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.error}>
+          <strong>Error:</strong> {error}
+        </div>
+        <button 
+          onClick={() => navigate('/admin/dashboard')}
+          style={styles.backButton}
+        >
+          <ArrowLeft size={16} style={{ marginRight: '8px' }} />
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <button onClick={() => navigate(-1)} style={styles.backButton}>
+        <button 
+          onClick={() => navigate('/admin/dashboard')}
+          style={styles.backButton}
+        >
           <ArrowLeft size={16} style={{ marginRight: '8px' }} />
+          Back to Dashboard
         </button>
+        
         <h1 style={styles.title}>{hostel?.name || 'Hostel'} - Students</h1>
-        <button onClick={handleAddStudent} style={styles.addButton}>
-          <UserPlus size={16} style={{ marginRight: '8px' }} /> Add Student
+        
+        <button 
+          onClick={handleAddStudent}
+          style={styles.addButton}
+        >
+          <UserPlus size={16} style={{ marginRight: '8px' }} />
+          Add Student
         </button>
       </div>
-
+      
       <p style={styles.address}>{hostel?.address}</p>
-
+      
       <div style={styles.tableContainer}>
-        <div style={styles.tableHeader}><h3>Students</h3></div>
-
+        <div style={styles.tableHeader}>
+          <h3>Students</h3>
+        </div>
+        
         {students.length === 0 ? (
-          <div style={styles.emptyState}><p>No students found in this hostel.</p></div>
+          <div style={styles.emptyState}>
+            <p>No students found in this hostel.</p>
+          </div>
         ) : (
           <table style={styles.table}>
             <thead>
               <tr>
                 <th style={styles.th}>Application No.</th>
                 <th style={styles.th}>Name</th>
-                <th style={styles.th}>Mobile Number</th>
                 <th style={styles.th}>Status</th>
+                <th style={styles.th}>Mobile Number</th>
                 <th style={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {students.map((student, index) => {
+                // Compute application number display:
+                // preferred: student.applicationNumber
+                // else if student.combinedId exists (e.g. "02/0001") show without slash -> "020001"
+                // else if student.studentId and hostel.hostelId available, join them
                 const computedAppNo = (() => {
                   if (student.applicationNumber) return student.applicationNumber;
-                  if (student.combinedId) return String(student.combinedId).replace(/\//g, '');
+                    if (student.combinedId) return String(student.combinedId).replace(/\//g, '');
+                  // some records may store studentId and hostelId separately
                   const hostelCode = student.hostelId || (hostel && hostel.hostelId) || null;
                   if (student.studentId && hostelCode) return `${String(hostelCode)}${String(student.studentId)}`;
                   return 'N/A';
                 })();
 
                 return (
-                  <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
-                    <td style={styles.td}>{computedAppNo}</td>
-                    <td style={styles.td}><span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span></td>
-                    <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
-                    <td style={styles.td}>
-                      <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
-                        {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Accept"><Check size={16} /></button>
-                        <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton }} title="Reject"><X size={16} /></button>
-                        <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
-                        <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
-                        <button onClick={async () => {
+                <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
+                  <td style={styles.td}>{computedAppNo}</td>
+                  <td style={styles.td}>
+                    <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
+                  </td>
+                  <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
+                  <td style={styles.td}>
+                    <span style={{...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {})}}>
+                      {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
+                    </span>
+                  </td>
+                  <td style={styles.td}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Accept">
+                        <Check size={16} />
+                      </button>
+                      <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton }} title="Reject">
+                        <X size={16} />
+                      </button>
+                      <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
+                        <Edit size={16} />
+                      </button>
+                      <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
+                        <Download size={16} />
+                      </button>
+                      <button onClick={async () => {
                           if (!confirm('Delete this student? This cannot be undone.')) return;
                           try {
                             const token = localStorage.getItem('token');
@@ -161,12 +225,15 @@ const StudentsPage = () => {
                             console.error('Delete failed', err);
                             alert('Failed to delete student');
                           }
-                        }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete"><Trash2 size={16} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                        }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete">
+                        <Trash2 size={16} />
+                      </button>
+                      
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
             </tbody>
           </table>
         )}

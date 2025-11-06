@@ -202,6 +202,53 @@ router.get('/users/me/hostels/:hostelId/students', async (req, res) => {
   }
 });
 
+// Update hostel details: PUT /api/users/me/hostels/:hostelId
+router.put('/users/me/hostels/:hostelId', async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { hostelId } = req.params;
+    if (!userId || !hostelId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
+
+    const payload = req.body || {};
+    const hostelRef = db.collection('users').doc(userId).collection('hostels').doc(hostelId);
+    const snap = await hostelRef.get();
+    if (!snap.exists) return res.status(404).json({ success: false, error: 'Hostel not found' });
+
+    await hostelRef.update({ ...payload, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    const updated = (await hostelRef.get()).data();
+    res.json({ success: true, data: { id: hostelId, ...updated } });
+  } catch (error) {
+    console.error('Error updating hostel:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to update hostel' });
+  }
+});
+
+// Delete hostel (and its students) under the user: DELETE /api/users/me/hostels/:hostelId
+router.delete('/users/me/hostels/:hostelId', async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { hostelId } = req.params;
+    if (!userId || !hostelId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
+
+    const hostelRef = db.collection('users').doc(userId).collection('hostels').doc(hostelId);
+    const snap = await hostelRef.get();
+    if (!snap.exists) return res.status(404).json({ success: false, error: 'Hostel not found' });
+
+    // Delete students under the hostel
+    const studentsSnap = await hostelRef.collection('students').get();
+    const batch = db.batch();
+    studentsSnap.docs.forEach(d => batch.delete(d.ref));
+    // delete hostel doc
+    batch.delete(hostelRef);
+    await batch.commit();
+
+    res.json({ success: true, data: { id: hostelId } });
+  } catch (error) {
+    console.error('Error deleting hostel:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to delete hostel' });
+  }
+});
+
 // Update a student's status within a specific hostel: PUT /api/users/me/hostels/:hostelId/students/:studentId/status
 // Update a student's data within a specific hostel:
 // PUT /api/users/me/hostels/:hostelId/students/:studentId
