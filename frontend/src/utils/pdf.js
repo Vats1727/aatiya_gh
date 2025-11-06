@@ -20,11 +20,15 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
   snippetContainer.style.position = 'fixed';
   snippetContainer.style.left = '-9999px';
   snippetContainer.style.top = '0';
-  // Use a width that maps well to A4 at typical screen DPI and avoid
-  // additional padding so the rendered canvas matches the template height.
+  // Use a width/height that map to A4 at ~96dpi (210mm x 297mm ≈ 794x1122px)
+  // and avoid additional padding so the rendered canvas matches the
+  // template height. Set overflow hidden to avoid small overflows
+  // producing extra blank pages.
   snippetContainer.style.width = '794px';
+  snippetContainer.style.height = '1122px';
   snippetContainer.style.padding = '0';
   snippetContainer.style.boxSizing = 'border-box';
+  snippetContainer.style.overflow = 'hidden';
   snippetContainer.style.background = '#fff';
     snippetContainer.innerHTML = snippetHtml;
     document.body.appendChild(snippetContainer);
@@ -95,11 +99,13 @@ export async function generatePdfFromHtmlString(htmlString, fileName = 'admissio
   container.style.position = 'fixed';
   container.style.left = '-9999px';
   container.style.top = '0';
-  // Match the snippet width used above and avoid extra padding to
+  // Match the snippet width/height used above and avoid extra padding to
   // prevent accidental overflow when converting to canvas.
   container.style.width = '794px';
+  container.style.height = '1122px';
   container.style.padding = '0';
   container.style.boxSizing = 'border-box';
+  container.style.overflow = 'hidden';
   container.style.background = '#fff';
     container.innerHTML = htmlString;
     document.body.appendChild(container);
