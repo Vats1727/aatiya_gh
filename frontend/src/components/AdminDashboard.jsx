@@ -598,6 +598,20 @@ const fetchHostels = async () => {
         opacity: 0.95,
       },
     },
+    cancelButton: {
+      background: '#6b7280',
+      color: 'white',
+      border: 'none',
+      padding: '0.75rem',
+      borderRadius: '0.5rem',
+      fontWeight: '600',
+      cursor: 'pointer',
+      fontSize: '1rem',
+      marginTop: '0.5rem',
+      '&:hover': {
+        opacity: 0.95,
+      },
+    },
     hostelGrid: {
       display: 'grid',
       gridTemplateColumns: '1fr',
@@ -1105,7 +1119,7 @@ const fetchHostels = async () => {
                   type="button"
                   className="btn btn-secondary"
                   onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '' }); setError(''); }}
-                  style={{ ...applyResponsiveStyles(styles.logoutButton), background: '#6b7280' }}
+                  style={applyResponsiveStyles(styles.cancelButton)}
                 >
                   Cancel
                 </button>

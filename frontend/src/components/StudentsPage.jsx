@@ -18,6 +18,7 @@ const StudentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortOption, setSortOption] = useState('name_asc');
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -156,21 +157,40 @@ const StudentsPage = () => {
   const filteredStudents = useMemo(() => {
     if (loading) return [];
     if (error) return [];
-    
-    return students.filter(student => {
+
+    const results = students.filter(student => {
       const matchesSearch = searchTerm === '' || 
         (student.studentName && student.studentName.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (student.applicationNumber && student.applicationNumber.toString().includes(searchTerm)) ||
         (student.combinedId && student.combinedId.toString().includes(searchTerm));
-      
+
       const matchesStatus = statusFilter === 'all' || 
         (statusFilter === 'pending' && (!student.status || student.status === 'pending')) ||
         (statusFilter === 'approved' && student.status === 'approved') ||
         (statusFilter === 'rejected' && student.status === 'rejected');
-      
+
       return matchesSearch && matchesStatus;
     });
-  }, [students, searchTerm, statusFilter, loading, error]);
+
+    // Sorting
+    const getCreated = (s) => {
+      const cand = s.createdAt || s.createdOn || s.timestamp || s.submittedAt || s._createdAt || null;
+      const t = cand ? (typeof cand === 'number' ? cand : Date.parse(cand)) : NaN;
+      return Number.isFinite(t) ? t : 0;
+    };
+
+    if (sortOption === 'name_asc') {
+      results.sort((a, b) => (a.studentName || '').toString().localeCompare((b.studentName || '').toString(), undefined, { sensitivity: 'base' }));
+    } else if (sortOption === 'name_desc') {
+      results.sort((a, b) => (b.studentName || '').toString().localeCompare((a.studentName || '').toString(), undefined, { sensitivity: 'base' }));
+    } else if (sortOption === 'newest') {
+      results.sort((a, b) => getCreated(b) - getCreated(a));
+    } else if (sortOption === 'oldest') {
+      results.sort((a, b) => getCreated(a) - getCreated(b));
+    }
+
+    return results;
+  }, [students, searchTerm, statusFilter, loading, error, sortOption]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
@@ -267,21 +287,35 @@ const StudentsPage = () => {
           />
         </div>
         
-        <div style={styles.filterContainer}>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setCurrentPage(1); // Reset to first page when changing filter
-            }}
-            style={styles.statusFilter}
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Accepted</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </div>
+          <div style={styles.filterContainer}>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1); // Reset to first page when changing filter
+              }}
+              style={styles.statusFilter}
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Accepted</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+
+          <div style={styles.filterContainer}>
+            <select
+              value={sortOption}
+              onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
+              style={styles.statusFilter}
+              aria-label="Sort students"
+            >
+              <option value="name_asc">Name: A → Z</option>
+              <option value="name_desc">Name: Z → A</option>
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+            </select>
+          </div>
       </div>
       
       <div className="card" style={styles.tableContainer}>
@@ -336,12 +370,16 @@ const StudentsPage = () => {
                   <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                   <td style={styles.td}>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Accept">
-                        <Check size={16} />
-                      </button>
-                      <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton }} title="Reject">
-                        <X size={16} />
-                      </button>
+                      {student.status !== 'approved' && (
+                        <>
+                          <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Accept">
+                            <Check size={16} />
+                          </button>
+                          <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton }} title="Reject">
+                            <X size={16} />
+                          </button>
+                        </>
+                      )}
                       <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
                         <Edit size={16} />
                       </button>
