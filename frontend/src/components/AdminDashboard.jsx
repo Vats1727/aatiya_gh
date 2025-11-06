@@ -237,7 +237,7 @@ useEffect(() => {
             console.warn('Failed to upload QR to backend, using local dataUrl');
           }
         } catch (err) {
-          console.warn('Error uploading QR to backend, using local dataUrl', err);
+          console.warn('Error uploading QR to backend', err);
         }
       }
 
