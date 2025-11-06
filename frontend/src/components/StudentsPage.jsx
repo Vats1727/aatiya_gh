@@ -187,6 +187,31 @@ const StudentsPage = () => {
       results.sort((a, b) => getCreated(b) - getCreated(a));
     } else if (sortOption === 'oldest') {
       results.sort((a, b) => getCreated(a) - getCreated(b));
+    } else if (sortOption === 'acc_asc' || sortOption === 'acc_desc') {
+      const getAcct = (s) => {
+        // Prefer numeric applicationNumber
+        if (s.applicationNumber != null && s.applicationNumber !== '') {
+          const n = Number(String(s.applicationNumber).replace(/[^0-9]/g, ''));
+          if (!Number.isNaN(n)) return n;
+        }
+        // Fallback to combinedId (remove slashes)
+        if (s.combinedId) {
+          const n = Number(String(s.combinedId).replace(/\//g, '').replace(/[^0-9]/g, ''));
+          if (!Number.isNaN(n)) return n;
+        }
+        // Fallback to studentId
+        if (s.studentId) {
+          const n = Number(String(s.studentId).replace(/[^0-9]/g, ''));
+          if (!Number.isNaN(n)) return n;
+        }
+        return 0;
+      };
+
+      results.sort((a, b) => {
+        const aa = getAcct(a);
+        const bb = getAcct(b);
+        return sortOption === 'acc_asc' ? aa - bb : bb - aa;
+      });
     }
 
     return results;
@@ -314,6 +339,8 @@ const StudentsPage = () => {
               <option value="name_desc">Name: Z → A</option>
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
+              <option value="acc_asc">Account No ↑</option>
+              <option value="acc_desc">Account No ↓</option>
             </select>
           </div>
       </div>
@@ -370,16 +397,34 @@ const StudentsPage = () => {
                   <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                   <td style={styles.td}>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      {student.status !== 'approved' && (
-                        <>
-                          <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Accept">
-                            <Check size={16} />
-                          </button>
-                          <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton }} title="Reject">
-                            <X size={16} />
-                          </button>
-                        </>
-                      )}
+                      {/* Keep accept/reject buttons in DOM to preserve layout; hide them when already accepted */}
+                      <button
+                        onClick={() => handleAccept(student)}
+                        style={{
+                          ...styles.iconButton,
+                          ...styles.acceptButton,
+                          visibility: student.status === 'approved' ? 'hidden' : 'visible'
+                        }}
+                        title="Accept"
+                        aria-hidden={student.status === 'approved'}
+                        disabled={student.status === 'approved'}
+                      >
+                        <Check size={16} />
+                      </button>
+
+                      <button
+                        onClick={() => handleReject(student)}
+                        style={{
+                          ...styles.iconButton,
+                          ...styles.rejectButton,
+                          visibility: student.status === 'approved' ? 'hidden' : 'visible'
+                        }}
+                        title="Reject"
+                        aria-hidden={student.status === 'approved'}
+                        disabled={student.status === 'approved'}
+                      >
+                        <X size={16} />
+                      </button>
                       <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
                         <Edit size={16} />
                       </button>
