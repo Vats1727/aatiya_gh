@@ -10,7 +10,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onr
 const AdminDashboard = () => {
   const [hostels, setHostels] = useState([]);
   const [showAddHostel, setShowAddHostel] = useState(false);
-  const [newHostel, setNewHostel] = useState({ name: '', address: '' });
+  const [newHostel, setNewHostel] = useState({ name: '', address: '', name_hi: '', address_hi: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const HOSTELS_PER_PAGE = 8;
@@ -289,8 +289,9 @@ const fetchHostels = async () => {
   // Handle add or edit hostel. If newHostel.id exists we perform PUT, else POST
   const handleAddHostel = async (e) => {
     e.preventDefault();
+    // require at least English name and English address for compatibility
     if (!newHostel.name || !newHostel.address) {
-      setError('Please fill in all fields');
+      setError('Please fill in all required fields (English name and address)');
       return;
     }
 
@@ -302,6 +303,14 @@ const fetchHostels = async () => {
         return;
       }
 
+      const payloadBody = {
+        name: newHostel.name,
+        address: newHostel.address,
+        // include bilingual fields; backend may store or ignore them
+        name_hi: newHostel.name_hi || '',
+        address_hi: newHostel.address_hi || ''
+      };
+
       if (newHostel.id) {
         // Edit existing hostel
         const response = await fetch(`${API_BASE}/api/users/me/hostels/${newHostel.id}`, {
@@ -310,7 +319,7 @@ const fetchHostels = async () => {
             'Content-Type': 'application/json',
             'Authorization': authHeader
           },
-          body: JSON.stringify({ name: newHostel.name, address: newHostel.address })
+          body: JSON.stringify(payloadBody)
         });
         if (!response.ok) throw new Error('Failed to update hostel');
         const payload = await response.json();
@@ -324,7 +333,7 @@ const fetchHostels = async () => {
             'Content-Type': 'application/json',
             'Authorization': authHeader
           },
-          body: JSON.stringify({ name: newHostel.name, address: newHostel.address })
+          body: JSON.stringify(payloadBody)
         });
         if (!response.ok) throw new Error('Failed to create hostel');
         const data = await response.json();
@@ -332,7 +341,7 @@ const fetchHostels = async () => {
         setHostels(prev => [...prev, created]);
       }
 
-      setNewHostel({ name: '', address: '' });
+      setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' });
       setShowAddHostel(false);
       setError('');
       setCurrentPage(1);
@@ -1108,25 +1117,41 @@ const fetchHostels = async () => {
                 className="input"
                 value={newHostel.name}
                 onChange={(e) => setNewHostel(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Hostel name"
+                placeholder="Hostel name (English)"
                 style={applyResponsiveStyles(styles.input)}
                 required
+              />
+              <input
+                name="name_hi"
+                className="input"
+                value={newHostel.name_hi}
+                onChange={(e) => setNewHostel(prev => ({ ...prev, name_hi: e.target.value }))}
+                placeholder="Hostel name (Hindi)"
+                style={applyResponsiveStyles(styles.input)}
               />
               <input
                 name="address"
                 className="input"
                 value={newHostel.address}
                 onChange={(e) => setNewHostel(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="Address"
+                placeholder="Address (English)"
                 style={applyResponsiveStyles(styles.input)}
                 required
+              />
+              <input
+                name="address_hi"
+                className="input"
+                value={newHostel.address_hi}
+                onChange={(e) => setNewHostel(prev => ({ ...prev, address_hi: e.target.value }))}
+                placeholder="Address (Hindi)"
+                style={applyResponsiveStyles(styles.input)}
               />
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '' }); setError(''); }}
+                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setError(''); }}
                   style={applyResponsiveStyles(styles.cancelButton)}
                 >
                   Cancel
@@ -1141,7 +1166,7 @@ const fetchHostels = async () => {
             <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
             <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
               <button
-                onClick={() => { setNewHostel({ name: '', address: '' }); setShowAddHostel(true); }}
+                onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setShowAddHostel(true); }}
                 className="btn btn-primary"
                 style={{
                   ...applyResponsiveStyles(styles.addButton),
@@ -1180,7 +1205,7 @@ const fetchHostels = async () => {
                       View Students
                     </button>
                     <button onClick={() => generateQrForHostel(hostel)} className="btn" style={{ padding: '0.5rem' }} title="QR"><UserPlus size={16} /></button>
-                    <button onClick={() => { setNewHostel({ id: hostel.id, name: hostel.name || '', address: hostel.address || '' }); setShowAddHostel(true); }} className="btn" style={{ padding: '0.5rem' }} title="Edit"><Edit size={16} /></button>
+                    <button onClick={() => { setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '' }); setShowAddHostel(true); }} className="btn" style={{ padding: '0.5rem' }} title="Edit"><Edit size={16} /></button>
                   </div>
                 </div>
               ))}
@@ -1222,7 +1247,7 @@ const fetchHostels = async () => {
                         </button>
                         <button
                           onClick={() => {
-                            setNewHostel({ id: hostel.id, name: hostel.name || '', address: hostel.address || '' });
+                            setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '' });
                             setShowAddHostel(true);
                           }}
                           className="btn btn-icon btn-secondary"

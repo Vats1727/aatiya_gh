@@ -86,6 +86,18 @@ const HostelAdmissionForm = () => {
 
   const [showPreview, setShowPreview] = useState(false);
   const [hostels, setHostels] = useState([]);
+  // Helper to resolve bilingual hostel name/address from available hostel records.
+  const getHostelBilingual = (hostelId) => {
+    const effectiveId = hostelId || formData.hostelDocId || preHostelId;
+    if (!effectiveId) return {};
+    const h = (hostels || []).find(x => x && (x.id === effectiveId || x.hostelId === effectiveId));
+    if (!h) return {};
+    const nameEn = h.name_en || (typeof h.name === 'object' ? (h.name.en || '') : (h.name || '')) || '';
+    const nameHi = h.name_hi || (typeof h.name === 'object' ? (h.name.hi || '') : '') || '';
+    const addressEn = h.address_en || (typeof h.address === 'object' ? (h.address.en || '') : (h.address || '')) || '';
+    const addressHi = h.address_hi || (typeof h.address === 'object' ? (h.address.hi || '') : '') || '';
+    return { nameEn, nameHi, addressEn, addressHi, hostel: h };
+  };
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -1088,9 +1100,19 @@ const HostelAdmissionForm = () => {
             }}>
               {/* Header */}
               <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '2px solid #4f46e5', paddingBottom: '10px' }}>
-                <h1 style={{ color: '#4f46e5', margin: '5px 0', fontSize: '28px' }}>आतिया गर्ल्स हॉस्टल</h1>
-                <h2 style={{ color: '#4f46e5', margin: '5px 0', fontSize: '20px' }}>ATIYA GIRLS HOSTEL</h2>
-                <p style={{ margin: '5px 0', fontSize: '16px', color: '#666' }}>रामपाड़ा कटिहार / Rampada Katihar</p>
+                {(() => {
+                  const { nameEn = '', nameHi = '', addressEn = '', addressHi = '' } = getHostelBilingual(formData.hostelDocId || preHostelId) || {};
+                  const headerHi = nameHi || nameEn || 'आतिया गर्ल्स हॉस्टल';
+                  const headerEn = nameEn || (nameHi ? '' : 'ATIYA GIRLS HOSTEL');
+                  const addressLine = addressHi ? `${addressHi} / ${addressEn || ''}` : (addressEn || 'रामपाड़ा कटिहार / Rampada Katihar');
+                  return (
+                    <>
+                      <h1 style={{ color: '#4f46e5', margin: '5px 0', fontSize: '28px' }}>{headerHi}</h1>
+                      <h2 style={{ color: '#4f46e5', margin: '5px 0', fontSize: '20px' }}>{headerEn}</h2>
+                      <p style={{ margin: '5px 0', fontSize: '16px', color: '#666' }}>{addressLine}</p>
+                    </>
+                  );
+                })()}
                 <p style={{ margin: '10px 0', fontSize: '18px', fontWeight: 'bold', color: '#333' }}>नामांकन फॉर्म / ADMISSION FORM</p>
                 <div style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
                   Admission Date: {formatDateDDMMYYYY(formData.admissionDate || new Date())}
@@ -1470,10 +1492,20 @@ const HostelAdmissionForm = () => {
         {/* Header */}
         <div style={responsiveStyles.card}>
           <div style={responsiveStyles.header}>
-            <h1 style={responsiveStyles.h1}>आतिया गर्ल्स हॉस्टल</h1>
-            <h2 style={responsiveStyles.h2}>ATIYA GIRLS HOSTEL</h2>
-            <p style={responsiveStyles.subtitle}>रामपाड़ा कटिहार / Rampada Katihar</p>
-            <p style={responsiveStyles.formTitle}>नामांकन फॉर्म / ADMISSION FORM</p>
+            {(() => {
+              const { nameEn = '', nameHi = '', addressEn = '', addressHi = '' } = getHostelBilingual(formData.hostelDocId || preHostelId) || {};
+              const headerHi = nameHi || nameEn || 'आतिया गर्ल्स हॉस्टल';
+              const headerEn = nameEn || (nameHi ? '' : 'ATIYA GIRLS HOSTEL');
+              const addressLine = addressHi ? `${addressHi} / ${addressEn || ''}` : (addressEn || 'रामपाड़ा कटिहार / Rampada Katihar');
+              return (
+                <>
+                  <h1 style={responsiveStyles.h1}>{headerHi}</h1>
+                  <h2 style={responsiveStyles.h2}>{headerEn}</h2>
+                  <p style={responsiveStyles.subtitle}>{addressLine}</p>
+                  <p style={responsiveStyles.formTitle}>नामांकन फॉर्म / ADMISSION FORM</p>
+                </>
+              );
+            })()}
           </div>
         </div>
 
