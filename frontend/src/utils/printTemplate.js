@@ -8,7 +8,10 @@ export const renderStudentPrintHtml = (student = {}) => {
   // Use A4 dimensions so the form occupies the full first page and rules always start on page 2
   // make the page container position:relative so we can absolutely position signatures
   // Note: we avoid page-break-after here and add an explicit break between pages
-  const pageStyle = `width:210mm;min-height:297mm;margin:0 auto;background:white;padding:24px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;position:relative;`;
+  // Force the form container to be exactly one A4 page and hide overflow so
+  // the form never spills onto the 2nd page. We also add an explicit
+  // page-break-after to be compatible with most HTML->PDF renderers.
+  const pageStyle = `width:210mm;height:297mm;margin:0 auto;background:white;padding:18px;box-sizing:border-box;font-family:Arial, sans-serif;color:#111827;position:relative;overflow:hidden;page-break-after:always;break-after:page;`;
 
   const photoBlock = (label, src) => `
     <div style="text-align:center">
@@ -41,7 +44,7 @@ export const renderStudentPrintHtml = (student = {}) => {
   };
 
   const formHtml = `
-    <div style="${pageStyle}">
+  <div style="${pageStyle}">
       <div style="text-align:center;border-bottom:3px solid #9ca3af;padding-bottom:8px;margin-bottom:12px;">
         <h1 style="margin:0;font-size:28px;color:#db2777">आतिया गर्ल्स हॉस्टल</h1>
         <h2 style="margin:0;font-size:20px;color:#ec4899">ATIYA GIRLS HOSTEL</h2>
