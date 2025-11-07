@@ -628,7 +628,14 @@ const StudentsPage = () => {
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', marginRight: 8 }}>
                           <div style={{ fontSize: 12, color: '#6b7280', marginRight: 6 }}>Balance</div>
-                          <div style={{ fontWeight: 600 }}>₹{student.currentBalance != null ? student.currentBalance : 0}</div>
+                          <div style={{ 
+                            fontWeight: 600, 
+                            color: (student.currentBalance || 0) > 0 ? '#dc2626' : '#059669' 
+                          }}>
+                            {(student.currentBalance || 0) > 0 ? 
+                              `Due: ₹${Math.abs(student.currentBalance)}` : 
+                              `Advance: ₹${Math.abs(student.currentBalance || 0)}`}
+                          </div>
                         </div>
                         <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/payments`)} style={{ ...styles.iconButton, ...styles.paymentButton }} title="Payments">💳</button>
                       </>
@@ -685,8 +692,13 @@ const StudentsPage = () => {
                     </td>
                     <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                     <td style={styles.td}>
-                      <div style={styles.balanceContainer}>
-                        <span>₹{student.currentBalance || 0}</span>
+                      <div style={{
+                        ...styles.balanceContainer,
+                        color: (student.currentBalance || 0) > 0 ? '#dc2626' : '#059669'
+                      }}>
+                        {(student.currentBalance || 0) > 0 ? 
+                          `Due: ₹${Math.abs(student.currentBalance)}` : 
+                          `Advance: ₹${Math.abs(student.currentBalance || 0)}`}
                       </div>
                     </td>
                     <td style={styles.td}>

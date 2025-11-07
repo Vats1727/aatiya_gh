@@ -181,6 +181,7 @@ const StudentPayments = () => {
   const appliedFee = Number(student?.appliedFee) || 0;
   const monthlyFee = Number(student?.monthlyFee) || 0;
   const usedFee = appliedFee > 0 ? appliedFee : monthlyFee;
+  const hasCustomFee = appliedFee > 0 && appliedFee !== monthlyFee;
 
   // Calculate totals
   const totalCredit = payments
@@ -222,9 +223,11 @@ const StudentPayments = () => {
             <span>Current Balance:</span>
             <div style={{
               ...styles.balanceAmount,
-              color: currentBalance < 0 ? '#dc2626' : '#059669'
+              color: currentBalance > 0 ? '#dc2626' : '#059669'  // Red if balance is positive (payment due), green if negative (advance)
             }}>
-              {formatCurrency(currentBalance)}
+              {currentBalance > 0 ? 
+                `Due: ${formatCurrency(currentBalance)}` : 
+                `Advance: ${formatCurrency(Math.abs(currentBalance))}`}
               <button
                 onClick={() => setShowHistory(!showHistory)}
                 style={styles.infoButton}
@@ -354,7 +357,7 @@ const StudentPayments = () => {
                         <tr>
                           <td>{formatDate(student.createdAt || new Date().toISOString())}</td>
                           <td>—</td>
-                          <td>{appliedFee > 0 && appliedFee !== monthlyFee ? 'Applied Monthly Fee' : 'Monthly Fee'}</td>
+                          <td>{hasCustomFee ? 'Applied Monthly Fee' : 'Monthly Fee'}</td>
                           <td style={{ textAlign: 'right', color: '#dc2626' }}>{formatCurrency(usedFee)}</td>
                           <td style={{ textAlign: 'right' }}></td>
                         </tr>
