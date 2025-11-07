@@ -467,6 +467,12 @@ const StudentsPage = () => {
                         alert('Failed to delete student');
                       }
                     }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete"><Trash2 size={16} /></button>
+                    {/* Payment button */}
+                    <button onClick={() => {
+                      // open payment modal — use a custom event via window so we don't add more state in this file
+                      const ev = new CustomEvent('openPaymentModal', { detail: { student, hostelId, hostelFee: (hostel && (hostel.monthlyFee || hostel.fee)) || 0 } });
+                      window.dispatchEvent(ev);
+                    }} style={{ ...styles.iconButton, background: '#6366f1', color: 'white' }} title="Payments">Pay</button>
                   </div>
                 </div>
               );

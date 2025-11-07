@@ -7,7 +7,10 @@ import { db } from './config/firebase.js';
 import hostelsRouter from './routes/hostels.js';
 import createAuthRouter from './routes/auth.js';
 import studentsRouter from './routes/students.js';
+import paymentsRouter from './routes/payments.js';
 import { authMiddleware } from './middleware/auth.js';
+import cron from 'node-cron';
+import admin from 'firebase-admin';
 
 // Load environment variables
 dotenv.config();
@@ -73,6 +76,7 @@ app.get('/api/users/me', authMiddleware, async (req, res) => {
 // (POST /api/students) are not intercepted by the hostels auth middleware.
 app.use('/api/students', studentsRouter);
 app.use('/api', hostelsRouter);
+app.use('/api/payments', paymentsRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -100,5 +104,58 @@ app.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Firebase project: ${process.env.GOOGLE_CLOUD_PROJECT || 'Not set'}`);
 });
+
+// Schedule cron job to generate monthly dues on the 1st of every month at 00:00
+try {
+  cron.schedule('0 0 1 * *', async () => {
+    console.log('[cron] Generating monthly dues -', new Date().toISOString());
+    try {
+      const now = new Date();
+      const monthLabel = now.toLocaleString('en-US', { month: 'short' }) + '-' + now.getFullYear();
+
+      const usersSnap = await db.collection('users').get();
+      for (const userDoc of usersSnap.docs) {
+        const ownerUserId = userDoc.id;
+        const hostelsSnap = await db.collection('users').doc(ownerUserId).collection('hostels').get();
+        for (const hostelDoc of hostelsSnap.docs) {
+          const hostelData = hostelDoc.data() || {};
+          const hostelId = hostelDoc.id;
+          const fee = Number(hostelData.monthlyFee || hostelData.fee || 0) || 0;
+          if (!fee) continue;
+
+          const studentsSnap = await db.collection('users').doc(ownerUserId).collection('hostels').doc(hostelId).collection('students').get();
+          for (const studentDoc of studentsSnap.docs) {
+            const studentId = studentDoc.id;
+            const existing = await db.collection('payments')
+              .where('student_id', '==', studentId)
+              .where('hostel_id', '==', hostelId)
+              .where('month', '==', monthLabel)
+              .limit(1)
+              .get();
+            if (!existing.empty) continue;
+
+            await db.collection('payments').add({
+              student_id: studentId,
+              hostel_id: hostelId,
+              owner_user_id: ownerUserId,
+              amount: fee,
+              type: 'debit',
+              status: 'pending',
+              month: monthLabel,
+              remarks: 'Monthly hostel fee',
+              created_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        }
+      }
+      console.log('✅ Monthly dues generated successfully.');
+    } catch (err) {
+      console.error('[cron] Error generating monthly dues:', err);
+    }
+  }, { timezone: process.env.CRON_TIMEZONE || 'Asia/Kolkata' });
+  console.log('Cron job scheduled: monthly dues on 1st 00:00');
+} catch (err) {
+  console.error('Failed to schedule cron job', err);
+}
 
 export default app;
