@@ -177,6 +177,11 @@ const StudentPayments = () => {
   const totals = calculateTotals(payments);
   const studentFees = Number(student?.hostelFees ?? student?.fees ?? student?.totalFees ?? 0);
   const feesDue = studentFees ? Math.max(0, studentFees - totals.netPaid) : null;
+  // derive current balance: prefer fee-based calculation (owner-set fee or per-student fee),
+  // fallback to student.currentBalance when fee info is missing
+  const derivedCurrentBalance = (studentFees > 0)
+    ? (studentFees - totals.netPaid)
+    : (Number(student?.currentBalance) || 0);
 
   return (
     <div style={styles.container}>
@@ -194,7 +199,7 @@ const StudentPayments = () => {
           <div style={styles.balanceSection}>
             <span>Current Balance:</span>
             <div style={styles.balanceAmount}>
-              ₹{student.currentBalance || 0}
+              {formatCurrency(derivedCurrentBalance)}
               <button 
                 onClick={() => setShowHistory(!showHistory)} 
                 style={styles.infoButton}
@@ -294,25 +299,34 @@ const StudentPayments = () => {
                 {payments.length === 0 ? (
                   <div style={styles.noHistory}>No payment records found</div>
                 ) : (
-                  payments.map((payment, index) => (
-                    <div key={payment.id || index} style={styles.historyItem}>
-                      <div style={styles.historyItemHeader}>
-                        <span style={styles.historyDate}>{formatDate(payment.timestamp)}</span>
-                        <span style={{
-                          ...styles.historyAmount,
-                          color: payment.type === 'credit' ? '#059669' : '#dc2626'
-                        }}>
-                          {payment.type === 'credit' ? '+' : '-'}₹{payment.amount}
-                        </span>
-                      </div>
-                      <div style={styles.historyItemDetails}>
-                        <span style={styles.paymentMode}>Mode: {payment.paymentMode}</span>
-                        {payment.remarks && (
-                          <div style={styles.remarks}>{payment.remarks}</div>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                  <div style={styles.historyTableWrapper}>
+                    <table style={styles.historyTable}>
+                      <thead>
+                        <tr>
+                          <th style={styles.th}>Date</th>
+                          <th style={styles.th}>Mode</th>
+                          <th style={styles.th}>Remarks</th>
+                          <th style={{ ...styles.th, textAlign: 'right' }}>Debit</th>
+                          <th style={{ ...styles.th, textAlign: 'right' }}>Credit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payments.map((payment, index) => (
+                          <tr key={payment.id || index} style={styles.tr}>
+                            <td style={styles.td}>{formatDate(payment.timestamp)}</td>
+                            <td style={styles.td}>{payment.paymentMode}</td>
+                            <td style={styles.td}>{payment.remarks || '—'}</td>
+                            <td style={{ ...styles.td, textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
+                              {payment.type === 'debit' ? formatCurrency(payment.amount) : ''}
+                            </td>
+                            <td style={{ ...styles.td, textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
+                              {payment.type === 'credit' ? formatCurrency(payment.amount) : ''}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             </div>
@@ -529,6 +543,31 @@ const styles = {
   historyList: {
     padding: '1rem',
     overflowY: 'auto',
+  },
+  historyTableWrapper: {
+    overflowX: 'auto',
+  },
+  historyTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    minWidth: '640px',
+  },
+  th: {
+    textAlign: 'left',
+    padding: '0.75rem 1rem',
+    fontSize: '0.875rem',
+    color: '#6b7280',
+    borderBottom: '1px solid #e5e7eb',
+  },
+  tr: {
+    backgroundColor: 'white',
+  },
+  td: {
+    padding: '0.75rem 1rem',
+    borderBottom: '1px solid #f3f4f6',
+    fontSize: '0.875rem',
+    color: '#374151',
+    verticalAlign: 'top'
   },
   historyItem: {
     padding: '1rem',
