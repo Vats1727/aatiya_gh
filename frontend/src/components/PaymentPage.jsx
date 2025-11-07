@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Info } from 'lucide-react';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+const API_BASE = process.env.REACT_APP_API_BASE || 'https://aatiya-gh-backend.onrender.com';
 
 // Helper to calculate closing balance
 const calculateClosingBalance = (currentBalance, amount) => {
