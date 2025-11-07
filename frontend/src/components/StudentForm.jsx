@@ -1067,17 +1067,30 @@ const HostelAdmissionForm = () => {
 
       // Anonymous submission for a hostel -> navigate to confirmation page with combinedId and formData so user can download PDF
       if (!editId && !token && effectiveHostelId) {
+        // Be tolerant of backends that return non-JSON bodies.
+        let combined = null;
         try {
           const payload = await res.json();
-          const combined = payload && ((payload.data && payload.data.combinedId) || payload.combinedId) || null;
-          // Navigate to success page; pass form data so PDF can be generated client-side
-          navigate('/submission-success', { state: { combinedId: combined, formData: formDataWithStatus } });
-          return;
+          combined = payload && ((payload.data && payload.data.combinedId) || payload.combinedId) || null;
         } catch (err) {
-          console.error('Failed to parse response for anonymous submission', err);
-          alert('Submission saved but failed to show confirmation.');
-          return;
+          // If response is not JSON, try to read text and extract an identifier, otherwise continue.
+          try {
+            const txt = await res.text();
+            // crude extraction: look for an alphanumeric token of length >=4
+            const m = String(txt).match(/[A-Za-z0-9\-]{4,}/);
+            if (m) combined = m[0];
+          } catch (e) {
+            // ignore
+          }
         }
+        // Navigate to success page regardless so user sees confirmation and can download PDF.
+        try {
+          navigate('/submission-success', { state: { combinedId: combined, formData: formDataWithStatus } });
+        } catch (e) {
+          console.error('Navigation to submission-success failed', e);
+          alert('Submission saved. You can download the PDF from the dashboard or try again later.');
+        }
+        return;
       }
 
       alert('Record updated successfully');
