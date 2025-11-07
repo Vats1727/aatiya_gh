@@ -79,6 +79,78 @@ const StudentsPage = () => {
     fetchStudents();
   }, [hostelId]);
 
+  // Helper to fetch public hostel metadata when viewing as an unauthenticated user or via QR links
+  const fetchPublicHostel = async (hostelDocId, optOwnerUserId) => {
+    try {
+      const ownerUserId = optOwnerUserId || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ownerUserId') : null) || null;
+      const url = `${API_BASE}/api/public/hostels/${encodeURIComponent(hostelDocId)}${ownerUserId ? `?ownerUserId=${encodeURIComponent(ownerUserId)}` : ''}`;
+      const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
+      if (!res.ok) {
+        // not fatal: return null so caller can fallback
+        return null;
+      }
+      const payload = await res.json();
+      const data = payload?.data || payload || null;
+      return data;
+    } catch (err) {
+      console.warn('Failed to fetch public hostel metadata', err);
+      return null;
+    }
+  };
+
+  // Normalize and open preview modal: ensure hostel bilingual fields and monthlyFee are present on previewStudent
+  const openPreview = async (student) => {
+    try {
+      // If student already has hostelName/monthlyFee present, use it
+      let merged = { ...student };
+      const hostelDoc = student.hostelDocId || student.ownerHostelDocId || hostel?.id || hostelId;
+      // Try to get additional hostel metadata if missing
+      if ((!merged.hostelName && !merged.hostelNameHi) || merged.appliedFee == null || merged.appliedFee === '') {
+        // Attempt authenticated fetch first if token exists
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const resp = await fetch(`${API_BASE}/api/users/me/hostels`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+            if (resp.ok) {
+              const p = await resp.json();
+              const list = p?.data || p || [];
+              const found = list.find(h => String(h.id) === String(hostelDoc) || String(h.docId) === String(hostelDoc));
+              if (found) {
+                merged = { ...found, ...merged, hostelName: found.name || found.hostelName || merged.hostelName, hostelNameHi: found.name_hi || merged.hostelNameHi || found.nameHi, hostelAddress: found.address || merged.hostelAddress, monthlyFee: (found.monthlyFee != null ? found.monthlyFee : merged.monthlyFee), monthlyFeeCurrency: found.monthlyFeeCurrency || merged.monthlyFeeCurrency || 'INR' };
+              }
+            }
+          } catch (err) {
+            // continue to public fetch fallback
+          }
+        }
+
+        // If still missing or unauthenticated, try public endpoint
+        if ((!merged.hostelName && !merged.hostelNameHi) || merged.monthlyFee == null || merged.monthlyFee === undefined) {
+          const pub = await fetchPublicHostel(hostelDoc, student.ownerUserId || student.owner || student.ownerId || null);
+          if (pub) {
+            merged = { ...merged, hostelName: pub.name || merged.hostelName, hostelNameHi: pub.name_hi || merged.hostelNameHi, hostelAddress: pub.address || merged.hostelAddress, monthlyFee: (pub.monthlyFee != null ? pub.monthlyFee : merged.monthlyFee), monthlyFeeCurrency: pub.monthlyFeeCurrency || merged.monthlyFeeCurrency || 'INR' };
+          }
+        }
+      }
+
+      // Prefill preview fee: student's appliedFee if present, otherwise hostel.monthlyFee
+      const feePrefill = (merged.appliedFee != null && merged.appliedFee !== '') ? merged.appliedFee : (merged.monthlyFee != null ? merged.monthlyFee : (hostel && hostel.monthlyFee != null ? hostel.monthlyFee : ''));
+      const currencyPrefill = merged.appliedFeeCurrency || merged.monthlyFeeCurrency || (hostel && hostel.monthlyFeeCurrency) || 'INR';
+
+      setPreviewStudent(merged);
+      setPreviewFee(feePrefill);
+      setPreviewCurrency(currencyPrefill);
+      setPreviewVisible(true);
+    } catch (err) {
+      console.error('openPreview failed', err);
+      // fallback to simple preview
+      setPreviewStudent(student);
+      setPreviewFee(student.appliedFee || (hostel && hostel.monthlyFee) || '');
+      setPreviewCurrency(student.appliedFeeCurrency || (hostel && hostel.monthlyFeeCurrency) || 'INR');
+      setPreviewVisible(true);
+    }
+  };
+
   // Dynamic loader for Sanscript (transliteration) to show Hindi fallback when hostel record doesn't have name_hi
   const loadSanscript = () => {
     return new Promise((resolve, reject) => {
@@ -175,13 +247,8 @@ const StudentsPage = () => {
 
   // Open preview modal before accepting so admin can review and adjust fee
   const handleAccept = async (student) => {
-    // determine default fee: student.appliedFee || hostel.monthlyFee || 0
-    const defaultFee = (student.appliedFee != null && student.appliedFee !== '') ? student.appliedFee : (hostel && (hostel.monthlyFee || hostel.monthlyfee) ? hostel.monthlyFee : 0);
-    const defaultCurrency = (student.appliedFeeCurrency || (hostel && hostel.monthlyFeeCurrency)) || 'INR';
-    setPreviewStudent(student);
-    setPreviewFee(defaultFee);
-    setPreviewCurrency(defaultCurrency || 'INR');
-    setPreviewVisible(true);
+    // open enriched preview modal so admin can review/adjust fee
+    await openPreview(student);
   };
 
   const confirmAccept = async () => {
@@ -489,7 +556,7 @@ const StudentsPage = () => {
                     <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Reject"><X size={16} /></button>
                     <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
                     <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
-                    <button onClick={() => { setPreviewStudent(student); setPreviewFee((student.appliedFee != null) ? student.appliedFee : (hostel && hostel.monthlyFee) || 0); setPreviewCurrency(student.appliedFeeCurrency || (hostel && hostel.monthlyFeeCurrency) || 'INR'); setPreviewVisible(true); }} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
+                    <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
                     <button onClick={async () => {
                       if (!confirm('Delete this student? This cannot be undone.')) return;
                       try {
@@ -575,7 +642,7 @@ const StudentsPage = () => {
                       <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
                         <Download size={16} />
                       </button>
-                      <button onClick={() => { setPreviewStudent(student); setPreviewFee((student.appliedFee != null) ? student.appliedFee : (hostel && hostel.monthlyFee) || 0); setPreviewCurrency(student.appliedFeeCurrency || (hostel && hostel.monthlyFeeCurrency) || 'INR'); setPreviewVisible(true); }} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
+                      <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
                         <Eye size={16} />
                       </button>
                       <button onClick={async () => {
