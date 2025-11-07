@@ -1227,7 +1227,6 @@ const fetchHostels = async () => {
                 />
                 <select value={newHostel.monthlyFeeCurrency} onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFeeCurrency: e.target.value }))} style={{ padding: '0.75rem 1rem', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>
                   <option value="INR">INR</option>
-                  <option value="USD">USD</option>
                 </select>
               </div>
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>

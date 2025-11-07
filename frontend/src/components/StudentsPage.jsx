@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { renderStudentPrintHtml, renderRulesHtml } from '../utils/printTemplate';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import '../styles.css';
 
@@ -370,6 +371,11 @@ const StudentsPage = () => {
                   <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{normHi || normEn || 'Hostel Students'}</div>
                   {showBoth && <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{normEn} - Student list</div>}
                   {!normHi && normEn && <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{normEn} - Student list</div>}
+                  {(hostel && (hostel.monthlyFee != null && hostel.monthlyFee !== '')) && (
+                    <div style={{ fontSize: '0.9rem', color: '#374151', marginTop: 6 }}>
+                      Monthly fee: {hostel.monthlyFeeCurrency === 'INR' ? `₹${hostel.monthlyFee}` : `${hostel.monthlyFee} ${hostel.monthlyFeeCurrency}`} per student
+                    </div>
+                  )}
                 </>
               );
             })()}
@@ -700,14 +706,21 @@ const StudentsPage = () => {
                     <input type="number" value={previewFee} onChange={(e) => setPreviewFee(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb', width: '140px' }} />
                     <select value={previewCurrency} onChange={(e) => setPreviewCurrency(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb' }}>
                       <option value="INR">INR</option>
-                      <option value="USD">USD</option>
                     </select>
                   </div>
                 </div>
               </div>
 
+              {/* PDF preview iframe for reading inside modal (form + rules) */}
               <div style={{ marginTop: 14 }}>
-                <button onClick={() => downloadStudentPdf(previewStudent)} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: '#0ea5a4', color: '#fff' }}>Download PDF</button>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>PDF preview</div>
+                <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
+                  <iframe
+                    title="Student PDF Preview"
+                    style={{ width: '100%', height: 560, border: 'none' }}
+                    srcDoc={`${renderStudentPrintHtml(previewStudent) || ''}${'<div style="page-break-before: always;"></div>'}${(renderRulesHtml && renderRulesHtml(previewStudent)) || ''}`}
+                  />
+                </div>
               </div>
             </div>
           </div>
