@@ -58,9 +58,7 @@ router.get('/public/hostels/:hostelDocId', async (req, res) => {
       address: data.address || null,
       address_en: data.address_en || null,
       address_hi: data.address_hi || null,
-      qrDataUrl: data.qrDataUrl || null,
-      monthlyFee: data.monthlyFee != null ? data.monthlyFee : null,
-      monthlyFeeCurrency: data.monthlyFeeCurrency || null
+      qrDataUrl: data.qrDataUrl || null
     };
     res.json({ success: true, data: publicData });
   } catch (err) {
@@ -258,49 +256,6 @@ router.get('/users/me/hostels/:hostelId/students', async (req, res) => {
       error: 'Failed to fetch students',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
-  }
-});
-
-// Get aggregated balances for all students in a hostel (single call to avoid N requests)
-// GET /api/users/me/hostels/:hostelId/students/balances
-router.get('/users/me/hostels/:hostelId/students/balances', async (req, res) => {
-  try {
-    const { hostelId } = req.params;
-    const userId = req.user.uid;
-    if (!userId || !hostelId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
-
-    const studentsRef = db.collection('users').doc(userId).collection('hostels').doc(hostelId).collection('students');
-    const studentsSnap = await studentsRef.get();
-    const balances = [];
-
-    for (const sDoc of studentsSnap.docs) {
-      const sData = sDoc.data() || {};
-      // If student already stores currentBalance, trust it (keeps server authoritative)
-      if (sData.currentBalance != null) {
-        balances.push({ id: sDoc.id, currentBalance: sData.currentBalance, totalCredit: null, totalDebit: null, usedFee: (sData.appliedFee != null ? sData.appliedFee : (sData.monthlyFee != null ? sData.monthlyFee : null)) });
-        continue;
-      }
-
-      // Otherwise compute from payments: sum credits and debits
-      const paymentsSnap = await studentsRef.doc(sDoc.id).collection('payments').get();
-      let totalCredit = 0; let totalDebit = 0;
-      paymentsSnap.docs.forEach(p => {
-        const pd = p.data() || {};
-        const amt = Number(pd.amount) || 0;
-        if ((pd.type || 'credit') === 'credit') totalCredit += amt;
-        else totalDebit += amt;
-      });
-
-      const netPaid = totalCredit - totalDebit;
-      const usedFee = (sData.appliedFee != null ? Number(sData.appliedFee) : (sData.monthlyFee != null ? Number(sData.monthlyFee) : null));
-      const balance = (usedFee != null) ? (Number(usedFee) - netPaid) : null;
-      balances.push({ id: sDoc.id, currentBalance: balance, totalCredit, totalDebit, usedFee });
-    }
-
-    res.json({ success: true, data: balances });
-  } catch (error) {
-    console.error('Error fetching student balances:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to fetch balances' });
   }
 });
 

@@ -27,7 +27,6 @@ const StudentsPage = () => {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
   const [translitNameHi, setTranslitNameHi] = useState('');
   const [translitAddressHi, setTranslitAddressHi] = useState('');
-  const [balancesLoaded, setBalancesLoaded] = useState(false);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640);
@@ -79,43 +78,6 @@ const StudentsPage = () => {
 
     fetchStudents();
   }, [hostelId]);
-
-  // Fetch balances in a single call to avoid N requests and UI flicker.
-  useEffect(() => {
-    if (!students || students.length === 0) return;
-    if (balancesLoaded) return; // already enriched
-
-    const fetchBalances = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return; // only for authenticated admin
-      try {
-        const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/balances`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
-        if (!resp.ok) return setBalancesLoaded(true);
-        const payload = await resp.json();
-        const list = payload.data || [];
-        const map = {};
-        list.forEach(b => { if (b && b.id) map[b.id] = b; });
-
-        // Merge balances into students in one go to avoid incremental re-renders
-        setStudents(prev => prev.map(s => {
-          const b = map[s.id];
-          if (!b) return s;
-          const merged = { ...s };
-          if (b.currentBalance != null) merged.currentBalance = b.currentBalance;
-          if (b.totalCredit != null) merged.totalPaid = b.totalCredit;
-          if (b.totalDebit != null) merged.totalRefunds = b.totalDebit;
-          if (b.usedFee != null) merged.usedFee = b.usedFee;
-          return merged;
-        }));
-        setBalancesLoaded(true);
-      } catch (err) {
-        console.warn('Failed to fetch aggregated balances', err);
-        setBalancesLoaded(true);
-      }
-    };
-
-    fetchBalances();
-  }, [students, hostelId, balancesLoaded]);
 
   // Helper to fetch public hostel metadata when viewing as an unauthenticated user or via QR links
   const fetchPublicHostel = async (hostelDocId, optOwnerUserId) => {
@@ -470,9 +432,8 @@ const StudentsPage = () => {
   }
 
 
-  try {
-    return (
-      <div className="container" style={styles.container}>
+  return (
+    <div className="container" style={styles.container}>
       {/* Static profile navbar (sticky) - show current admin info if available */}
       {(() => {
         let stored = null;
@@ -636,7 +597,6 @@ const StudentsPage = () => {
                 if (student.studentId && hostelCode) return `${String(hostelCode)}${String(student.studentId)}`;
                 return 'N/A';
               })();
-              const displayBalance = (student.currentBalance != null) ? student.currentBalance : (balancesLoaded ? 0 : '—');
 
               return (
                 <div key={student.id} style={styles.studentCard}>
@@ -668,7 +628,7 @@ const StudentsPage = () => {
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', marginRight: 8 }}>
                           <div style={{ fontSize: 12, color: '#6b7280', marginRight: 6 }}>Balance</div>
-                          <div style={{ fontWeight: 600 }}>{typeof displayBalance === 'number' ? `₹${displayBalance}` : displayBalance}</div>
+                          <div style={{ fontWeight: 600 }}>₹{student.currentBalance != null ? student.currentBalance : 0}</div>
                         </div>
                         <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/payments`)} style={{ ...styles.iconButton, ...styles.paymentButton }} title="Payments">💳</button>
                       </>
@@ -712,8 +672,6 @@ const StudentsPage = () => {
                   return 'N/A';
                 })();
 
-                const displayBalance = (student.currentBalance != null) ? student.currentBalance : (balancesLoaded ? 0 : '—');
-
                 return (
                   <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
                     <td style={styles.td}>{computedAppNo}</td>
@@ -728,7 +686,7 @@ const StudentsPage = () => {
                     <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                     <td style={styles.td}>
                       <div style={styles.balanceContainer}>
-                        <span>{typeof displayBalance === 'number' ? `₹${displayBalance}` : displayBalance}</span>
+                        <span>₹{student.currentBalance || 0}</span>
                       </div>
                     </td>
                     <td style={styles.td}>
@@ -938,21 +896,8 @@ const StudentsPage = () => {
           </div>
         )}
       </div>
-      </div>
-    );
-  } catch (renderErr) {
-    // Defensive: catch any unexpected runtime error (eg. ReferenceError) during render
-    console.error('StudentsPage render error:', renderErr);
-    return (
-      <div style={{ padding: 24 }}>
-        <h3>Something went wrong while rendering the students list</h3>
-        <div style={{ color: '#6b7280' }}>{String(renderErr && renderErr.message)}</div>
-        <div style={{ marginTop: 12 }}>
-          Please check the browser console for details. If you need help, share the stack trace.
-        </div>
-      </div>
-    );
-  }
+    </div>
+  );
 };
 
 const styles = {
