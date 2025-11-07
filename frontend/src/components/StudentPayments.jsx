@@ -183,16 +183,23 @@ const StudentPayments = () => {
   const usedFee = appliedFee > 0 ? appliedFee : monthlyFee;
 
   // Calculate totals
-  const totalCredit = payments.filter(p => p.type === 'credit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
-  const totalDebit = payments.filter(p => p.type === 'debit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
-  const netPaid = totalCredit - totalDebit;
-
-  // Current balance (positive = pending, negative = advance).
-  // Prefer the fee-based calculation (usedFee - netPaid) when available; otherwise fall back to
-  // the server-provided student.currentBalance.
-  const currentBalance = (usedFee != null)
-    ? (usedFee - netPaid)
-    : (Number(student?.currentBalance) || 0);
+  const totalCredit = payments
+    .filter(p => p.type === 'credit')
+    .reduce((a, b) => a + (Number(b.amount) || 0), 0);
+    
+  const totalDebit = payments
+    .filter(p => p.type === 'debit')
+    .reduce((a, b) => a + (Number(b.amount) || 0), 0);
+    
+  // Initial fee is considered as a debit (money owed by student)
+  const initialFeeDebit = usedFee || 0;
+  const totalDebitIncludingFee = totalDebit + initialFeeDebit;
+  
+  // Net paid is total payments (credit) minus refunds (debit) and initial fee
+  const netPaid = totalCredit - totalDebitIncludingFee;
+  
+  // Current balance (positive = pending, negative = advance)
+  const currentBalance = usedFee - (totalCredit - totalDebit);
 
   // For UI
   const feesDue = currentBalance > 0 ? currentBalance : 0;
@@ -294,16 +301,16 @@ const StudentPayments = () => {
               {/* Summary */}
               <div style={styles.historySummary}>
                 <div style={styles.summaryItem}>
+                  <div style={styles.summaryLabel}>Monthly Fee</div>
+                  <div style={styles.summaryValue}>{formatCurrency(usedFee)}</div>
+                </div>
+                <div style={styles.summaryItem}>
                   <div style={styles.summaryLabel}>Total Paid</div>
                   <div style={{ ...styles.summaryValue, color: '#059669' }}>{formatCurrency(totalCredit)}</div>
                 </div>
                 <div style={styles.summaryItem}>
                   <div style={styles.summaryLabel}>Total Refunds</div>
                   <div style={{ ...styles.summaryValue, color: '#dc2626' }}>{formatCurrency(totalDebit)}</div>
-                </div>
-                <div style={styles.summaryItem}>
-                  <div style={styles.summaryLabel}>Net Paid</div>
-                  <div style={styles.summaryValue}>{formatCurrency(netPaid)}</div>
                 </div>
 
                 {/* Show applied vs monthly fee when available */}
@@ -345,11 +352,11 @@ const StudentPayments = () => {
                       </thead>
                       <tbody>
                         <tr>
+                          <td>{formatDate(student.createdAt || new Date().toISOString())}</td>
                           <td>—</td>
-                          <td>Fee</td>
-                          <td>{appliedFee > 0 && appliedFee !== monthlyFee ? 'Applied Fee' : 'Monthly Fee'}</td>
+                          <td>{appliedFee > 0 && appliedFee !== monthlyFee ? 'Applied Monthly Fee' : 'Monthly Fee'}</td>
                           <td style={{ textAlign: 'right', color: '#dc2626' }}>{formatCurrency(usedFee)}</td>
-                          <td></td>
+                          <td style={{ textAlign: 'right' }}></td>
                         </tr>
                         {payments.map((payment, i) => (
                           <tr key={i}>
