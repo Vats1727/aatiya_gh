@@ -489,7 +489,7 @@ const StudentsPage = () => {
             style={styles.addButton}
             aria-label="Add New Student"
           >
-            <UserPlus size={18} style={{ marginRight: '6px', flexShrink: 0 }} />
+            <UserPlus size={18} style={{ marginLeft: '6px', flexShrink: 0 }} />
             <span>Add Student</span>
           </button>
         </div>
