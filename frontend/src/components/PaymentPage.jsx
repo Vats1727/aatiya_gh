@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Info } from 'lucide-react';
 
-// Use the same API_BASE as other components
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3000';
-
-// For debugging
-console.log('API_BASE:', API_BASE);
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
 // Helper to calculate closing balance
 const calculateClosingBalance = (currentBalance, amount) => {
@@ -37,51 +33,26 @@ const PaymentPage = () => {
           return;
         }
 
-        console.log('Fetching from:', `${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`);
-
-        // Fetch student details
-        const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
+        // Fetch student payment details
+        const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
-        // Log response status and headers for debugging
-        console.log('Response status:', response.status);
-        console.log('Response headers:', [...response.headers.entries()]);
-
         if (!response.ok) {
-          const text = await response.text();
-          console.error('Response text:', text);
-          throw new Error(`Failed to fetch student: ${response.status} ${text}`);
+          throw new Error('Failed to fetch student payment data');
         }
 
-        // Try to parse as JSON
-        let data;
-        try {
-          const text = await response.text();
-          console.log('Response text:', text);
-          data = JSON.parse(text);
-        } catch (parseError) {
-          console.error('JSON Parse Error:', parseError);
-          throw new Error('Invalid JSON response from server');
-        }
-
-        const studentData = data.data || data; // Handle both response formats
+        const data = await response.json();
+        console.log('Fetched student data:', data);
         
-        if (!studentData) {
-          throw new Error('No student data received');
-        }
-
-        console.log('Received student data:', studentData);
+        setStudent(data);
+        setCurrentBalance(data.currentBalance || 0);
         
-        setStudent(studentData);
-        setCurrentBalance(studentData.currentBalance || 0);
-        
-        // Fetch payment history if it exists
-        if (studentData.payments && Array.isArray(studentData.payments)) {
-          setPaymentHistory(studentData.payments);
+        if (data.payments && Array.isArray(data.payments)) {
+          setPaymentHistory(data.payments);
         }
 
       } catch (err) {
@@ -105,13 +76,10 @@ const PaymentPage = () => {
         amount: Number(paymentAmount),
         mode: paymentMode,
         remarks,
-        timestamp: new Date().toISOString(),
         type: 'credit', // credit means payment received
-        currentBalance: Number(currentBalance),
-        closingBalance: Number(calculateClosingBalance(currentBalance, paymentAmount))
       };
 
-      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
+      const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,10 +88,11 @@ const PaymentPage = () => {
         body: JSON.stringify(payment)
       });
 
-      if (!res.ok) throw new Error('Failed to save payment');
+      if (!response.ok) {
+        throw new Error('Failed to save payment');
+      }
 
-      const updated = await res.json();
-      const updatedData = updated.data || updated;
+      const updatedData = await response.json();
       
       setStudent(updatedData);
       setCurrentBalance(updatedData.currentBalance || 0);

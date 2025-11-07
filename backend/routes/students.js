@@ -121,4 +121,79 @@ router.get('/:id/pdf', async (req, res) => {
   }
 });
 
+// Get student payments
+router.get('/:id/payments', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
+  try {
+    const { id } = req.params;
+    const doc = await db.collection('students').doc(id).get();
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const data = doc.data();
+    res.json({ 
+      id: doc.id,
+      currentBalance: data.currentBalance || 0,
+      payments: data.payments || []
+    });
+  } catch (err) {
+    console.error('GET /api/students/:id/payments error', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// Add new payment
+router.post('/:id/payments', async (req, res) => {
+  if (!db) return res.status(500).send('Firestore not initialized');
+  try {
+    const { id } = req.params;
+    const payment = req.body;
+    
+    // Validate payment data
+    if (!payment.amount || !payment.mode) {
+      return res.status(400).json({ error: 'Amount and mode are required' });
+    }
+
+    const docRef = db.collection('students').doc(id);
+    const doc = await docRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const currentData = doc.data();
+    const currentBalance = currentData.currentBalance || 0;
+    const newBalance = currentBalance + Number(payment.amount);
+
+    // Add timestamp and balance information to payment
+    const newPayment = {
+      ...payment,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      currentBalance: currentBalance,
+      closingBalance: newBalance
+    };
+
+    // Update student document with new payment and balance
+    await docRef.update({
+      currentBalance: newBalance,
+      payments: admin.firestore.FieldValue.arrayUnion(newPayment)
+    });
+
+    // Get updated document
+    const updatedDoc = await docRef.get();
+    const updatedData = updatedDoc.data();
+
+    res.json({
+      id: updatedDoc.id,
+      currentBalance: updatedData.currentBalance,
+      payments: updatedData.payments || []
+    });
+
+  } catch (err) {
+    console.error('POST /api/students/:id/payments error', err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 export default router;
