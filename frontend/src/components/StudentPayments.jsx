@@ -175,12 +175,20 @@ const StudentPayments = () => {
 
   // derived totals for UI
   const totals = calculateTotals(payments);
-  const studentFees = Number(student?.hostelFees ?? student?.fees ?? student?.totalFees ?? 0);
-  const feesDue = studentFees ? Math.max(0, studentFees - totals.netPaid) : null;
-  // derive current balance: prefer fee-based calculation (owner-set fee or per-student fee),
+
+  // Detect various fee properties: per-student applied fee (explicit override) and hostel/default monthly fee
+  const appliedFee = Number(student?.appliedFee ?? student?.appliedFees ?? student?.applied_fee ?? null);
+  const monthlyFee = Number(student?.monthlyFee ?? student?.hostelMonthlyFee ?? student?.hostelFees ?? student?.fees ?? student?.totalFees ?? 0);
+
+  // Pick usedFee: prefer appliedFee when set (non-NaN and > 0), otherwise monthlyFee
+  const usedFee = (appliedFee > 0) ? appliedFee : (monthlyFee > 0 ? monthlyFee : null);
+
+  const feesDue = (usedFee != null) ? Math.max(0, usedFee - totals.netPaid) : null;
+
+  // derive current balance: prefer fee-based calculation (applied or monthly) when available,
   // fallback to student.currentBalance when fee info is missing
-  const derivedCurrentBalance = (studentFees > 0)
-    ? (studentFees - totals.netPaid)
+  const derivedCurrentBalance = (usedFee != null)
+    ? (usedFee - totals.netPaid)
     : (Number(student?.currentBalance) || 0);
 
   return (
@@ -283,16 +291,31 @@ const StudentPayments = () => {
                   <div style={styles.summaryLabel}>Total Refunds</div>
                   <div style={{ ...styles.summaryValue, color: '#dc2626' }}>{formatCurrency(totals.totalDebit)}</div>
                 </div>
-                <div style={styles.summaryItem}>
-                  <div style={styles.summaryLabel}>Net Paid</div>
-                  <div style={styles.summaryValue}>{formatCurrency(totals.netPaid)}</div>
-                </div>
-                {studentFees > 0 && (
                   <div style={styles.summaryItem}>
-                    <div style={styles.summaryLabel}>Fees Due</div>
-                    <div style={{ ...styles.summaryValue, color: feesDue > 0 ? '#b91c1c' : '#059669' }}>{formatCurrency(feesDue)}</div>
+                    <div style={styles.summaryLabel}>Net Paid</div>
+                    <div style={styles.summaryValue}>{formatCurrency(totals.netPaid)}</div>
                   </div>
-                )}
+
+                  {/* Show applied vs monthly fee when available */}
+                  {usedFee != null && (
+                    <div style={styles.summaryItem}>
+                      <div style={styles.summaryLabel}>Applied Fee</div>
+                      <div style={styles.summaryValue}>{formatCurrency(usedFee)}</div>
+                    </div>
+                  )}
+                  {appliedFee > 0 && monthlyFee > 0 && appliedFee !== monthlyFee && (
+                    <div style={styles.summaryItem}>
+                      <div style={styles.summaryLabel}>Standard Monthly Fee</div>
+                      <div style={styles.summaryValue}>{formatCurrency(monthlyFee)}</div>
+                    </div>
+                  )}
+
+                  {feesDue != null && (
+                    <div style={styles.summaryItem}>
+                      <div style={styles.summaryLabel}>Fees Due</div>
+                      <div style={{ ...styles.summaryValue, color: feesDue > 0 ? '#b91c1c' : '#059669' }}>{formatCurrency(feesDue)}</div>
+                    </div>
+                  )}
               </div>
 
               <div style={styles.historyList}>
