@@ -26,8 +26,6 @@ This repository implements a hostel admission system for Aatiya Girls Hostel. It
 - Per-hostel monthly fee configuration and per-student applied fee at acceptance.
 - PDF generation of the admission form (two-page: filled form + rules) using HTML templates.
 
-This README summarizes how the app is organized, how to run it, and where the important code lives.
-
 ---
 
 ## Architecture & tech stack
@@ -36,7 +34,6 @@ This README summarizes how the app is organized, how to run it, and where the im
 - Backend: Express (Node.js) with Firestore (Firebase) as the database. Code located in `backend/`.
 - Authentication: JWT-based tokens for admin routes (stored in localStorage). Helper functions centralize header creation.
 - PDF: HTML templates rendered to PDF via a client-side generator (html→canvas→PDF) using utilities in `frontend/src/utils/`.
-
 
 ---
 
@@ -163,7 +160,7 @@ npm run dev
 ```powershell
 cd frontend
 npm run build
-# Then serve `frontend/dist` with a static host for tests, or deploy to Vercel/Netlify
+
 ```
 
 Environment variables
