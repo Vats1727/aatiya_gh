@@ -32,7 +32,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onr
 const AdminDashboard = () => {
   const [hostels, setHostels] = useState([]);
   const [showAddHostel, setShowAddHostel] = useState(false);
-  const [newHostel, setNewHostel] = useState({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: '', monthlyFeeCurrency: 'INR' });
+  const [newHostel, setNewHostel] = useState({ name: '', address: '', name_hi: '', address_hi: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const HOSTELS_PER_PAGE = 8;
@@ -333,10 +333,7 @@ const fetchHostels = async () => {
         address: newHostel.address,
         // include bilingual fields; backend may store or ignore them
         name_hi: newHostel.name_hi || '',
-        address_hi: newHostel.address_hi || '',
-        // monthly fee (number) and currency
-        monthlyFee: Number(newHostel.monthlyFee || 0),
-        monthlyFeeCurrency: newHostel.monthlyFeeCurrency || 'INR'
+        address_hi: newHostel.address_hi || ''
       };
 
       if (newHostel.id) {
@@ -369,7 +366,7 @@ const fetchHostels = async () => {
         setHostels(prev => [...prev, created]);
       }
 
-  setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: '', monthlyFeeCurrency: 'INR' });
+      setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' });
       setShowAddHostel(false);
       setError('');
       setCurrentPage(1);
@@ -1213,35 +1210,12 @@ const fetchHostels = async () => {
                 />
                 <button type="button" onClick={() => { setKeyboardTarget('address_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
               </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  name="monthlyFee"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="input"
-                  value={newHostel.monthlyFee}
-                  onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFee: e.target.value }))}
-                  placeholder="Monthly fee (e.g. 2500)"
-                  style={{ ...applyResponsiveStyles(styles.input), maxWidth: 220 }}
-                />
-                <select
-                  name="monthlyFeeCurrency"
-                  value={newHostel.monthlyFeeCurrency}
-                  onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFeeCurrency: e.target.value }))}
-                  style={{ padding: '0.6rem', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white' }}
-                >
-                  <option value="INR">INR</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                </select>
-              </div>
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: '', monthlyFeeCurrency: 'INR' }); setError(''); }}
+                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setError(''); }}
                   style={applyResponsiveStyles(styles.cancelButton)}
                 >
                   Cancel
@@ -1277,7 +1251,7 @@ const fetchHostels = async () => {
             <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
             <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
               <button
-                onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: '', monthlyFeeCurrency: 'INR' }); setShowAddHostel(true); }}
+                onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setShowAddHostel(true); }}
                 className="btn btn-primary"
                 style={{
                   ...applyResponsiveStyles(styles.addButton),
@@ -1316,7 +1290,7 @@ const fetchHostels = async () => {
                       View Students
                     </button>
                     <button onClick={() => generateQrForHostel(hostel)} className="btn" style={{ padding: '0.5rem' }} title="QR"><UserPlus size={16} /></button>
-                    <button onClick={() => { setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '', monthlyFee: hostel.monthlyFee || hostel.fee || '', monthlyFeeCurrency: hostel.monthlyFeeCurrency || hostel.currency || 'INR' }); setShowAddHostel(true); }} className="btn" style={{ padding: '0.5rem' }} title="Edit"><Edit size={16} /></button>
+                    <button onClick={() => { setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '' }); setShowAddHostel(true); }} className="btn" style={{ padding: '0.5rem' }} title="Edit"><Edit size={16} /></button>
                   </div>
                 </div>
               ))}
@@ -1358,7 +1332,7 @@ const fetchHostels = async () => {
                         </button>
                         <button
                           onClick={() => {
-                            setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '', monthlyFee: hostel.monthlyFee || hostel.fee || '', monthlyFeeCurrency: hostel.monthlyFeeCurrency || hostel.currency || 'INR' });
+                            setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '' });
                             setShowAddHostel(true);
                           }}
                           className="btn btn-icon btn-secondary"
