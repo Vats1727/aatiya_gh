@@ -5,7 +5,7 @@ import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminRegister from "./components/AdminRegister";
 import StudentsPage from "./components/StudentsPage";
-import PaymentPage from "./components/PaymentPage";
+import StudentPayments from "./components/StudentPayments";
 import SubmissionSuccess from "./components/SubmissionSuccess";
 
 // Authentication wrapper
@@ -68,14 +68,14 @@ export default function App() {
         </PrivateRoute>
       } />
 
-      <Route path="/hostel/:hostelId/add-student" element={
-        <StudentForm />
-      } />
-
       <Route path="/hostel/:hostelId/students/:studentId/payments" element={
         <PrivateRoute>
-          <PaymentPage />
+          <StudentPayments />
         </PrivateRoute>
+      } />
+
+      <Route path="/hostel/:hostelId/add-student" element={
+        <StudentForm />
       } />
 
       <Route path="/submission-success" element={

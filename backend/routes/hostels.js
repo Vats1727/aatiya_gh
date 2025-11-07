@@ -372,4 +372,81 @@ router.get('/users/me/hostels/:hostelId/students/:studentId', async (req, res) =
   }
 });
 
+// Payments: list payments for a student
+// GET /api/users/me/hostels/:hostelId/students/:studentId/payments
+router.get('/users/me/hostels/:hostelId/students/:studentId/payments', async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { hostelId, studentId } = req.params;
+    if (!userId || !hostelId || !studentId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
+
+    const paymentsSnap = await db.collection('users')
+      .doc(userId)
+      .collection('hostels')
+      .doc(hostelId)
+      .collection('students')
+      .doc(studentId)
+      .collection('payments')
+      .orderBy('timestamp', 'desc')
+      .get();
+
+    const payments = paymentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json({ success: true, data: payments });
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch payments' });
+  }
+});
+
+// Payments: add a payment record and update student's currentBalance
+// POST /api/users/me/hostels/:hostelId/students/:studentId/payments
+router.post('/users/me/hostels/:hostelId/students/:studentId/payments', async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { hostelId, studentId } = req.params;
+    const { amount, paymentMode, remarks, type, timestamp } = req.body || {};
+
+    if (!userId || !hostelId || !studentId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
+    const amt = Number(amount || 0);
+    if (Number.isNaN(amt) || amt < 0) return res.status(400).json({ success: false, error: 'Invalid amount' });
+    if (!['credit', 'debit'].includes(type)) return res.status(400).json({ success: false, error: 'Invalid payment type' });
+
+    const studentRef = db.collection('users').doc(userId).collection('hostels').doc(hostelId).collection('students').doc(studentId);
+
+    // Use transaction to atomically write payment and update balance
+    const result = await db.runTransaction(async (tx) => {
+      const sSnap = await tx.get(studentRef);
+      if (!sSnap.exists) throw new Error('Student not found');
+
+      const sData = sSnap.data();
+      const currentBalance = (sData && (sData.currentBalance != null ? sData.currentBalance : (sData.appliedFee != null ? sData.appliedFee : (sData.monthlyFee != null ? sData.monthlyFee : 0)))) || 0;
+
+      // credit reduces balance (payment received), debit increases balance (refund)
+      const newBalance = type === 'credit' ? (currentBalance - amt) : (currentBalance + amt);
+
+      const paymentRef = studentRef.collection('payments').doc();
+      const paymentPayload = {
+        amount: amt,
+        paymentMode: paymentMode || 'cash',
+        remarks: remarks || '',
+        type,
+        timestamp: timestamp || new Date().toISOString(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      tx.set(paymentRef, paymentPayload);
+      tx.update(studentRef, { currentBalance: newBalance, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+
+      return { paymentId: paymentRef.id, paymentPayload, newBalance };
+    });
+
+    // fetch updated student to return
+    const updatedSnap = await db.collection('users').doc(req.user.uid).collection('hostels').doc(hostelId).collection('students').doc(studentId).get();
+    res.json({ success: true, data: { payment: { id: result.paymentId, ...result.paymentPayload }, student: { id: updatedSnap.id, ...updatedSnap.data() } } });
+  } catch (error) {
+    console.error('Error adding payment:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to add payment' });
+  }
+});
+
 export default router;
