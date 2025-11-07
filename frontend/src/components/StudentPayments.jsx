@@ -254,17 +254,6 @@ const StudentPayments = () => {
               />
             </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Type</label>
-              <select
-                value={newPayment.type}
-                onChange={(e) => setNewPayment(prev => ({ ...prev, type: e.target.value }))}
-                style={styles.select}
-              >
-                <option value="credit">Payment Received</option>
-                <option value="debit">Refund/Adjustment</option>
-              </select>
-            </div>
 
             <div style={styles.formGroup}>
               <label style={styles.label}>Payment Mode</label>
@@ -304,38 +293,31 @@ const StudentPayments = () => {
               {/* Summary */}
               <div style={styles.historySummary}>
                 <div style={styles.summaryItem}>
-                  <div style={styles.summaryLabel}>Monthly Fee</div>
-                  <div style={styles.summaryValue}>{formatCurrency(usedFee)}</div>
+                  <div style={styles.summaryLabel}>Hostel Fee (Debit)</div>
+                  <div style={{ ...styles.summaryValue, color: '#dc2626' }}>{formatCurrency(usedFee)}</div>
                 </div>
+                {hasCustomFee && monthlyFee > 0 && (
+                  <div style={styles.summaryItem}>
+                    <div style={{ ...styles.summaryLabel, fontSize: '0.9em', color: '#6b7280' }}>Standard Fee</div>
+                    <div style={{ ...styles.summaryValue, fontSize: '0.9em', color: '#6b7280' }}>{formatCurrency(monthlyFee)}</div>
+                  </div>
+                )}
                 <div style={styles.summaryItem}>
-                  <div style={styles.summaryLabel}>Total Paid</div>
+                  <div style={styles.summaryLabel}>Total Received</div>
                   <div style={{ ...styles.summaryValue, color: '#059669' }}>{formatCurrency(totalCredit)}</div>
                 </div>
-                <div style={styles.summaryItem}>
-                  <div style={styles.summaryLabel}>Total Refunds</div>
-                  <div style={{ ...styles.summaryValue, color: '#dc2626' }}>{formatCurrency(totalDebit)}</div>
+                <div style={{ ...styles.summaryItem, borderTop: '1px solid #e5e7eb', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
+                  <div style={{ ...styles.summaryLabel, fontWeight: '600' }}>Current Balance</div>
+                  <div style={{ 
+                    ...styles.summaryValue, 
+                    color: currentBalance > 0 ? '#b91c1c' : '#059669',
+                    fontWeight: '600'
+                  }}>
+                    {currentBalance > 0 
+                      ? `Due: ${formatCurrency(currentBalance)}` 
+                      : `Advance: ${formatCurrency(Math.abs(currentBalance))}`}
+                  </div>
                 </div>
-
-                {/* Show applied vs monthly fee when available */}
-                {usedFee != null && (
-                  <div style={styles.summaryItem}>
-                    <div style={styles.summaryLabel}>Applied Fee</div>
-                    <div style={styles.summaryValue}>{formatCurrency(usedFee)}</div>
-                  </div>
-                )}
-                {appliedFee > 0 && monthlyFee > 0 && appliedFee !== monthlyFee && (
-                  <div style={styles.summaryItem}>
-                    <div style={styles.summaryLabel}>Standard Monthly Fee</div>
-                    <div style={styles.summaryValue}>{formatCurrency(monthlyFee)}</div>
-                  </div>
-                )}
-
-                {feesDue != null && (
-                  <div style={styles.summaryItem}>
-                    <div style={styles.summaryLabel}>Fees Due</div>
-                    <div style={{ ...styles.summaryValue, color: feesDue > 0 ? '#b91c1c' : '#059669' }}>{formatCurrency(feesDue)}</div>
-                  </div>
-                )}
               </div>
 
               <div style={styles.historyList}>
