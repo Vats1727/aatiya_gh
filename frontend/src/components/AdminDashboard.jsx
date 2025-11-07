@@ -70,111 +70,111 @@ const AdminDashboard = () => {
     return raw.startsWith('Bearer ') ? raw.slice(7) : raw;
   };
 
-    // Decode a JWT payload (no validation) to extract common fields as a
-    // quick fallback when the /me endpoint doesn't return a name.
-    const decodeJwtPayload = (token) => {
-      try {
-        if (!token) return null;
-        const parts = token.split('.');
-        if (parts.length < 2) return null;
-        const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-        const decoded = atob(payload);
-        return JSON.parse(decoded);
-      } catch (e) {
-        return null;
-      }
-    };
-
-// Fetch user profile function. Try multiple backend endpoints and response shapes
-// to be tolerant of environments that return { data: user } or { user }.
-const fetchUserProfile = async () => {
-  try {
-    const authHeader = getAuthHeader();
-    const rawToken = getRawToken();
-    if (!authHeader || !rawToken) {
-      navigate('/admin');
-      return;
+  // Decode a JWT payload (no validation) to extract common fields as a
+  // quick fallback when the /me endpoint doesn't return a name.
+  const decodeJwtPayload = (token) => {
+    try {
+      if (!token) return null;
+      const parts = token.split('.');
+      if (parts.length < 2) return null;
+      const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const decoded = atob(payload);
+      return JSON.parse(decoded);
+    } catch (e) {
+      return null;
     }
+  };
 
-    const endpoints = [`${API_BASE}/api/auth/me`, `${API_BASE}/api/users/me`, `${API_BASE}/api/me`];
-    let lastErr = null;
-    let userObj = null;
+  // Fetch user profile function. Try multiple backend endpoints and response shapes
+  // to be tolerant of environments that return { data: user } or { user }.
+  const fetchUserProfile = async () => {
+    try {
+      const authHeader = getAuthHeader();
+      const rawToken = getRawToken();
+      if (!authHeader || !rawToken) {
+        navigate('/admin');
+        return;
+      }
 
-    for (const ep of endpoints) {
-      try {
-        const res = await fetch(ep, {
-          headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
-        });
+      const endpoints = [`${API_BASE}/api/auth/me`, `${API_BASE}/api/users/me`, `${API_BASE}/api/me`];
+      let lastErr = null;
+      let userObj = null;
 
-        if (!res.ok) {
-          // If unauthorized, bail out immediately
-          if (res.status === 401) {
-            localStorage.removeItem('token');
-            navigate('/admin');
-            return;
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+          });
+
+          if (!res.ok) {
+            // If unauthorized, bail out immediately
+            if (res.status === 401) {
+              localStorage.removeItem('token');
+              navigate('/admin');
+              return;
+            }
+            lastErr = new Error(`Failed to fetch user profile from ${ep} (status ${res.status})`);
+            continue;
           }
-          lastErr = new Error(`Failed to fetch user profile from ${ep} (status ${res.status})`);
+
+          const payload = await res.json();
+          // Normalize various possible shapes
+          userObj = payload?.data || payload?.user || payload || null;
+          break;
+        } catch (innerErr) {
+          lastErr = innerErr;
           continue;
         }
-
-        const payload = await res.json();
-        // Normalize various possible shapes
-        userObj = payload?.data || payload?.user || payload || null;
-        break;
-      } catch (innerErr) {
-        lastErr = innerErr;
-        continue;
       }
-    }
 
-    if (!userObj) {
-      // Try to fallback to any cached user in localStorage
-      const cached = (() => {
-        try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { return null; }
-      })();
-      if (cached) {
-        setUser(cached);
+      if (!userObj) {
+        // Try to fallback to any cached user in localStorage
+        const cached = (() => {
+          try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { return null; }
+        })();
+        if (cached) {
+          setUser(cached);
+          return;
+        }
+
+        // As a last resort, decode token payload for name/email
+        const raw = getRawToken();
+        const payload = decodeJwtPayload(raw);
+        if (payload) {
+          const fallback = { name: payload.name || payload.displayName || payload.email || payload.sub };
+          setUser(fallback);
+          try { localStorage.setItem('user', JSON.stringify(fallback)); } catch (e) { /* ignore */ }
+          return;
+        }
+
+        console.error('fetchUserProfile: no user returned', lastErr);
+        setError('Failed to load user profile');
         return;
       }
 
-      // As a last resort, decode token payload for name/email
-      const raw = getRawToken();
-      const payload = decodeJwtPayload(raw);
-      if (payload) {
-        const fallback = { name: payload.name || payload.displayName || payload.email || payload.sub };
-        setUser(fallback);
-        try { localStorage.setItem('user', JSON.stringify(fallback)); } catch (e) { /* ignore */ }
-        return;
+      // If the profile is nested under a `profile` or similar key, try to extract
+      const resolved = userObj.profile || userObj;
+      // Normalize name/email fields and cache
+      const normalized = {
+        ...resolved,
+        name: resolved.name || resolved.displayName || resolved.fullName || resolved.email?.split?.('@')?.[0] || resolved.uid || resolved.id,
+      };
+      setUser(normalized);
+      try { localStorage.setItem('user', JSON.stringify(normalized)); } catch (e) { /* ignore */ }
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+      if (err.message && (err.message.includes('401') || err.message.includes('unauthorized'))) {
+        localStorage.removeItem('token');
+        navigate('/admin');
       }
-
-      console.error('fetchUserProfile: no user returned', lastErr);
       setError('Failed to load user profile');
-      return;
     }
+  };
 
-    // If the profile is nested under a `profile` or similar key, try to extract
-    const resolved = userObj.profile || userObj;
-    // Normalize name/email fields and cache
-    const normalized = {
-      ...resolved,
-      name: resolved.name || resolved.displayName || resolved.fullName || resolved.email?.split?.('@')?.[0] || resolved.uid || resolved.id,
-    };
-    setUser(normalized);
-    try { localStorage.setItem('user', JSON.stringify(normalized)); } catch (e) { /* ignore */ }
-  } catch (err) {
-    console.error('Error fetching user profile:', err);
-    if (err.message && (err.message.includes('401') || err.message.includes('unauthorized'))) {
-      localStorage.removeItem('token');
-      navigate('/admin');
-    }
-    setError('Failed to load user profile');
-  }
-};
-
-// Fetch hostels function
-const fetchHostels = async () => {
-  try {
-    setLoading(true);
+  // Fetch hostels function
+  const fetchHostels = async () => {
+    try {
+      setLoading(true);
       const authHeader = getAuthHeader();
       const rawToken = getRawToken();
       if (!authHeader || !rawToken) {
@@ -189,30 +189,30 @@ const fetchHostels = async () => {
         }
       });
 
-    if (!response.ok) {
-      if (response.status === 401) {
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/admin');
+          return;
+        }
+        throw new Error('Failed to fetch hostels');
+      }
+
+      const data = await response.json();
+      setHostels(data.data || []);
+    } catch (err) {
+      console.error('Error fetching hostels:', err);
+      setError('Failed to load hostels');
+      if (err.message.includes('401')) {
         localStorage.removeItem('token');
         navigate('/admin');
-        return;
       }
-      throw new Error('Failed to fetch hostels');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const data = await response.json();
-    setHostels(data.data || []);
-  } catch (err) {
-    console.error('Error fetching hostels:', err);
-    setError('Failed to load hostels');
-    if (err.message.includes('401')) {
-      localStorage.removeItem('token');
-      navigate('/admin');
-    }
-  } finally {
-    setLoading(false);
-  }
-};
-
-// NOTE: initial auth+data fetching consolidated in the checkAuthAndFetchData effect below
+  // NOTE: initial auth+data fetching consolidated in the checkAuthAndFetchData effect below
 
   // Fetch students for a specific hostel
   const fetchStudents = async (hostelId) => {
@@ -266,10 +266,10 @@ const fetchHostels = async () => {
     if (!hostel || !hostel.id) return;
     try {
       const publicBase = window.location.origin || 'https://aatiya-gh.vercel.app';
-  // Include owner user id in the QR URL as a query param so public submissions can be attributed correctly
-  const ownerId = user?.uid || user?.id || (user && user.userId) || null;
-  const ownerQuery = ownerId ? `?ownerUserId=${encodeURIComponent(ownerId)}` : '';
-  const addUrl = `${publicBase}/hostel/${encodeURIComponent(hostel.id)}/add-student${ownerQuery}`;
+      // Include owner user id in the QR URL as a query param so public submissions can be attributed correctly
+      const ownerId = user?.uid || user?.id || (user && user.userId) || null;
+      const ownerQuery = ownerId ? `?ownerUserId=${encodeURIComponent(ownerId)}` : '';
+      const addUrl = `${publicBase}/hostel/${encodeURIComponent(hostel.id)}/add-student${ownerQuery}`;
 
       // Generate a data URL (PNG) for the QR locally using the `qrcode` lib
       const dataUrl = await QRCode.toDataURL(addUrl, { width: 360, margin: 1 });
@@ -369,7 +369,7 @@ const fetchHostels = async () => {
         setHostels(prev => [...prev, created]);
       }
 
-  setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: 0, monthlyFeeCurrency: 'INR' });
+      setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: 0, monthlyFeeCurrency: 'INR' });
       setShowAddHostel(false);
       setError('');
       setCurrentPage(1);
@@ -413,9 +413,9 @@ const fetchHostels = async () => {
           // Then fetch the hostels data
           await fetchHostels();
         } catch (err) {
-          if (err.response?.status === 401 || 
-              err.message.includes('401') || 
-              err.message.includes('unauthorized')) {
+          if (err.response?.status === 401 ||
+            err.message.includes('401') ||
+            err.message.includes('unauthorized')) {
             throw new Error('Session expired. Please login again.');
           }
           throw err;
@@ -1111,10 +1111,10 @@ const fetchHostels = async () => {
                 width: '100%',
               }}
             >
-              <button onClick={() => navigate('/admin/dashboard')} className="btn btn-primary" style={{...applyResponsiveStyles(styles.addButton), minWidth: '120px', background: '#06b6d4'}} title="Hostel List">
+              <button onClick={() => navigate('/admin/dashboard')} className="btn btn-primary" style={{ ...applyResponsiveStyles(styles.addButton), minWidth: '120px', background: '#06b6d4' }} title="Hostel List">
                 <Users size={16} style={{ marginRight: '6px' }} /> Hostel List
               </button>
-              <button onClick={handleLogout} className="btn btn-secondary" style={{...applyResponsiveStyles(styles.logoutButton), minWidth: '100px'}} title="Logout">
+              <button onClick={handleLogout} className="btn btn-secondary" style={{ ...applyResponsiveStyles(styles.logoutButton), minWidth: '100px' }} title="Logout">
                 <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
               </button>
             </div>
@@ -1159,7 +1159,7 @@ const fetchHostels = async () => {
                       } catch (err) {
                         // fallback: do nothing
                       }
-                    }).catch(() => {/* ignore load errors */});
+                    }).catch(() => {/* ignore load errors */ });
                   }, 350);
                 }}
                 placeholder="Hostel name (English)"
@@ -1195,7 +1195,7 @@ const fetchHostels = async () => {
                       } catch (err) {
                         // ignore
                       }
-                    }).catch(() => {/* ignore */});
+                    }).catch(() => {/* ignore */ });
                   }, 350);
                 }}
                 placeholder="Address (English)"
@@ -1225,9 +1225,18 @@ const fetchHostels = async () => {
                   placeholder="Monthly fee per student"
                   style={{ ...applyResponsiveStyles(styles.input), maxWidth: 220 }}
                 />
-                <select value={newHostel.monthlyFeeCurrency} onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFeeCurrency: e.target.value }))} style={{ padding: '0.75rem 1rem', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>
-                  <option value="INR">INR</option>
-                </select>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '0.75rem 1rem',
+                    borderRadius: 6,
+                    border: '1px solid #e5e7eb',
+                    background: '#fff',
+                  }}
+                >
+                  {newHostel.monthlyFeeCurrency || 'INR'}
+                </span>
+
               </div>
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
@@ -1266,9 +1275,9 @@ const fetchHostels = async () => {
         />
 
         <div style={applyResponsiveStyles(styles.header)}>
-          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%'}}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%' }}>
             <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
-            <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <button
                 onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setShowAddHostel(true); }}
                 className="btn btn-primary"
@@ -1321,66 +1330,66 @@ const fetchHostels = async () => {
               borderCollapse: 'collapse'
             }}>
               <thead>
-                  <tr>
-                    <th style={styles.th}>Hostel Name</th>
-                    <th style={styles.th}>Number of Students</th>
-                    <th style={styles.th}>Actions</th>
-                  </tr>
+                <tr>
+                  <th style={styles.th}>Hostel Name</th>
+                  <th style={styles.th}>Number of Students</th>
+                  <th style={styles.th}>Actions</th>
+                </tr>
               </thead>
               <tbody>
-                  {paginatedHostels.map((hostel, idx) => (
-                    <tr key={hostel.id}>
-                      <td style={styles.td}>{hostel.name}</td>
-                      <td style={styles.td}>{hostel.studentCount ?? hostel.studentsCount ?? 0}</td>
-                      <td style={styles.td}>
-                        <button
-                          onClick={() => handleViewStudents(hostel.id)}
-                          className="btn btn-icon btn-primary"
-                          style={{ ...styles.actionButton, ...styles.editButton }}
-                          title="View Students"
-                        >
-                          <ArrowRight size={16} />
-                        </button>
-                        <button
-                          onClick={() => generateQrForHostel(hostel)}
-                          className="btn btn-icon"
-                          style={{ ...styles.actionButton }}
-                          title="Generate QR for Add Student"
-                        >
-                          <UserPlus size={14} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '' });
-                            setShowAddHostel(true);
-                          }}
-                          className="btn btn-icon btn-secondary"
-                          style={{ ...styles.actionButton }}
-                          title="Edit Hostel"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (!confirm('Delete this hostel? This will remove the hostel and its students.')) return;
-                            const token = getAuthHeader();
-                            fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
-                              method: 'DELETE',
-                              headers: { 'Authorization': token }
-                            }).then(res => {
-                              if (!res.ok) throw new Error('Failed to delete hostel');
-                              setHostels(prev => prev.filter(h => h.id !== hostel.id));
-                            }).catch(err => { console.error(err); alert('Failed to delete hostel'); });
-                          }}
-                          className="btn btn-icon btn-danger"
-                          style={{ ...styles.actionButton }}
-                          title="Delete Hostel"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                {paginatedHostels.map((hostel, idx) => (
+                  <tr key={hostel.id}>
+                    <td style={styles.td}>{hostel.name}</td>
+                    <td style={styles.td}>{hostel.studentCount ?? hostel.studentsCount ?? 0}</td>
+                    <td style={styles.td}>
+                      <button
+                        onClick={() => handleViewStudents(hostel.id)}
+                        className="btn btn-icon btn-primary"
+                        style={{ ...styles.actionButton, ...styles.editButton }}
+                        title="View Students"
+                      >
+                        <ArrowRight size={16} />
+                      </button>
+                      <button
+                        onClick={() => generateQrForHostel(hostel)}
+                        className="btn btn-icon"
+                        style={{ ...styles.actionButton }}
+                        title="Generate QR for Add Student"
+                      >
+                        <UserPlus size={14} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '' });
+                          setShowAddHostel(true);
+                        }}
+                        className="btn btn-icon btn-secondary"
+                        style={{ ...styles.actionButton }}
+                        title="Edit Hostel"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!confirm('Delete this hostel? This will remove the hostel and its students.')) return;
+                          const token = getAuthHeader();
+                          fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': token }
+                          }).then(res => {
+                            if (!res.ok) throw new Error('Failed to delete hostel');
+                            setHostels(prev => prev.filter(h => h.id !== hostel.id));
+                          }).catch(err => { console.error(err); alert('Failed to delete hostel'); });
+                        }}
+                        className="btn btn-icon btn-danger"
+                        style={{ ...styles.actionButton }}
+                        title="Delete Hostel"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           )}
@@ -1425,25 +1434,25 @@ const fetchHostels = async () => {
         )}
         {/* QR Modal */}
         {qrHostel && (
-          <div style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}} onClick={closeQrModal}>
-            <div onClick={(e) => e.stopPropagation()} style={{background: 'white', padding: '1rem', borderRadius: '0.75rem', maxWidth: '420px', width: '92%', textAlign: 'center'}}>
-              <h3 style={{marginTop:0, marginBottom: '0.5rem'}}>QR for {qrHostel.name || 'Hostel'}</h3>
-              <div style={{display: 'flex', justifyContent: 'center', marginBottom: '0.5rem'}}>
-                <img src={qrImageUrl} alt={`QR code for ${qrHostel.name}`} style={{width: '320px', height: '320px', maxWidth: '100%'}} />
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={closeQrModal}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: 'white', padding: '1rem', borderRadius: '0.75rem', maxWidth: '420px', width: '92%', textAlign: 'center' }}>
+              <h3 style={{ marginTop: 0, marginBottom: '0.5rem' }}>QR for {qrHostel.name || 'Hostel'}</h3>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+                <img src={qrImageUrl} alt={`QR code for ${qrHostel.name}`} style={{ width: '320px', height: '320px', maxWidth: '100%' }} />
               </div>
-              <div style={{wordBreak: 'break-all', fontSize: '0.9rem', color: '#374151', marginBottom: '0.75rem'}}>
+              <div style={{ wordBreak: 'break-all', fontSize: '0.9rem', color: '#374151', marginBottom: '0.75rem' }}>
                 <small>
                   {`${window.location.origin || 'https://aatiya-gh.vercel.app'}/hostel/${encodeURIComponent(qrHostel.id)}/add-student${user?.uid ? `?ownerUserId=${encodeURIComponent(user.uid)}` : ''}`}
                 </small>
               </div>
-              <div style={{display: 'flex', gap: '0.5rem', justifyContent: 'center'}}>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                 <button className="btn btn-primary" onClick={() => { navigator.clipboard?.writeText(`${window.location.origin || 'https://aatiya-gh.vercel.app'}/hostel/${encodeURIComponent(qrHostel.id)}/add-student`); }}>
                   Copy Link
                 </button>
-                <a className="btn btn-secondary" href={qrImageUrl} download={`hostel-${qrHostel.id}-qr.png`} style={{textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem 0.75rem', borderRadius: '0.375rem'}}>
+                <a className="btn btn-secondary" href={qrImageUrl} download={`hostel-${qrHostel.id}-qr.png`} style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem 0.75rem', borderRadius: '0.375rem' }}>
                   Download
                 </a>
-                <button className="btn" onClick={closeQrModal} style={{background: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '0.375rem'}}>
+                <button className="btn" onClick={closeQrModal} style={{ background: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '0.375rem' }}>
                   Close
                 </button>
               </div>
