@@ -50,7 +50,17 @@ const StudentPayments = () => {
 
         if (!paymentsRes.ok) throw new Error('Failed to fetch payments');
         const paymentsData = await paymentsRes.json();
-        setPayments(paymentsData.data || []);
+        // normalize and sort payments (newest first)
+        const rawPayments = paymentsData.data || [];
+        const normalized = rawPayments
+          .map(p => ({
+            ...p,
+            amount: Number(p.amount) || 0,
+            type: p.type || 'credit',
+            timestamp: p.timestamp || p.createdAt || new Date().toISOString(),
+          }))
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        setPayments(normalized);
 
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -68,9 +78,14 @@ const StudentPayments = () => {
       const token = localStorage.getItem('token');
       if (!token) return alert('Not authenticated');
 
+      // capture numeric amount and type before resetting state
+      const amount = Number(newPayment.amount) || 0;
+      const type = newPayment.type || 'credit';
+
       const payload = {
         ...newPayment,
-        amount: Number(newPayment.amount),
+        amount,
+        type,
         timestamp: new Date().toISOString()
       };
 
@@ -88,7 +103,13 @@ const StudentPayments = () => {
       const data = await res.json();
       
       // Update payments list and reset form
-      setPayments(prev => [data, ...prev]);
+      const newEntry = {
+        ...data,
+        amount,
+        type,
+        timestamp: payload.timestamp,
+      };
+      setPayments(prev => [newEntry, ...prev]);
       setNewPayment({
         amount: '',
         paymentMode: 'cash',
@@ -96,11 +117,15 @@ const StudentPayments = () => {
         type: 'credit'
       });
 
-      // Update student's current balance
-      setStudent(prev => ({
-        ...prev,
-        currentBalance: prev.currentBalance - (newPayment.type === 'credit' ? Number(newPayment.amount) : -Number(newPayment.amount))
-      }));
+      // Update student's current balance (assume currentBalance = amount owed)
+      setStudent(prev => {
+        const prevBalance = Number(prev?.currentBalance) || 0;
+        const newBalance = type === 'credit' ? prevBalance - amount : prevBalance + amount;
+        return {
+          ...prev,
+          currentBalance: newBalance
+        };
+      });
 
     } catch (err) {
       console.error('Failed to add payment:', err);
@@ -133,6 +158,25 @@ const StudentPayments = () => {
       minute: '2-digit'
     });
   };
+
+  const formatCurrency = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
+
+  const calculateTotals = (paymentsArr) => {
+    let totalCredit = 0;
+    let totalDebit = 0;
+    (paymentsArr || []).forEach(p => {
+      const amt = Number(p.amount) || 0;
+      if (p.type === 'credit') totalCredit += amt;
+      else totalDebit += amt;
+    });
+    const netPaid = totalCredit - totalDebit;
+    return { totalCredit, totalDebit, netPaid };
+  };
+
+  // derived totals for UI
+  const totals = calculateTotals(payments);
+  const studentFees = Number(student?.hostelFees ?? student?.fees ?? student?.totalFees ?? 0);
+  const feesDue = studentFees ? Math.max(0, studentFees - totals.netPaid) : null;
 
   return (
     <div style={styles.container}>
@@ -224,6 +268,28 @@ const StudentPayments = () => {
                 <h3>Payment History</h3>
                 <button onClick={() => setShowHistory(false)} style={styles.closeButton}>×</button>
               </div>
+              {/* Summary */}
+              <div style={styles.historySummary}>
+                <div style={styles.summaryItem}>
+                  <div style={styles.summaryLabel}>Total Paid</div>
+                  <div style={{ ...styles.summaryValue, color: '#059669' }}>{formatCurrency(totals.totalCredit)}</div>
+                </div>
+                <div style={styles.summaryItem}>
+                  <div style={styles.summaryLabel}>Total Refunds</div>
+                  <div style={{ ...styles.summaryValue, color: '#dc2626' }}>{formatCurrency(totals.totalDebit)}</div>
+                </div>
+                <div style={styles.summaryItem}>
+                  <div style={styles.summaryLabel}>Net Paid</div>
+                  <div style={styles.summaryValue}>{formatCurrency(totals.netPaid)}</div>
+                </div>
+                {studentFees > 0 && (
+                  <div style={styles.summaryItem}>
+                    <div style={styles.summaryLabel}>Fees Due</div>
+                    <div style={{ ...styles.summaryValue, color: feesDue > 0 ? '#b91c1c' : '#059669' }}>{formatCurrency(feesDue)}</div>
+                  </div>
+                )}
+              </div>
+
               <div style={styles.historyList}>
                 {payments.length === 0 ? (
                   <div style={styles.noHistory}>No payment records found</div>
@@ -424,6 +490,30 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  historySummary: {
+    display: 'flex',
+    gap: '1rem',
+    padding: '1rem',
+    borderBottom: '1px solid #eef2ff',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap'
+  },
+  summaryItem: {
+    minWidth: '140px',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  summaryLabel: {
+    fontSize: '0.75rem',
+    color: '#6b7280',
+  },
+  summaryValue: {
+    fontSize: '1rem',
+    fontWeight: 700,
+    color: '#111827'
   },
   closeButton: {
     background: 'none',
