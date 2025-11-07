@@ -32,7 +32,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onr
 const AdminDashboard = () => {
   const [hostels, setHostels] = useState([]);
   const [showAddHostel, setShowAddHostel] = useState(false);
-  const [newHostel, setNewHostel] = useState({ name: '', address: '', name_hi: '', address_hi: '' });
+  const [newHostel, setNewHostel] = useState({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: 0, monthlyFeeCurrency: 'INR' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const HOSTELS_PER_PAGE = 8;
@@ -333,7 +333,10 @@ const fetchHostels = async () => {
         address: newHostel.address,
         // include bilingual fields; backend may store or ignore them
         name_hi: newHostel.name_hi || '',
-        address_hi: newHostel.address_hi || ''
+        address_hi: newHostel.address_hi || '',
+        // monthly fee (per person) and currency
+        monthlyFee: (newHostel.monthlyFee != null ? Number(newHostel.monthlyFee) : 0),
+        monthlyFeeCurrency: newHostel.monthlyFeeCurrency || 'INR'
       };
 
       if (newHostel.id) {
@@ -366,7 +369,7 @@ const fetchHostels = async () => {
         setHostels(prev => [...prev, created]);
       }
 
-      setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' });
+  setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: 0, monthlyFeeCurrency: 'INR' });
       setShowAddHostel(false);
       setError('');
       setCurrentPage(1);
@@ -1209,6 +1212,23 @@ const fetchHostels = async () => {
                   style={applyResponsiveStyles(styles.input)}
                 />
                 <button type="button" onClick={() => { setKeyboardTarget('address_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                <input
+                  name="monthlyFee"
+                  className="input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newHostel.monthlyFee}
+                  onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFee: e.target.value }))}
+                  placeholder="Monthly fee per student"
+                  style={{ ...applyResponsiveStyles(styles.input), maxWidth: 220 }}
+                />
+                <select value={newHostel.monthlyFeeCurrency} onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFeeCurrency: e.target.value }))} style={{ padding: '0.75rem 1rem', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>
+                  <option value="INR">INR</option>
+                  <option value="USD">USD</option>
+                </select>
               </div>
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
