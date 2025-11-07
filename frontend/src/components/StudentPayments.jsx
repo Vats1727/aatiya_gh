@@ -357,9 +357,20 @@ const StudentPayments = () => {
                         <tr>
                           <td>{formatDate(student.createdAt || new Date().toISOString())}</td>
                           <td>—</td>
-                          <td>{hasCustomFee ? 'Applied Monthly Fee' : 'Monthly Fee'}</td>
-                          <td style={{ textAlign: 'right', color: '#dc2626' }}>{formatCurrency(usedFee)}</td>
-                          <td style={{ textAlign: 'right' }}></td>
+                          <td>
+                            {hasCustomFee ? (
+                              <div>
+                                <div>Applied Monthly Fee</div>
+                                <div style={{ fontSize: '0.8em', color: '#6b7280' }}>
+                                  (Standard: {formatCurrency(monthlyFee)})
+                                </div>
+                              </div>
+                            ) : 'Monthly Fee'}
+                          </td>
+                          <td style={{ textAlign: 'right', color: '#dc2626' }}>
+                            {formatCurrency(usedFee)}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>—</td>
                         </tr>
                         {payments.map((payment, i) => (
                           <tr key={i}>
