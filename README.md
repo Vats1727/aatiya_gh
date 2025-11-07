@@ -1,7 +1,10 @@
 ## Aatiya Girls Hostel (aatiya_gh)
 
+<<<<<<< HEAD
 Comprehensive README describing this repository: a full-stack admission & hostel management app with bilingual (English/Hindi) support, QR-based anonymous student intake, PDF admission form generation, and an admin dashboard.
 
+=======
+>>>>>>> 08cb18016457a398c57afef587771c32afe6b9b1
 ---
 
 ## Table of contents
@@ -28,8 +31,11 @@ This repository implements a hostel admission system for Aatiya Girls Hostel. It
 - Per-hostel monthly fee configuration and per-student applied fee at acceptance.
 - PDF generation of the admission form (two-page: filled form + rules) using HTML templates.
 
+<<<<<<< HEAD
 This README summarizes how the app is organized, how to run it, and where the important code lives.
 
+=======
+>>>>>>> 08cb18016457a398c57afef587771c32afe6b9b1
 ---
 
 ## Architecture & tech stack
@@ -39,7 +45,10 @@ This README summarizes how the app is organized, how to run it, and where the im
 - Authentication: JWT-based tokens for admin routes (stored in localStorage). Helper functions centralize header creation.
 - PDF: HTML templates rendered to PDF via a client-side generator (html→canvas→PDF) using utilities in `frontend/src/utils/`.
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 08cb18016457a398c57afef587771c32afe6b9b1
 ---
 
 ## Key features (what this repo implements)
@@ -165,7 +174,11 @@ npm run dev
 ```powershell
 cd frontend
 npm run build
+<<<<<<< HEAD
 # Then serve `frontend/dist` with a static host for tests, or deploy to Vercel/Netlify
+=======
+
+>>>>>>> 08cb18016457a398c57afef587771c32afe6b9b1
 ```
 
 Environment variables

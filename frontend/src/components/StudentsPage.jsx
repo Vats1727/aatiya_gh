@@ -48,12 +48,12 @@ const StudentsPage = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        
+
         if (!token) {
           navigate('/admin');
           return;
         }
-        
+
         // Fetch students for this hostel using the correct endpoint
         const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
           headers: {
@@ -61,12 +61,12 @@ const StudentsPage = () => {
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (!response.ok) throw new Error('Failed to fetch students');
-        
+
         const data = await response.json();
         setStudents(data.data || []);
-        
+
         // If we have students, we can get hostel details from the first student or set a default
         if (data.data && data.data.length > 0) {
           setHostel({
@@ -76,7 +76,7 @@ const StudentsPage = () => {
             address: data.data[0].hostelAddress || ''
           });
         }
-        
+
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err.message);
@@ -196,7 +196,7 @@ const StudentsPage = () => {
       } catch (e) {
         // ignore
       }
-    }).catch(() => {});
+    }).catch(() => { });
     return () => { mounted = false; };
   }, [hostel && hostel.name, hostel && hostel.name_hi]);
 
@@ -289,7 +289,7 @@ const StudentsPage = () => {
     try {
       await updateStudentStatus(student.id, 'rejected');
       // Update local state immediately for better UX
-      setStudents(prev => prev.map(s => 
+      setStudents(prev => prev.map(s =>
         s.id === student.id ? { ...s, status: 'rejected' } : s
       ));
     } catch (error) {
@@ -462,12 +462,12 @@ const StudentsPage = () => {
     if (error) return [];
 
     const results = students.filter(student => {
-      const matchesSearch = searchTerm === '' || 
+      const matchesSearch = searchTerm === '' ||
         (student.studentName && student.studentName.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (student.applicationNumber && student.applicationNumber.toString().includes(searchTerm)) ||
         (student.combinedId && student.combinedId.toString().includes(searchTerm));
 
-      const matchesStatus = statusFilter === 'all' || 
+      const matchesStatus = statusFilter === 'all' ||
         (statusFilter === 'pending' && (!student.status || student.status === 'pending')) ||
         (statusFilter === 'approved' && student.status === 'approved') ||
         (statusFilter === 'rejected' && student.status === 'rejected');
@@ -563,20 +563,20 @@ const StudentsPage = () => {
         const display = stored?.name || stored?.displayName || (stored?.email && stored.email.split('@')[0]) || null;
         if (!display) return null;
         return (
-          <div style={{background: 'white', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 8, zIndex: 50}}>
-            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem'}}>
-              <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>
-                <div style={{width:48,height:48,borderRadius:'50%',backgroundColor:'#8b5cf6',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:'1.25rem',fontWeight:'bold'}}>
+          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 8, zIndex: 50 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.25rem', fontWeight: 'bold' }}>
                   {String(display).charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div style={{fontSize:'1rem',fontWeight:600,color:'#111827'}}>{display}</div>
-                  <div style={{fontSize:'0.875rem',color:'#6b7280'}}>{stored?.email || ''}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#111827' }}>{display}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{stored?.email || ''}</div>
                 </div>
               </div>
-              <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
-                <button onClick={() => navigate('/admin/dashboard')} style={{padding:'0.5rem 0.75rem',borderRadius:8,border:'none',background:'#06b6d4',color:'white',cursor:'pointer'}}>Hostel list</button>
-                <button onClick={() => { localStorage.removeItem('token'); navigate('/admin'); }} style={{padding:'0.5rem 0.75rem',borderRadius:8,border:'none',background:'#ef4444',color:'white',cursor:'pointer'}}>Logout</button>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <button onClick={() => navigate('/admin/dashboard')} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: 'none', background: '#06b6d4', color: 'white', cursor: 'pointer' }}>Hostel list</button>
+                <button onClick={() => { localStorage.removeItem('token'); navigate('/admin'); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer' }}>Logout</button>
               </div>
             </div>
           </div>
@@ -636,7 +636,7 @@ const StudentsPage = () => {
           </div>
 
           <div style={{ marginLeft: 'auto' }}>
-            <button 
+            <button
               onClick={handleAddStudent}
               style={styles.addButton}
               aria-label="Add New Student"
@@ -647,7 +647,7 @@ const StudentsPage = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Search and Filter Section */}
       <div style={styles.searchFilterContainer}>
         <div style={styles.searchContainer}>
@@ -663,40 +663,40 @@ const StudentsPage = () => {
             style={styles.searchInput}
           />
         </div>
-        
-          <div style={styles.filterContainer}>
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1); // Reset to first page when changing filter
-              }}
-              style={styles.statusFilter}
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Accepted</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
 
-          <div style={styles.filterContainer}>
-            <select
-              value={sortOption}
-              onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
-              style={styles.statusFilter}
-              aria-label="Sort students"
-            >
-              <option value="name_asc">Name: A → Z</option>
-              <option value="name_desc">Name: Z → A</option>
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="acc_asc">Account No ↑</option>
-              <option value="acc_desc">Account No ↓</option>
-            </select>
-          </div>
+        <div style={styles.filterContainer}>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1); // Reset to first page when changing filter
+            }}
+            style={styles.statusFilter}
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Active</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+
+        <div style={styles.filterContainer}>
+          <select
+            value={sortOption}
+            onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
+            style={styles.statusFilter}
+            aria-label="Sort students"
+          >
+            <option value="name_asc">Name: A → Z</option>
+            <option value="name_desc">Name: Z → A</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="acc_asc">Account No ↑</option>
+            <option value="acc_desc">Account No ↓</option>
+          </select>
+        </div>
       </div>
-      
+
       <div className="card" style={styles.tableContainer}>
         <div style={styles.tableHeader}>
           <h3>Students</h3>
@@ -704,7 +704,7 @@ const StudentsPage = () => {
             Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of {filteredStudents.length} students
           </div>
         </div>
-        
+
         {filteredStudents.length === 0 ? (
           <div style={styles.emptyState}>
             <p>No students found matching your criteria.</p>
@@ -726,14 +726,14 @@ const StudentsPage = () => {
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                       <div style={styles.avatar}>{String((student.studentName || 'U').charAt(0)).toUpperCase()}</div>
                       <div>
-                          <div style={styles.nameText}>{student.studentName || student.name || 'N/A'}</div>
+                        <div style={styles.nameText}>{student.studentName || student.name || 'N/A'}</div>
                         <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{student.mobile1 || 'N/A'}</div>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ marginBottom: 8 }}>
                         <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
-                          {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
+                          {student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
                         </span>
                       </div>
                       <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{computedAppNo}</div>
@@ -770,8 +770,9 @@ const StudentsPage = () => {
               <tr>
                 <th style={styles.th}>Application No.</th>
                 <th style={styles.th}>Name</th>
-                <th style={styles.th}>Status</th>
                 <th style={styles.th}>Mobile Number</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Current Balance</th>
                 <th style={styles.th}>Actions</th>
               </tr>
             </thead>
@@ -786,59 +787,78 @@ const StudentsPage = () => {
                 })();
 
                 return (
-                <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
-                  <td style={styles.td}>{computedAppNo}</td>
-                  <td style={styles.td}>
-                    <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
-                  </td>
-                  <td style={styles.td}>
-                    <span style={{...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {})}}>
-                      {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
-                    </span>
-                  </td>
-                  <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
-                  <td style={styles.td}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={() => handleAccept(student)}
-                        style={{
-                          ...styles.iconButton,
-                          ...styles.acceptButton,
-                          visibility: student.status === 'approved' ? 'hidden' : 'visible'
-                        }}
-                        title="Accept"
-                        aria-hidden={student.status === 'approved'}
-                        disabled={student.status === 'approved'}
-                      >
-                        <Check size={16} />
-                      </button>
+                  <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
+                    <td style={styles.td}>{computedAppNo}</td>
+                    <td style={styles.td}>
+                      <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
+                    </td>
+                    <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
+                    <td style={styles.td}>
+                      <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
+                        {student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
+                      </span>
+                    </td>
+                    <td style={styles.td}>
+                      {student.status === 'approved' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontWeight: 'bold' }}>
+                            {student.currentBalance ? `₹${student.currentBalance}` : '₹0'}
+                          </span>
+                        </div>
+                      ) : '-'}
+                    </td>
+                    <td style={styles.td}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {student.status === 'approved' && (
+                          <button
+                            onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/payments`)}
+                            style={{
+                              ...styles.iconButton,
+                              background: '#10b981',
+                              color: 'white',
+                            }}
+                            title="Payment"
+                          >
+                            ₹
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleAccept(student)}
+                          style={{
+                            ...styles.iconButton,
+                            ...styles.acceptButton,
+                            visibility: student.status === 'approved' ? 'hidden' : 'visible'
+                          }}
+                          title="Accept"
+                          aria-hidden={student.status === 'approved'}
+                          disabled={student.status === 'approved'}
+                        >
+                          <Check size={16} />
+                        </button>
 
-                      <button
-                        onClick={() => handleReject(student)}
-                        style={{
-                          ...styles.iconButton,
-                          ...styles.rejectButton,
-                          visibility: student.status === 'approved' ? 'hidden' : 'visible'
-                        }}
-                        title="Reject"
-                        aria-hidden={student.status === 'approved'}
-                        disabled={student.status === 'approved'}
-                      >
-                        <X size={16} />
-                      </button>
-                      <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
-                        <Edit size={16} />
-                      </button>
-                      <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
-                        <Download size={16} />
-                      </button>
-                      <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
-                        <Eye size={16} />
-                      </button>
-                      <button onClick={() => openPayment(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Payment">
-                        <CreditCard size={16} />
-                      </button>
-                      <button onClick={async () => {
+                        <button
+                          onClick={() => handleReject(student)}
+                          style={{
+                            ...styles.iconButton,
+                            ...styles.rejectButton,
+                            visibility: student.status === 'approved' ? 'hidden' : 'visible'
+                          }}
+                          title="Reject"
+                          aria-hidden={student.status === 'approved'}
+                          disabled={student.status === 'approved'}
+                        >
+                          <X size={16} />
+                        </button>
+                        <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
+                          <Edit size={16} />
+                        </button>
+                        <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
+                          <Download size={16} />
+                        </button>
+                        <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
+                          <Eye size={16} />
+                        </button>
+                        <button onClick={async () => {
                           if (!confirm('Delete this student? This cannot be undone.')) return;
                           try {
                             const token = localStorage.getItem('token');
@@ -850,79 +870,22 @@ const StudentsPage = () => {
                             alert('Failed to delete student');
                           }
                         }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete">
-                        <Trash2 size={16} />
-                      </button>
-                      
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                          <Trash2 size={16} />
+                        </button>
+
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
-        {paymentVisible && paymentStudent && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: 'min(720px, 96%)', maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: 8, padding: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <h3 style={{ margin: 0 }}>Record payment — {paymentStudent.studentName || paymentStudent.name}</h3>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => { setPaymentVisible(false); setPaymentStudent(null); }} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>Close</button>
-                  <button onClick={handleSavePayment} disabled={paymentProcessing} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff' }}>{paymentProcessing ? 'Saving...' : 'Save Payment'}</button>
-                </div>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>Current balance</div>
-                  <div style={{ fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div>{paymentStudent.__computed ? (paymentStudent.__computed.currentBal || 0) : '0'}</div>
-                    <Info size={16} style={{ cursor: 'pointer', color: '#6b7280' }} onClick={() => setPaymentInfoOpen(v => !v)} />
-                  </div>
-
-                  {paymentInfoOpen && (
-                    <div style={{ border: '1px solid #e5e7eb', padding: 10, borderRadius: 6, background: '#fafafa', marginBottom: 8 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Payment history</div>
-                      {paymentHistory.length === 0 && <div style={{ fontSize: 12, color: '#6b7280' }}>No payments recorded</div>}
-                      {paymentHistory.map((p, idx) => (
-                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px dashed #eee' }}>
-                          <div style={{ fontSize: 13 }}>{new Date(p.date).toLocaleDateString()} • {p.mode || 'Cash'}</div>
-                          <div style={{ fontWeight: 600 }}>{p.amount}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>Remarks</div>
-                  <textarea value={paymentRemarks} onChange={(e) => setPaymentRemarks(e.target.value)} rows={4} style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }} />
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>Amount</div>
-                  <input type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb', width: '100%', marginBottom: 12 }} />
-
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>Mode</div>
-                  <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb', width: '100%', marginBottom: 12 }}>
-                    <option>Cash</option>
-                    <option>UPI</option>
-                    <option>Card</option>
-                    <option>Bank Transfer</option>
-                  </select>
-
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>Closing balance</div>
-                  <div style={{ fontWeight: 700, marginTop: 6 }}>
-                    {paymentStudent.__computed ? (Number(paymentStudent.__computed.currentBal) - (Number(paymentAmount) || 0)) : (-(Number(paymentAmount) || 0))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
         {/* Pagination */}
         {filteredStudents.length > ITEMS_PER_PAGE && (
           <div style={styles.pagination}>
-            <button 
+            <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               style={{
@@ -934,7 +897,7 @@ const StudentsPage = () => {
             >
               <ChevronLeft size={18} />
             </button>
-            
+
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               // Show first page, last page, current page, and pages around current page
               let pageNum;
@@ -947,9 +910,9 @@ const StudentsPage = () => {
               } else {
                 pageNum = currentPage - 2 + i;
               }
-              
+
               if (pageNum > totalPages) return null;
-              
+
               return (
                 <button
                   key={pageNum}
@@ -964,8 +927,8 @@ const StudentsPage = () => {
                 </button>
               );
             })}
-            
-            <button 
+
+            <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               style={{
@@ -977,13 +940,13 @@ const StudentsPage = () => {
             >
               <ChevronRight size={18} />
             </button>
-            
+
             <div style={styles.pageInfo}>
               Page {currentPage} of {totalPages}
             </div>
           </div>
         )}
-        
+
         {/* result count moved to table header (top-right) */}
         {previewVisible && previewStudent && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1021,9 +984,18 @@ const StudentsPage = () => {
                   <div style={{ fontSize: 12, color: '#6b7280' }}>Monthly Fee</div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <input type="number" value={previewFee} onChange={(e) => setPreviewFee(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb', width: '140px' }} />
-                    <select value={previewCurrency} onChange={(e) => setPreviewCurrency(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb' }}>
-                      <option value="INR">INR</option>
-                    </select>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        padding: '8px',
+                        borderRadius: 6,
+                        border: '1px solid #e5e7eb',
+                        background: '#fff',
+                      }}
+                    >
+                      {previewCurrency || 'INR'}
+                    </span>
+
                   </div>
                 </div>
               </div>
@@ -1430,7 +1402,7 @@ const styles = {
       boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.1)',
     },
   },
-  
+
   // Pagination Styles
   pagination: {
     display: 'flex',
@@ -1485,7 +1457,7 @@ const styles = {
     fontSize: '0.875rem',
     textAlign: 'right'
   },
-  
+
   // Empty State
   emptyState: {
     padding: '3rem 1rem',
