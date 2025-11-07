@@ -553,7 +553,7 @@ const StudentsPage = () => {
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
-            <option value="approved">Accepted</option>
+            <option value="approved">Active</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
@@ -611,7 +611,7 @@ const StudentsPage = () => {
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ marginBottom: 8 }}>
                         <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
-                          {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
+                          {student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
                         </span>
                       </div>
                       <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{computedAppNo}</div>
@@ -647,8 +647,9 @@ const StudentsPage = () => {
               <tr>
                 <th style={styles.th}>Application No.</th>
                 <th style={styles.th}>Name</th>
-                <th style={styles.th}>Status</th>
                 <th style={styles.th}>Mobile Number</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Current Balance</th>
                 <th style={styles.th}>Actions</th>
               </tr>
             </thead>
@@ -668,14 +669,36 @@ const StudentsPage = () => {
                     <td style={styles.td}>
                       <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
                     </td>
-                    <td style={styles.td}>
-                      <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
-                        {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
-                      </span>
-                    </td>
                     <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                     <td style={styles.td}>
+                      <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
+                        {student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
+                      </span>
+                    </td>
+                    <td style={styles.td}>
+                      {student.status === 'approved' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontWeight: 'bold' }}>
+                            {student.currentBalance ? `₹${student.currentBalance}` : '₹0'}
+                          </span>
+                        </div>
+                      ) : '-'}
+                    </td>
+                    <td style={styles.td}>
                       <div style={{ display: 'flex', gap: '8px' }}>
+                        {student.status === 'approved' && (
+                          <button
+                            onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/payments`)}
+                            style={{
+                              ...styles.iconButton,
+                              background: '#10b981',
+                              color: 'white',
+                            }}
+                            title="Payment"
+                          >
+                            ₹
+                          </button>
+                        )}
                         <button
                           onClick={() => handleAccept(student)}
                           style={{
