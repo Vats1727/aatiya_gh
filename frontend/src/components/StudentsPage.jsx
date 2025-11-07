@@ -461,19 +461,48 @@ const StudentsPage = () => {
         );
       })()}
       <div className="header" style={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {(() => {
-              const hi = (hostel && (hostel.name_hi || translitNameHi)) || '';
-              const en = hostel?.name || '';
-              const normHi = String(hi).trim();
-              const normEn = String(en).trim();
-              const showBoth = normHi && normEn && normHi !== normEn;
+              const rawHi = (hostel && (hostel.name_hi || translitNameHi)) || '';
+              const rawEn = hostel?.name || '';
+              const hi = String(rawHi || '').trim();
+              const en = String(rawEn || '').trim();
+              const hasDevanagari = /[\u0900-\u097F]/.test(hi);
+              const different = hi && en && (hi !== en);
+
+              if (hasDevanagari && en) {
+                return (
+                  <>
+                    <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{hi}</div>
+                    <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{en} - Student list</div>
+                    {(hostel && (hostel.monthlyFee != null && hostel.monthlyFee !== '')) && (
+                      <div style={{ fontSize: '0.9rem', color: '#374151', marginTop: 6 }}>
+                        Monthly fee: {hostel.monthlyFeeCurrency === 'INR' ? `₹${hostel.monthlyFee}` : `${hostel.monthlyFee} ${hostel.monthlyFeeCurrency}`} per student
+                      </div>
+                    )}
+                  </>
+                );
+              }
+
+              if (different) {
+                return (
+                  <>
+                    <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{en}</div>
+                    <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{hi} - Student list</div>
+                    {(hostel && (hostel.monthlyFee != null && hostel.monthlyFee !== '')) && (
+                      <div style={{ fontSize: '0.9rem', color: '#374151', marginTop: 6 }}>
+                        Monthly fee: {hostel.monthlyFeeCurrency === 'INR' ? `₹${hostel.monthlyFee}` : `${hostel.monthlyFee} ${hostel.monthlyFeeCurrency}`} per student
+                      </div>
+                    )}
+                  </>
+                );
+              }
+
+              const main = hi || en || 'Hostel Students';
               return (
                 <>
-                  <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{normHi || normEn || 'Hostel Students'}</div>
-                  {showBoth && <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{normEn} - Student list</div>}
-                  {!normHi && normEn && <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{normEn} - Student list</div>}
+                  <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{main}</div>
                   {(hostel && (hostel.monthlyFee != null && hostel.monthlyFee !== '')) && (
                     <div style={{ fontSize: '0.9rem', color: '#374151', marginTop: 6 }}>
                       Monthly fee: {hostel.monthlyFeeCurrency === 'INR' ? `₹${hostel.monthlyFee}` : `${hostel.monthlyFee} ${hostel.monthlyFeeCurrency}`} per student
@@ -483,15 +512,17 @@ const StudentsPage = () => {
               );
             })()}
           </div>
-          
-          <button 
-            onClick={handleAddStudent}
-            style={styles.addButton}
-            aria-label="Add New Student"
-          >
-            <UserPlus size={18} style={{ marginLeft: '6px', flexShrink: 0 }} />
-            <span>Add Student</span>
-          </button>
+
+          <div style={{ marginLeft: 'auto' }}>
+            <button 
+              onClick={handleAddStudent}
+              style={styles.addButton}
+              aria-label="Add New Student"
+            >
+              <UserPlus size={18} style={{ marginLeft: '6px', flexShrink: 0 }} />
+              <span>Add Student</span>
+            </button>
+          </div>
         </div>
       </div>
       
