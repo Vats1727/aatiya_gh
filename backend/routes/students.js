@@ -122,10 +122,12 @@ router.get('/:id/pdf', async (req, res) => {
 });
 
 // Get student payments
-router.get('/users/:userId/hostels/:hostelId/students/:studentId/payments', async (req, res) => {
+router.get('/:studentId/payments', async (req, res) => {
   if (!db) return res.status(500).send('Firestore not initialized');
   try {
-    const { userId, hostelId, studentId } = req.params;
+    const { hostelId } = req.params;
+    const { studentId } = req.params;
+    const userId = req.user.userId || req.user.uid; // Get userId from auth middleware
     const studentRef = db.collection('users').doc(userId)
                         .collection('hostels').doc(hostelId)
                         .collection('students').doc(studentId);
@@ -187,7 +189,7 @@ router.get('/users/:userId/hostels/:hostelId/students/:studentId/payments', asyn
 });
 
 // Add new payment
-router.post('/users/:userId/hostels/:hostelId/students/:studentId/payments', async (req, res) => {
+router.post('/:studentId/payments', async (req, res) => {
   if (!db) return res.status(500).send('Firestore not initialized');
   try {
     const { id } = req.params;
