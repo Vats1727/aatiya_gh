@@ -187,18 +187,16 @@ const StudentPayments = () => {
   const totalDebit = payments.filter(p => p.type === 'debit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
   const netPaid = totalCredit - totalDebit;
 
-  // Calculate current balance (positive = pending, negative = advance)
-  const currentBalance = usedFee - netPaid;
+  // Current balance (positive = pending, negative = advance).
+  // Prefer the fee-based calculation (usedFee - netPaid) when available; otherwise fall back to
+  // the server-provided student.currentBalance.
+  const currentBalance = (usedFee != null)
+    ? (usedFee - netPaid)
+    : (Number(student?.currentBalance) || 0);
 
   // For UI
   const feesDue = currentBalance > 0 ? currentBalance : 0;
   const advancePaid = currentBalance < 0 ? Math.abs(currentBalance) : 0;
-
-  // derive current balance: prefer fee-based calculation (applied or monthly) when available,
-  // fallback to student.currentBalance when fee info is missing
-  const derivedCurrentBalance = (usedFee != null)
-    ? (usedFee - totals.netPaid)
-    : (Number(student?.currentBalance) || 0);
 
   return (
     <div style={styles.container}>
@@ -217,9 +215,9 @@ const StudentPayments = () => {
             <span>Current Balance:</span>
             <div style={{
               ...styles.balanceAmount,
-              color: derivedCurrentBalance < 0 ? '#dc2626' : '#059669'
+              color: currentBalance < 0 ? '#dc2626' : '#059669'
             }}>
-              {formatCurrency(derivedCurrentBalance)}
+              {formatCurrency(currentBalance)}
               <button
                 onClick={() => setShowHistory(!showHistory)}
                 style={styles.infoButton}
@@ -297,15 +295,15 @@ const StudentPayments = () => {
               <div style={styles.historySummary}>
                 <div style={styles.summaryItem}>
                   <div style={styles.summaryLabel}>Total Paid</div>
-                  <div style={{ ...styles.summaryValue, color: '#059669' }}>{formatCurrency(totals.totalCredit)}</div>
+                  <div style={{ ...styles.summaryValue, color: '#059669' }}>{formatCurrency(totalCredit)}</div>
                 </div>
                 <div style={styles.summaryItem}>
                   <div style={styles.summaryLabel}>Total Refunds</div>
-                  <div style={{ ...styles.summaryValue, color: '#dc2626' }}>{formatCurrency(totals.totalDebit)}</div>
+                  <div style={{ ...styles.summaryValue, color: '#dc2626' }}>{formatCurrency(totalDebit)}</div>
                 </div>
                 <div style={styles.summaryItem}>
                   <div style={styles.summaryLabel}>Net Paid</div>
-                  <div style={styles.summaryValue}>{formatCurrency(totals.netPaid)}</div>
+                  <div style={styles.summaryValue}>{formatCurrency(netPaid)}</div>
                 </div>
 
                 {/* Show applied vs monthly fee when available */}
