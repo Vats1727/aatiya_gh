@@ -12,6 +12,10 @@ const StudentsPage = () => {
   const { hostelId } = useParams();
   const navigate = useNavigate();
   const [hostel, setHostel] = useState(null);
+  const [previewStudent, setPreviewStudent] = useState(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewFee, setPreviewFee] = useState('');
+  const [previewCurrency, setPreviewCurrency] = useState('INR');
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -22,14 +26,6 @@ const StudentsPage = () => {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
   const [translitNameHi, setTranslitNameHi] = useState('');
   const [translitAddressHi, setTranslitAddressHi] = useState('');
-  const [hostelMonthlyFee, setHostelMonthlyFee] = useState(null);
-  const [feesModalStudent, setFeesModalStudent] = useState(null);
-  const [feeInput, setFeeInput] = useState('');
-  const [feeMonth, setFeeMonth] = useState(() => {
-    try {
-      return new Date().toISOString().slice(0,7); // YYYY-MM default
-    } catch (e) { return '' }
-  });
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640);
@@ -69,29 +65,6 @@ const StudentsPage = () => {
             name: data.data[0].hostelName || 'Hostel',
             address: data.data[0].hostelAddress || ''
           });
-          // If backend returned hostel-level fee attached to student docs, pick it; otherwise fetch hostel metadata
-          const maybe = data.data[0];
-          if (maybe && maybe.hostelMonthlyFee != null) {
-            setHostelMonthlyFee(Number(maybe.hostelMonthlyFee));
-          } else {
-            // try to fetch hostel metadata for monthlyFee
-            try {
-              const token = localStorage.getItem('token');
-              if (token) {
-                const r2 = await fetch(`${API_BASE}/api/users/me/hostels`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (r2.ok) {
-                  const p2 = await r2.json();
-                  const list = p2.data || [];
-                  const found = list.find(h => String(h.id) === String(hostelId));
-                  if (found && (found.monthlyFee != null || found.monthlyFee === 0)) {
-                    setHostelMonthlyFee(Number(found.monthlyFee || found.monthlyFee === 0 ? found.monthlyFee : found.monthlyFee));
-                  }
-                }
-              }
-            } catch (e) {
-              // ignore
-            }
-          }
         }
         
       } catch (err) {
@@ -159,7 +132,7 @@ const StudentsPage = () => {
         const list = payload.data || [];
         const found = list.find(h => String(h.id) === String(hostelId));
         if (found) {
-          setHostel(prev => ({ ...(prev || {}), id: hostelId, name: found.name || found.displayName || found.hostelName || prev?.name || 'Hostel', address: found.address || prev?.address || '' }));
+          setHostel(prev => ({ ...(prev || {}), id: hostelId, name: found.name || found.displayName || found.hostelName || prev?.name || 'Hostel', address: found.address || prev?.address || '', monthlyFee: (found.monthlyFee != null ? found.monthlyFee : (found.monthlyfee != null ? found.monthlyfee : 0)), monthlyFeeCurrency: found.monthlyFeeCurrency || found.monthlyfeeCurrency || 'INR' }));
         }
       } catch (err) {
         // ignore errors — we already have fallback from student docs
@@ -199,15 +172,39 @@ const StudentsPage = () => {
     }
   };
 
+  // Open preview modal before accepting so admin can review and adjust fee
   const handleAccept = async (student) => {
+    // determine default fee: student.appliedFee || hostel.monthlyFee || 0
+    const defaultFee = (student.appliedFee != null && student.appliedFee !== '') ? student.appliedFee : (hostel && (hostel.monthlyFee || hostel.monthlyfee) ? hostel.monthlyFee : 0);
+    const defaultCurrency = (student.appliedFeeCurrency || (hostel && hostel.monthlyFeeCurrency)) || 'INR';
+    setPreviewStudent(student);
+    setPreviewFee(defaultFee);
+    setPreviewCurrency(defaultCurrency || 'INR');
+    setPreviewVisible(true);
+  };
+
+  const confirmAccept = async () => {
+    if (!previewStudent) return;
     try {
-      await updateStudentStatus(student.id, 'approved');
-      // Update local state immediately for better UX
-      setStudents(prev => prev.map(s => 
-        s.id === student.id ? { ...s, status: 'approved' } : s
-      ));
-    } catch (error) {
-      console.error('Failed to accept student:', error);
+      const token = localStorage.getItem('token');
+      if (!token) return alert('Not authenticated');
+      const payload = { status: 'approved', appliedFee: Number(previewFee) || 0, appliedFeeCurrency: previewCurrency || 'INR' };
+      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${previewStudent.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || 'Failed to update student');
+      }
+      const updated = await res.json();
+      setStudents(prev => prev.map(s => s.id === previewStudent.id ? { ...s, ...updated } : s));
+      setPreviewVisible(false);
+      setPreviewStudent(null);
+    } catch (err) {
+      console.error('Failed to accept with fee:', err);
+      alert('Failed to accept student');
     }
   };
 
@@ -230,61 +227,6 @@ const StudentsPage = () => {
     } catch (err) {
       console.error('Download failed', err);
       alert('Failed to download PDF');
-    }
-  };
-
-  const closeFeesModal = () => {
-    setFeesModalStudent(null);
-    setFeeInput('');
-  };
-
-  const saveFeeForStudent = async () => {
-    if (!feesModalStudent) return;
-    const token = localStorage.getItem('token');
-    if (!token) return alert('Not authenticated');
-    const amt = Number(String(feeInput).trim() || 0);
-    try {
-      // Prepare transaction entry and update fee summary on student doc
-      const feeStatus = (hostelMonthlyFee != null && amt >= Number(hostelMonthlyFee)) ? 'credited' : (amt > 0 ? 'debit' : 'unpaid');
-      const txn = {
-        amount: amt,
-        month: feeMonth || new Date().toISOString().slice(0,7),
-        at: new Date().toISOString(),
-        by: (JSON.parse(localStorage.getItem('user') || 'null') || {}).email || 'admin',
-      };
-      const payload = { 
-        // keep previous feePaid / feeStatus for compatibility
-        feePaid: amt,
-        feeStatus,
-        // add transactional record - backend should append to 'feeHistory' array or we send whole history
-        feeTxn: txn
-      };
-      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${feesModalStudent.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || 'Failed to save fee');
-      }
-      const updated = await res.json();
-      // backend may return updated object or success wrapper
-      const upd = (updated && (updated.data || updated)) || {};
-      // update local state: merge feeHistory (if returned) or append txn locally
-      setStudents(prev => prev.map(s => {
-        if (s.id !== feesModalStudent.id) return s;
-        const next = { ...s, ...upd };
-        if (!next.feeHistory || !Array.isArray(next.feeHistory)) next.feeHistory = Array.isArray(s.feeHistory) ? [...s.feeHistory] : [];
-        // Append txn if backend didn't return history
-        if (!next.feeHistory.find(f => f.at === txn.at)) next.feeHistory.push(txn);
-        return next;
-      }));
-      closeFeesModal();
-      alert('Fee saved');
-    } catch (err) {
-      console.error('Failed to save fee', err);
-      alert('Failed to save fee. See console for details.');
     }
   };
 
@@ -537,20 +479,11 @@ const StudentsPage = () => {
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-                    {/* Show payment button only when approved */}
-                    {student.status === 'approved' && (
-                      <button onClick={() => {
-                        // open fees modal for this student
-                        setFeesModalStudent(student);
-                        setFeeInput(student.feePaid != null ? String(student.feePaid) : '');
-                      }} style={{ ...styles.iconButton, backgroundColor: '#fff7ed', color: '#92400e' }} title="Payments">
-                        ₹
-                      </button>
-                    )}
                     <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Accept"><Check size={16} /></button>
                     <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Reject"><X size={16} /></button>
                     <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
                     <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
+                    <button onClick={() => { setPreviewStudent(student); setPreviewFee((student.appliedFee != null) ? student.appliedFee : (hostel && hostel.monthlyFee) || 0); setPreviewCurrency(student.appliedFeeCurrency || (hostel && hostel.monthlyFeeCurrency) || 'INR'); setPreviewVisible(true); }} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
                     <button onClick={async () => {
                       if (!confirm('Delete this student? This cannot be undone.')) return;
                       try {
@@ -599,9 +532,6 @@ const StudentsPage = () => {
                     <span style={{...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {})}}>
                       {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
                     </span>
-                    <div style={{ marginTop: 6 }}>
-                      <strong>Payment:</strong> {student.feePaid != null ? `₹${student.feePaid} (${student.feeStatus || 'N/A'})` : (student.feeHistory && student.feeHistory.length ? `₹${student.feeHistory.reduce((sum, f) => sum + Number(f.amount || 0), 0)} (history)` : 'N/A')}
-                    </div>
                   </td>
                   <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                   <td style={styles.td}>
@@ -619,16 +549,7 @@ const StudentsPage = () => {
                       >
                         <Check size={16} />
                       </button>
-                      {/* Payments button (table) - visible only when approved */}
-                      {student.status === 'approved' && (
-                        <button onClick={() => {
-                          setFeesModalStudent(student);
-                          setFeeInput(student.feePaid != null ? String(student.feePaid) : '');
-                        }} style={{ ...styles.iconButton, backgroundColor: '#fff7ed', color: '#92400e' }} title="Payments">
-                          ₹
-                        </button>
-                      )}
-                      
+
                       <button
                         onClick={() => handleReject(student)}
                         style={{
@@ -647,6 +568,9 @@ const StudentsPage = () => {
                       </button>
                       <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
                         <Download size={16} />
+                      </button>
+                      <button onClick={() => { setPreviewStudent(student); setPreviewFee((student.appliedFee != null) ? student.appliedFee : (hostel && hostel.monthlyFee) || 0); setPreviewCurrency(student.appliedFeeCurrency || (hostel && hostel.monthlyFeeCurrency) || 'INR'); setPreviewVisible(true); }} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
+                        <Eye size={16} />
                       </button>
                       <button onClick={async () => {
                           if (!confirm('Delete this student? This cannot be undone.')) return;
@@ -668,38 +592,9 @@ const StudentsPage = () => {
                 </tr>
               );
             })}
-              </tbody>
-              </table>
-            )}
-
-            {feesModalStudent && (
-              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '100%', maxWidth: 920, background: 'white', borderRadius: 8, padding: 16, maxHeight: '90vh', overflow: 'auto' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <div style={{ fontSize: 18, fontWeight: 700 }}>Student Submission (Read only)</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={closeFeesModal} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: '#ef4444', color: '#fff' }}>Close</button>
-                    </div>
-                  </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <div><strong>Name:</strong> {feesModalStudent.studentName}</div>
-                    <div><strong>Mobile:</strong> {feesModalStudent.mobile1}</div>
-                    <div><strong>Application No:</strong> {feesModalStudent.applicationNumber || feesModalStudent.combinedId || ''}</div>
-                    <div><strong>Status:</strong> {feesModalStudent.status}</div>
-                  </div>
-                  <div style={{ borderTop: '1px solid #eee', paddingTop: 12 }}>
-                    <h4>Fees</h4>
-                          <div style={{ marginBottom: 8 }}>Hostel monthly fee: {hostelMonthlyFee != null ? `₹${hostelMonthlyFee}` : 'N/A'}</div>
-                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <label style={{ fontSize: 12 }}>Month:</label>
-                            <input type="month" value={feeMonth} onChange={(e) => setFeeMonth(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
-                            <input type="number" value={feeInput} onChange={(e) => setFeeInput(e.target.value)} placeholder="Enter amount" style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', width: 160 }} />
-                            <button onClick={saveFeeForStudent} style={{ padding: '8px 12px', borderRadius: 6, background: '#10b981', color: 'white', border: 'none' }}>Save Fee</button>
-                          </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            </tbody>
+          </table>
+        )}
         
         {/* Pagination */}
         {filteredStudents.length > ITEMS_PER_PAGE && (
@@ -766,34 +661,57 @@ const StudentsPage = () => {
           </div>
         )}
         
-            {/* Fees modal for mobile (re-use same modal below) */}
-            {feesModalStudent && (
-              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '100%', maxWidth: 920, background: 'white', borderRadius: 8, padding: 16, maxHeight: '90vh', overflow: 'auto' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <div style={{ fontSize: 18, fontWeight: 700 }}>Student Submission (Read only)</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={closeFeesModal} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: '#ef4444', color: '#fff' }}>Close</button>
-                    </div>
-                  </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <div><strong>Name:</strong> {feesModalStudent.studentName}</div>
-                    <div><strong>Mobile:</strong> {feesModalStudent.mobile1}</div>
-                    <div><strong>Application No:</strong> {feesModalStudent.applicationNumber || feesModalStudent.combinedId || ''}</div>
-                    <div><strong>Status:</strong> {feesModalStudent.status}</div>
-                  </div>
-                  <div style={{ borderTop: '1px solid #eee', paddingTop: 12 }}>
-                    <h4>Fees</h4>
-                    <div style={{ marginBottom: 8 }}>Hostel monthly fee: {hostelMonthlyFee != null ? `₹${hostelMonthlyFee}` : 'N/A'}</div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <input type="number" value={feeInput} onChange={(e) => setFeeInput(e.target.value)} placeholder="Enter amount" style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', width: 160 }} />
-                      <button onClick={saveFeeForStudent} style={{ padding: '8px 12px', borderRadius: 6, background: '#10b981', color: 'white', border: 'none' }}>Save Fee</button>
-                    </div>
+        {/* result count moved to table header (top-right) */}
+        {previewVisible && previewStudent && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 'min(920px, 96%)', maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: 8, padding: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <h3 style={{ margin: 0 }}>Preview student — {previewStudent.studentName || previewStudent.name}</h3>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => { setPreviewVisible(false); setPreviewStudent(null); }} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>Close</button>
+                  <button onClick={confirmAccept} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff' }}>Accept & Save</button>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Student Name</div>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>{previewStudent.studentName || '-'}</div>
+
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Father's Name</div>
+                  <div style={{ marginBottom: 8 }}>{previewStudent.fatherName || '-'}</div>
+
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Mother's Name</div>
+                  <div style={{ marginBottom: 8 }}>{previewStudent.motherName || '-'}</div>
+
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Mobile</div>
+                  <div style={{ marginBottom: 8 }}>{previewStudent.mobile1 || '-'}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Hostel</div>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>{(hostel && (hostel.name_hi || hostel.name)) || previewStudent.hostelName || '-'}</div>
+
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Address</div>
+                  <div style={{ marginBottom: 8 }}>{(hostel && (hostel.address_hi || hostel.address)) || previewStudent.hostelAddress || '-'}</div>
+
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Monthly Fee</div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                    <input type="number" value={previewFee} onChange={(e) => setPreviewFee(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb', width: '140px' }} />
+                    <select value={previewCurrency} onChange={(e) => setPreviewCurrency(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb' }}>
+                      <option value="INR">INR</option>
+                      <option value="USD">USD</option>
+                    </select>
                   </div>
                 </div>
               </div>
-            )}
-        {/* result count moved to table header (top-right) */}
+
+              <div style={{ marginTop: 14 }}>
+                <button onClick={() => downloadStudentPdf(previewStudent)} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: '#0ea5a4', color: '#fff' }}>Download PDF</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
