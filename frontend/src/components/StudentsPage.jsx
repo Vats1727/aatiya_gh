@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight, CreditCard, Info } from 'lucide-react';
+import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { renderStudentPrintHtml, renderRulesHtml } from '../utils/printTemplate';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import '../styles.css';
@@ -17,15 +17,6 @@ const StudentsPage = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewFee, setPreviewFee] = useState('');
   const [previewCurrency, setPreviewCurrency] = useState('INR');
-  // Payment UI state
-  const [paymentVisible, setPaymentVisible] = useState(false);
-  const [paymentStudent, setPaymentStudent] = useState(null);
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentMode, setPaymentMode] = useState('Cash');
-  const [paymentRemarks, setPaymentRemarks] = useState('');
-  const [paymentHistory, setPaymentHistory] = useState([]);
-  const [paymentInfoOpen, setPaymentInfoOpen] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -48,12 +39,12 @@ const StudentsPage = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-
+        
         if (!token) {
           navigate('/admin');
           return;
         }
-
+        
         // Fetch students for this hostel using the correct endpoint
         const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
           headers: {
@@ -61,12 +52,12 @@ const StudentsPage = () => {
             'Content-Type': 'application/json'
           }
         });
-
+        
         if (!response.ok) throw new Error('Failed to fetch students');
-
+        
         const data = await response.json();
         setStudents(data.data || []);
-
+        
         // If we have students, we can get hostel details from the first student or set a default
         if (data.data && data.data.length > 0) {
           setHostel({
@@ -76,7 +67,7 @@ const StudentsPage = () => {
             address: data.data[0].hostelAddress || ''
           });
         }
-
+        
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err.message);
@@ -196,7 +187,7 @@ const StudentsPage = () => {
       } catch (e) {
         // ignore
       }
-    }).catch(() => { });
+    }).catch(() => {});
     return () => { mounted = false; };
   }, [hostel && hostel.name, hostel && hostel.name_hi]);
 
@@ -289,7 +280,7 @@ const StudentsPage = () => {
     try {
       await updateStudentStatus(student.id, 'rejected');
       // Update local state immediately for better UX
-      setStudents(prev => prev.map(s =>
+      setStudents(prev => prev.map(s => 
         s.id === student.id ? { ...s, status: 'rejected' } : s
       ));
     } catch (error) {
@@ -343,131 +334,18 @@ const StudentsPage = () => {
     }
   };
 
-      // Helper: compute number of whole months between admission (or start) and now
-      const getMonthsSince = (dateStr) => {
-        try {
-          const start = dateStr ? new Date(dateStr) : null;
-          if (!start || isNaN(start)) return 0;
-          const now = new Date();
-          const years = now.getFullYear() - start.getFullYear();
-          const months = now.getMonth() - start.getMonth();
-          const total = years * 12 + months + (now.getDate() >= start.getDate() ? 0 : 0);
-          return Math.max(0, total + 1); // include current month as due
-        } catch (e) {
-          return 0;
-        }
-      };
-
-      // Open payment modal for a student: enrich with hostel metadata and compute balances
-      const openPayment = async (student) => {
-        try {
-          let merged = { ...student };
-          const hostelDoc = student.hostelDocId || student.ownerHostelDocId || hostel?.id || hostelId;
-          // Try authenticated fetch of hostel
-          const token = localStorage.getItem('token');
-          if (token) {
-            try {
-              const resp = await fetch(`${API_BASE}/api/users/me/hostels`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
-              if (resp.ok) {
-                const p = await resp.json();
-                const list = p?.data || p || [];
-                const found = list.find(h => String(h.id) === String(hostelDoc) || String(h.docId) === String(hostelDoc));
-                if (found) merged = { ...found, ...merged, monthlyFee: (found.monthlyFee != null ? found.monthlyFee : merged.monthlyFee), monthlyFeeCurrency: found.monthlyFeeCurrency || merged.monthlyFeeCurrency || 'INR' };
-              }
-            } catch (e) { /* continue to public */ }
-          }
-
-          if ((!merged.monthlyFee && merged.monthlyFee !== 0) || merged.monthlyFee == null) {
-            const pub = await fetchPublicHostel(hostelDoc, student.ownerUserId || student.owner || student.ownerId || null);
-            if (pub) merged = { ...merged, monthlyFee: (pub.monthlyFee != null ? pub.monthlyFee : merged.monthlyFee), monthlyFeeCurrency: pub.monthlyFeeCurrency || merged.monthlyFeeCurrency || 'INR' };
-          }
-
-          // Payment history stored on student.payments (if any)
-          const history = Array.isArray(merged.payments) ? merged.payments.slice().sort((a,b)=> new Date(b.date) - new Date(a.date)) : [];
-          setPaymentHistory(history);
-
-          // compute fee per month: prefer student.appliedFee, else hostel monthlyFee
-          const feePerMonth = (merged.appliedFee != null && merged.appliedFee !== '') ? Number(merged.appliedFee) : Number(merged.monthlyFee || 0);
-          const startDate = merged.admissionDate || merged.createdAt || merged._createdAt || merged.joinedAt || null;
-          const monthsDue = getMonthsSince(startDate);
-          const totalDue = monthsDue * feePerMonth;
-          const totalPaid = history.reduce((s, p) => s + (Number(p.amount || 0)), 0);
-          const currentBal = Number(totalDue) - Number(totalPaid);
-
-          setPaymentStudent(merged);
-          setPaymentAmount('');
-          setPaymentMode('Cash');
-          setPaymentRemarks('');
-          setPaymentVisible(true);
-          // store computed balances on state by reusing previewFee for display -- but better create locals
-          // We'll store as properties on paymentStudent for quick display
-          setPaymentHistory(history);
-          // attach computed balances
-          merged.__computed = { feePerMonth, monthsDue, totalDue, totalPaid, currentBal };
-          setPaymentStudent(merged);
-        } catch (err) {
-          console.error('openPayment error', err);
-          setPaymentStudent(student);
-          setPaymentHistory(Array.isArray(student.payments) ? student.payments : []);
-          setPaymentVisible(true);
-        }
-      };
-
-      // Save a payment for the current paymentStudent by appending to payments and persisting via PUT
-      const handleSavePayment = async () => {
-        if (!paymentStudent) return;
-        const amt = Number(paymentAmount);
-        if (!amt || isNaN(amt) || amt <= 0) return alert('Please enter a valid payment amount');
-        setPaymentProcessing(true);
-        try {
-          const token = localStorage.getItem('token');
-          if (!token) { alert('Not authenticated'); setPaymentProcessing(false); return; }
-          const studentId = paymentStudent.id;
-          const newPayment = { date: new Date().toISOString(), amount: Number(amt), mode: paymentMode || 'Cash', remarks: paymentRemarks || '' };
-          const updatedPayments = Array.isArray(paymentHistory) ? [ ...paymentHistory, newPayment ] : [ newPayment ];
-
-          const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ payments: updatedPayments })
-          });
-
-          if (!res.ok) {
-            const txt = await res.text();
-            throw new Error(txt || 'Failed to save payment');
-          }
-
-          const payload = await res.json();
-          const updatedStudent = (payload && payload.data) ? payload.data : payload;
-          // update local students list
-          setStudents(prev => prev.map(s => (s.id === updatedStudent.id ? updatedStudent : s)));
-          // close modal and reset
-          setPaymentVisible(false);
-          setPaymentStudent(null);
-          setPaymentHistory([]);
-          setPaymentAmount('');
-          setPaymentRemarks('');
-          alert('Payment recorded');
-        } catch (err) {
-          console.error('Failed to save payment', err);
-          alert('Failed to record payment');
-        } finally {
-          setPaymentProcessing(false);
-        }
-      };
-
   // Move hooks to the top level
   const filteredStudents = useMemo(() => {
     if (loading) return [];
     if (error) return [];
 
     const results = students.filter(student => {
-      const matchesSearch = searchTerm === '' ||
+      const matchesSearch = searchTerm === '' || 
         (student.studentName && student.studentName.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (student.applicationNumber && student.applicationNumber.toString().includes(searchTerm)) ||
         (student.combinedId && student.combinedId.toString().includes(searchTerm));
 
-      const matchesStatus = statusFilter === 'all' ||
+      const matchesStatus = statusFilter === 'all' || 
         (statusFilter === 'pending' && (!student.status || student.status === 'pending')) ||
         (statusFilter === 'approved' && student.status === 'approved') ||
         (statusFilter === 'rejected' && student.status === 'rejected');
@@ -563,20 +441,20 @@ const StudentsPage = () => {
         const display = stored?.name || stored?.displayName || (stored?.email && stored.email.split('@')[0]) || null;
         if (!display) return null;
         return (
-          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 8, zIndex: 50 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.25rem', fontWeight: 'bold' }}>
+          <div style={{background: 'white', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 8, zIndex: 50}}>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>
+                <div style={{width:48,height:48,borderRadius:'50%',backgroundColor:'#8b5cf6',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:'1.25rem',fontWeight:'bold'}}>
                   {String(display).charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#111827' }}>{display}</div>
-                  <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{stored?.email || ''}</div>
+                  <div style={{fontSize:'1rem',fontWeight:600,color:'#111827'}}>{display}</div>
+                  <div style={{fontSize:'0.875rem',color:'#6b7280'}}>{stored?.email || ''}</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <button onClick={() => navigate('/admin/dashboard')} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: 'none', background: '#06b6d4', color: 'white', cursor: 'pointer' }}>Hostel list</button>
-                <button onClick={() => { localStorage.removeItem('token'); navigate('/admin'); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer' }}>Logout</button>
+              <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
+                <button onClick={() => navigate('/admin/dashboard')} style={{padding:'0.5rem 0.75rem',borderRadius:8,border:'none',background:'#06b6d4',color:'white',cursor:'pointer'}}>Hostel list</button>
+                <button onClick={() => { localStorage.removeItem('token'); navigate('/admin'); }} style={{padding:'0.5rem 0.75rem',borderRadius:8,border:'none',background:'#ef4444',color:'white',cursor:'pointer'}}>Logout</button>
               </div>
             </div>
           </div>
@@ -636,7 +514,7 @@ const StudentsPage = () => {
           </div>
 
           <div style={{ marginLeft: 'auto' }}>
-            <button
+            <button 
               onClick={handleAddStudent}
               style={styles.addButton}
               aria-label="Add New Student"
@@ -647,7 +525,7 @@ const StudentsPage = () => {
           </div>
         </div>
       </div>
-
+      
       {/* Search and Filter Section */}
       <div style={styles.searchFilterContainer}>
         <div style={styles.searchContainer}>
@@ -663,40 +541,40 @@ const StudentsPage = () => {
             style={styles.searchInput}
           />
         </div>
+        
+          <div style={styles.filterContainer}>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1); // Reset to first page when changing filter
+              }}
+              style={styles.statusFilter}
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Accepted</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
 
-        <div style={styles.filterContainer}>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setCurrentPage(1); // Reset to first page when changing filter
-            }}
-            style={styles.statusFilter}
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Active</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </div>
-
-        <div style={styles.filterContainer}>
-          <select
-            value={sortOption}
-            onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
-            style={styles.statusFilter}
-            aria-label="Sort students"
-          >
-            <option value="name_asc">Name: A → Z</option>
-            <option value="name_desc">Name: Z → A</option>
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="acc_asc">Account No ↑</option>
-            <option value="acc_desc">Account No ↓</option>
-          </select>
-        </div>
+          <div style={styles.filterContainer}>
+            <select
+              value={sortOption}
+              onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
+              style={styles.statusFilter}
+              aria-label="Sort students"
+            >
+              <option value="name_asc">Name: A → Z</option>
+              <option value="name_desc">Name: Z → A</option>
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="acc_asc">Account No ↑</option>
+              <option value="acc_desc">Account No ↓</option>
+            </select>
+          </div>
       </div>
-
+      
       <div className="card" style={styles.tableContainer}>
         <div style={styles.tableHeader}>
           <h3>Students</h3>
@@ -704,7 +582,7 @@ const StudentsPage = () => {
             Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of {filteredStudents.length} students
           </div>
         </div>
-
+        
         {filteredStudents.length === 0 ? (
           <div style={styles.emptyState}>
             <p>No students found matching your criteria.</p>
@@ -726,14 +604,14 @@ const StudentsPage = () => {
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                       <div style={styles.avatar}>{String((student.studentName || 'U').charAt(0)).toUpperCase()}</div>
                       <div>
-                        <div style={styles.nameText}>{student.studentName || student.name || 'N/A'}</div>
+                          <div style={styles.nameText}>{student.studentName || student.name || 'N/A'}</div>
                         <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{student.mobile1 || 'N/A'}</div>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ marginBottom: 8 }}>
                         <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
-                          {student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
+                          {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
                         </span>
                       </div>
                       <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{computedAppNo}</div>
@@ -746,7 +624,6 @@ const StudentsPage = () => {
                     <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
                     <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
                     <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
-                    <button onClick={() => openPayment(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Payment"><CreditCard size={16} /></button>
                     <button onClick={async () => {
                       if (!confirm('Delete this student? This cannot be undone.')) return;
                       try {
@@ -770,9 +647,8 @@ const StudentsPage = () => {
               <tr>
                 <th style={styles.th}>Application No.</th>
                 <th style={styles.th}>Name</th>
-                <th style={styles.th}>Mobile Number</th>
                 <th style={styles.th}>Status</th>
-                <th style={styles.th}>Current Balance</th>
+                <th style={styles.th}>Mobile Number</th>
                 <th style={styles.th}>Actions</th>
               </tr>
             </thead>
@@ -787,78 +663,56 @@ const StudentsPage = () => {
                 })();
 
                 return (
-                  <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
-                    <td style={styles.td}>{computedAppNo}</td>
-                    <td style={styles.td}>
-                      <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
-                    </td>
-                    <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
-                    <td style={styles.td}>
-                      <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
-                        {student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      {student.status === 'approved' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontWeight: 'bold' }}>
-                            {student.currentBalance ? `₹${student.currentBalance}` : '₹0'}
-                          </span>
-                        </div>
-                      ) : '-'}
-                    </td>
-                    <td style={styles.td}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        {student.status === 'approved' && (
-                          <button
-                            onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/payments`)}
-                            style={{
-                              ...styles.iconButton,
-                              background: '#10b981',
-                              color: 'white',
-                            }}
-                            title="Payment"
-                          >
-                            ₹
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleAccept(student)}
-                          style={{
-                            ...styles.iconButton,
-                            ...styles.acceptButton,
-                            visibility: student.status === 'approved' ? 'hidden' : 'visible'
-                          }}
-                          title="Accept"
-                          aria-hidden={student.status === 'approved'}
-                          disabled={student.status === 'approved'}
-                        >
-                          <Check size={16} />
-                        </button>
+                <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
+                  <td style={styles.td}>{computedAppNo}</td>
+                  <td style={styles.td}>
+                    <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={{...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {})}}>
+                      {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
+                    </span>
+                  </td>
+                  <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
+                  <td style={styles.td}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => handleAccept(student)}
+                        style={{
+                          ...styles.iconButton,
+                          ...styles.acceptButton,
+                          visibility: student.status === 'approved' ? 'hidden' : 'visible'
+                        }}
+                        title="Accept"
+                        aria-hidden={student.status === 'approved'}
+                        disabled={student.status === 'approved'}
+                      >
+                        <Check size={16} />
+                      </button>
 
-                        <button
-                          onClick={() => handleReject(student)}
-                          style={{
-                            ...styles.iconButton,
-                            ...styles.rejectButton,
-                            visibility: student.status === 'approved' ? 'hidden' : 'visible'
-                          }}
-                          title="Reject"
-                          aria-hidden={student.status === 'approved'}
-                          disabled={student.status === 'approved'}
-                        >
-                          <X size={16} />
-                        </button>
-                        <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
-                          <Edit size={16} />
-                        </button>
-                        <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
-                          <Download size={16} />
-                        </button>
-                        <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
-                          <Eye size={16} />
-                        </button>
-                        <button onClick={async () => {
+                      <button
+                        onClick={() => handleReject(student)}
+                        style={{
+                          ...styles.iconButton,
+                          ...styles.rejectButton,
+                          visibility: student.status === 'approved' ? 'hidden' : 'visible'
+                        }}
+                        title="Reject"
+                        aria-hidden={student.status === 'approved'}
+                        disabled={student.status === 'approved'}
+                      >
+                        <X size={16} />
+                      </button>
+                      <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
+                        <Edit size={16} />
+                      </button>
+                      <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
+                        <Download size={16} />
+                      </button>
+                      <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
+                        <Eye size={16} />
+                      </button>
+                      <button onClick={async () => {
                           if (!confirm('Delete this student? This cannot be undone.')) return;
                           try {
                             const token = localStorage.getItem('token');
@@ -870,22 +724,22 @@ const StudentsPage = () => {
                             alert('Failed to delete student');
                           }
                         }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete">
-                          <Trash2 size={16} />
-                        </button>
-
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                        <Trash2 size={16} />
+                      </button>
+                      
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
             </tbody>
           </table>
         )}
-
+        
         {/* Pagination */}
         {filteredStudents.length > ITEMS_PER_PAGE && (
           <div style={styles.pagination}>
-            <button
+            <button 
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               style={{
@@ -897,7 +751,7 @@ const StudentsPage = () => {
             >
               <ChevronLeft size={18} />
             </button>
-
+            
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               // Show first page, last page, current page, and pages around current page
               let pageNum;
@@ -910,9 +764,9 @@ const StudentsPage = () => {
               } else {
                 pageNum = currentPage - 2 + i;
               }
-
+              
               if (pageNum > totalPages) return null;
-
+              
               return (
                 <button
                   key={pageNum}
@@ -927,8 +781,8 @@ const StudentsPage = () => {
                 </button>
               );
             })}
-
-            <button
+            
+            <button 
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               style={{
@@ -940,13 +794,13 @@ const StudentsPage = () => {
             >
               <ChevronRight size={18} />
             </button>
-
+            
             <div style={styles.pageInfo}>
               Page {currentPage} of {totalPages}
             </div>
           </div>
         )}
-
+        
         {/* result count moved to table header (top-right) */}
         {previewVisible && previewStudent && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -984,18 +838,9 @@ const StudentsPage = () => {
                   <div style={{ fontSize: 12, color: '#6b7280' }}>Monthly Fee</div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <input type="number" value={previewFee} onChange={(e) => setPreviewFee(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb', width: '140px' }} />
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        padding: '8px',
-                        borderRadius: 6,
-                        border: '1px solid #e5e7eb',
-                        background: '#fff',
-                      }}
-                    >
-                      {previewCurrency || 'INR'}
-                    </span>
-
+                    <select value={previewCurrency} onChange={(e) => setPreviewCurrency(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb' }}>
+                      <option value="INR">INR</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -1402,7 +1247,7 @@ const styles = {
       boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.1)',
     },
   },
-
+  
   // Pagination Styles
   pagination: {
     display: 'flex',
@@ -1457,7 +1302,7 @@ const styles = {
     fontSize: '0.875rem',
     textAlign: 'right'
   },
-
+  
   // Empty State
   emptyState: {
     padding: '3rem 1rem',
