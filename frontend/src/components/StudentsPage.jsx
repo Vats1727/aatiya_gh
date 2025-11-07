@@ -290,8 +290,44 @@ const StudentsPage = () => {
 
   const handleDownload = async (student) => {
     try {
-      // student object should contain full form data saved earlier; pass directly to PDF util
-      await downloadStudentPdf(student);
+      // Ensure hostel bilingual fields and address are present on student before PDF generation
+      let merged = { ...student };
+      const hostelDoc = student.hostelDocId || student.ownerHostelDocId || hostel?.id || hostelId;
+      // Attempt authenticated fetch of hostels to enrich data
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const resp = await fetch(`${API_BASE}/api/users/me/hostels`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+          if (resp.ok) {
+            const p = await resp.json();
+            const list = p?.data || p || [];
+            const found = list.find(h => String(h.id) === String(hostelDoc) || String(h.docId) === String(hostelDoc));
+            if (found) {
+              merged = { ...found, ...merged, hostelName: found.name || merged.hostelName, hostelNameHi: found.name_hi || merged.hostelNameHi, hostelAddress: found.address || merged.hostelAddress, hostelAddressHi: found.address_hi || merged.hostelAddressHi };
+            }
+          }
+        } catch (e) {
+          // ignore and fall back to public
+        }
+      }
+
+      // If still missing, try public endpoint
+      if ((!merged.hostelName && !merged.hostelNameHi) || (!merged.hostelAddress && !merged.hostelAddressHi)) {
+        try {
+          const pub = await fetch(`${API_BASE}/api/public/hostels/${encodeURIComponent(hostelDoc)}${(student.ownerUserId || student.owner || student.ownerId) ? `?ownerUserId=${encodeURIComponent(student.ownerUserId || student.owner || student.ownerId)}` : ''}`);
+          if (pub.ok) {
+            const payload = await pub.json();
+            const data = payload?.data || payload || null;
+            if (data) {
+              merged = { ...merged, hostelName: data.name || merged.hostelName, hostelNameHi: data.name_hi || merged.hostelNameHi, hostelAddress: data.address || merged.hostelAddress, hostelAddressHi: data.address_hi || merged.hostelAddressHi };
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      await downloadStudentPdf(merged);
     } catch (err) {
       console.error('Download failed', err);
       alert('Failed to download PDF');
