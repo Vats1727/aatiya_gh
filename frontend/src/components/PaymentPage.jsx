@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Info } from 'lucide-react';
 
-const API_BASE = process.env.REACT_APP_API_BASE || '';
+// Use the same API_BASE as other components
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3000';
+
+// For debugging
+console.log('API_BASE:', API_BASE);
 
 // Helper to calculate closing balance
 const calculateClosingBalance = (currentBalance, amount) => {
@@ -33,6 +37,8 @@ const PaymentPage = () => {
           return;
         }
 
+        console.log('Fetching from:', `${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`);
+
         // Fetch student details
         const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
           headers: {
@@ -41,10 +47,34 @@ const PaymentPage = () => {
           }
         });
 
-        if (!response.ok) throw new Error('Failed to fetch student');
+        // Log response status and headers for debugging
+        console.log('Response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
 
-        const data = await response.json();
+        if (!response.ok) {
+          const text = await response.text();
+          console.error('Response text:', text);
+          throw new Error(`Failed to fetch student: ${response.status} ${text}`);
+        }
+
+        // Try to parse as JSON
+        let data;
+        try {
+          const text = await response.text();
+          console.log('Response text:', text);
+          data = JSON.parse(text);
+        } catch (parseError) {
+          console.error('JSON Parse Error:', parseError);
+          throw new Error('Invalid JSON response from server');
+        }
+
         const studentData = data.data || data; // Handle both response formats
+        
+        if (!studentData) {
+          throw new Error('No student data received');
+        }
+
+        console.log('Received student data:', studentData);
         
         setStudent(studentData);
         setCurrentBalance(studentData.currentBalance || 0);
@@ -56,7 +86,7 @@ const PaymentPage = () => {
 
       } catch (err) {
         console.error('Error fetching data:', err);
-        alert('Error loading student data');
+        alert(`Error loading student data: ${err.message}`);
       } finally {
         setLoading(false);
       }
