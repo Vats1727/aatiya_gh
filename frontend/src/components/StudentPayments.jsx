@@ -189,11 +189,11 @@ const StudentPayments = () => {
 
   const feesDue = (usedFee != null) ? Math.max(0, usedFee - totals.netPaid) : null;
 
-  // derive current balance: prefer fee-based calculation (applied or monthly) when available,
-  // fallback to student.currentBalance when fee info is missing
-  const derivedCurrentBalance = (usedFee != null)
-    ? (usedFee - totals.netPaid)
-    : (Number(student?.currentBalance) || 0);
+  // derive current balance: prefer stored student.currentBalance when present (sync with StudentsPage),
+  // otherwise compute from usedFee - netPaid
+  const derivedCurrentBalance = (student && (student.currentBalance != null))
+    ? Number(student.currentBalance)
+    : ((usedFee != null) ? (usedFee - totals.netPaid) : (Number(student?.currentBalance) || 0));
 
   return (
     <div style={styles.container}>

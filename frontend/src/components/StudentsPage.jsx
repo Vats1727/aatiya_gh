@@ -79,6 +79,50 @@ const StudentsPage = () => {
     fetchStudents();
   }, [hostelId]);
 
+  // After students are loaded, compute currentBalance for any student missing it by summing payments
+  useEffect(() => {
+    if (!students || students.length === 0) return;
+    const enrichBalances = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return; // only for authenticated admin
+
+      const updated = await Promise.all(students.map(async (s) => {
+        try {
+          if (s.currentBalance != null) return s; // already present
+
+          // Determine fee to use: appliedFee if present else hostel.monthlyFee else student.monthlyFee
+          const appliedFee = (s.appliedFee != null && s.appliedFee !== '') ? Number(s.appliedFee) : null;
+          const monthly = (s.monthlyFee != null && s.monthlyFee !== '') ? Number(s.monthlyFee) : (hostel && hostel.monthlyFee != null ? Number(hostel.monthlyFee) : 0);
+          const usedFee = (appliedFee && appliedFee > 0) ? appliedFee : monthly;
+
+          // fetch payments for this student
+          const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${s.id}/payments`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+          if (!resp.ok) return s; // leave as-is
+          const payload = await resp.json();
+          const payments = payload.data || [];
+          let totalCredit = 0, totalDebit = 0;
+          payments.forEach(p => {
+            const amt = Number(p.amount) || 0;
+            if ((p.type || 'credit') === 'credit') totalCredit += amt;
+            else totalDebit += amt;
+          });
+
+          // Balance = usedFee - netPaid (netPaid = totalCredit - totalDebit)
+          const netPaid = totalCredit - totalDebit;
+          const balance = (usedFee != null ? Number(usedFee) : 0) - netPaid;
+
+          return { ...s, currentBalance: balance, balanceType: balance > 0 ? 'debit' : 'credit', totalPaid: totalCredit, totalRefunds: totalDebit };
+        } catch (err) {
+          return s;
+        }
+      }));
+
+      setStudents(updated);
+    };
+
+    enrichBalances();
+  }, [students, hostel, hostelId]);
+
   // Helper to fetch public hostel metadata when viewing as an unauthenticated user or via QR links
   const fetchPublicHostel = async (hostelDocId, optOwnerUserId) => {
     try {
