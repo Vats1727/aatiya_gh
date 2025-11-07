@@ -27,6 +27,7 @@ const StudentsPage = () => {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
   const [translitNameHi, setTranslitNameHi] = useState('');
   const [translitAddressHi, setTranslitAddressHi] = useState('');
+  const [balancesLoaded, setBalancesLoaded] = useState(false);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640);
@@ -79,49 +80,42 @@ const StudentsPage = () => {
     fetchStudents();
   }, [hostelId]);
 
-  // After students are loaded, compute currentBalance for any student missing it by summing payments
+  // Fetch balances in a single call to avoid N requests and UI flicker.
   useEffect(() => {
     if (!students || students.length === 0) return;
-    const enrichBalances = async () => {
+    if (balancesLoaded) return; // already enriched
+
+    const fetchBalances = async () => {
       const token = localStorage.getItem('token');
       if (!token) return; // only for authenticated admin
+      try {
+        const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/balances`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+        if (!resp.ok) return setBalancesLoaded(true);
+        const payload = await resp.json();
+        const list = payload.data || [];
+        const map = {};
+        list.forEach(b => { if (b && b.id) map[b.id] = b; });
 
-      const updated = await Promise.all(students.map(async (s) => {
-        try {
-          if (s.currentBalance != null) return s; // already present
-
-          // Determine fee to use: appliedFee if present else hostel.monthlyFee else student.monthlyFee
-          const appliedFee = (s.appliedFee != null && s.appliedFee !== '') ? Number(s.appliedFee) : null;
-          const monthly = (s.monthlyFee != null && s.monthlyFee !== '') ? Number(s.monthlyFee) : (hostel && hostel.monthlyFee != null ? Number(hostel.monthlyFee) : 0);
-          const usedFee = (appliedFee && appliedFee > 0) ? appliedFee : monthly;
-
-          // fetch payments for this student
-          const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${s.id}/payments`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
-          if (!resp.ok) return s; // leave as-is
-          const payload = await resp.json();
-          const payments = payload.data || [];
-          let totalCredit = 0, totalDebit = 0;
-          payments.forEach(p => {
-            const amt = Number(p.amount) || 0;
-            if ((p.type || 'credit') === 'credit') totalCredit += amt;
-            else totalDebit += amt;
-          });
-
-          // Balance = usedFee - netPaid (netPaid = totalCredit - totalDebit)
-          const netPaid = totalCredit - totalDebit;
-          const balance = (usedFee != null ? Number(usedFee) : 0) - netPaid;
-
-          return { ...s, currentBalance: balance, balanceType: balance > 0 ? 'debit' : 'credit', totalPaid: totalCredit, totalRefunds: totalDebit };
-        } catch (err) {
-          return s;
-        }
-      }));
-
-      setStudents(updated);
+        // Merge balances into students in one go to avoid incremental re-renders
+        setStudents(prev => prev.map(s => {
+          const b = map[s.id];
+          if (!b) return s;
+          const merged = { ...s };
+          if (b.currentBalance != null) merged.currentBalance = b.currentBalance;
+          if (b.totalCredit != null) merged.totalPaid = b.totalCredit;
+          if (b.totalDebit != null) merged.totalRefunds = b.totalDebit;
+          if (b.usedFee != null) merged.usedFee = b.usedFee;
+          return merged;
+        }));
+        setBalancesLoaded(true);
+      } catch (err) {
+        console.warn('Failed to fetch aggregated balances', err);
+        setBalancesLoaded(true);
+      }
     };
 
-    enrichBalances();
-  }, [students, hostel, hostelId]);
+    fetchBalances();
+  }, [students, hostelId, balancesLoaded]);
 
   // Helper to fetch public hostel metadata when viewing as an unauthenticated user or via QR links
   const fetchPublicHostel = async (hostelDocId, optOwnerUserId) => {
@@ -544,6 +538,8 @@ const StudentsPage = () => {
               }
 
               const main = hi || en || 'Hostel Students';
+              const displayBalance = (student.currentBalance != null) ? student.currentBalance : (balancesLoaded ? 0 : '—');
+
               return (
                 <>
                   <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{main}</div>
@@ -672,7 +668,7 @@ const StudentsPage = () => {
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', marginRight: 8 }}>
                           <div style={{ fontSize: 12, color: '#6b7280', marginRight: 6 }}>Balance</div>
-                          <div style={{ fontWeight: 600 }}>₹{student.currentBalance != null ? student.currentBalance : 0}</div>
+                          <div style={{ fontWeight: 600 }}>{typeof displayBalance === 'number' ? `₹${displayBalance}` : displayBalance}</div>
                         </div>
                         <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/payments`)} style={{ ...styles.iconButton, ...styles.paymentButton }} title="Payments">💳</button>
                       </>
@@ -716,6 +712,8 @@ const StudentsPage = () => {
                   return 'N/A';
                 })();
 
+                const displayBalance = (student.currentBalance != null) ? student.currentBalance : (balancesLoaded ? 0 : '—');
+
                 return (
                   <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
                     <td style={styles.td}>{computedAppNo}</td>
@@ -730,7 +728,7 @@ const StudentsPage = () => {
                     <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                     <td style={styles.td}>
                       <div style={styles.balanceContainer}>
-                        <span>₹{student.currentBalance || 0}</span>
+                        <span>{typeof displayBalance === 'number' ? `₹${displayBalance}` : displayBalance}</span>
                       </div>
                     </td>
                     <td style={styles.td}>
