@@ -125,9 +125,25 @@ router.get('/:id/pdf', async (req, res) => {
 router.get('/:studentId/payments', async (req, res) => {
   if (!db) return res.status(500).send('Firestore not initialized');
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized - No user found' });
+    }
+
     const { hostelId } = req.params;
     const { studentId } = req.params;
-    const userId = req.user.userId || req.user.uid; // Get userId from auth middleware
+    const userId = req.user.userId || req.user.uid;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid user ID' });
+    }
+
+    if (!hostelId) {
+      return res.status(400).json({ error: 'Hostel ID is required' });
+    }
+
+    if (!studentId) {
+      return res.status(400).json({ error: 'Student ID is required' });
+    }
     const studentRef = db.collection('users').doc(userId)
                         .collection('hostels').doc(hostelId)
                         .collection('students').doc(studentId);
@@ -192,7 +208,17 @@ router.get('/:studentId/payments', async (req, res) => {
 router.post('/:studentId/payments', async (req, res) => {
   if (!db) return res.status(500).send('Firestore not initialized');
   try {
-    const { id } = req.params;
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized - No user found' });
+    }
+
+    const userId = req.user.userId || req.user.uid;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid user ID' });
+    }
+
+    const { hostelId } = req.params;
+    const { studentId } = req.params;
     const payment = req.body;
     
     // Validate payment data
@@ -200,7 +226,9 @@ router.post('/:studentId/payments', async (req, res) => {
       return res.status(400).json({ error: 'Amount and mode are required' });
     }
 
-    const docRef = db.collection('students').doc(id);
+    const docRef = db.collection('users').doc(userId)
+                     .collection('hostels').doc(hostelId)
+                     .collection('students').doc(studentId);
     const doc = await docRef.get();
     
     if (!doc.exists) {

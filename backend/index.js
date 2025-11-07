@@ -71,11 +71,11 @@ app.get('/api/users/me', authMiddleware, async (req, res) => {
 });
 // Mount students router before hostels router so anonymous student submissions
 // (POST /api/students) are not intercepted by the hostels auth middleware.
-// Mount new nested routes under /api/users/me
-app.use('/api/users/me/hostels/:hostelId/students', studentsRouter);
+// Mount new nested routes under /api/users/me with auth middleware
+app.use('/api/users/me/hostels/:hostelId/students', authMiddleware, studentsRouter);
 
-// Keep the old routes for backward compatibility
-app.use('/api/students', studentsRouter);
+// Keep the old routes for backward compatibility but with auth
+app.use('/api/students', authMiddleware, studentsRouter);
 app.use('/api', hostelsRouter);
 
 // Error handling middleware
