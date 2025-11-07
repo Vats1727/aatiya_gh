@@ -25,6 +25,11 @@ const StudentsPage = () => {
   const [hostelMonthlyFee, setHostelMonthlyFee] = useState(null);
   const [feesModalStudent, setFeesModalStudent] = useState(null);
   const [feeInput, setFeeInput] = useState('');
+  const [feeMonth, setFeeMonth] = useState(() => {
+    try {
+      return new Date().toISOString().slice(0,7); // YYYY-MM default
+    } catch (e) { return '' }
+  });
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640);
@@ -239,8 +244,21 @@ const StudentsPage = () => {
     if (!token) return alert('Not authenticated');
     const amt = Number(String(feeInput).trim() || 0);
     try {
-      const feeStatus = (hostelMonthlyFee != null && amt >= Number(hostelMonthlyFee)) ? 'paid' : (amt > 0 ? 'partial' : 'unpaid');
-      const payload = { feePaid: amt, feeStatus };
+      // Prepare transaction entry and update fee summary on student doc
+      const feeStatus = (hostelMonthlyFee != null && amt >= Number(hostelMonthlyFee)) ? 'credited' : (amt > 0 ? 'debit' : 'unpaid');
+      const txn = {
+        amount: amt,
+        month: feeMonth || new Date().toISOString().slice(0,7),
+        at: new Date().toISOString(),
+        by: (JSON.parse(localStorage.getItem('user') || 'null') || {}).email || 'admin',
+      };
+      const payload = { 
+        // keep previous feePaid / feeStatus for compatibility
+        feePaid: amt,
+        feeStatus,
+        // add transactional record - backend should append to 'feeHistory' array or we send whole history
+        feeTxn: txn
+      };
       const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${feesModalStudent.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -251,8 +269,17 @@ const StudentsPage = () => {
         throw new Error(txt || 'Failed to save fee');
       }
       const updated = await res.json();
-      // update local state
-      setStudents(prev => prev.map(s => s.id === feesModalStudent.id ? { ...s, ...updated } : s));
+      // backend may return updated object or success wrapper
+      const upd = (updated && (updated.data || updated)) || {};
+      // update local state: merge feeHistory (if returned) or append txn locally
+      setStudents(prev => prev.map(s => {
+        if (s.id !== feesModalStudent.id) return s;
+        const next = { ...s, ...upd };
+        if (!next.feeHistory || !Array.isArray(next.feeHistory)) next.feeHistory = Array.isArray(s.feeHistory) ? [...s.feeHistory] : [];
+        // Append txn if backend didn't return history
+        if (!next.feeHistory.find(f => f.at === txn.at)) next.feeHistory.push(txn);
+        return next;
+      }));
       closeFeesModal();
       alert('Fee saved');
     } catch (err) {
@@ -572,6 +599,9 @@ const StudentsPage = () => {
                     <span style={{...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {})}}>
                       {student.status ? (student.status === 'approved' ? 'Accepted' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
                     </span>
+                    <div style={{ marginTop: 6 }}>
+                      <strong>Payment:</strong> {student.feePaid != null ? `₹${student.feePaid} (${student.feeStatus || 'N/A'})` : (student.feeHistory && student.feeHistory.length ? `₹${student.feeHistory.reduce((sum, f) => sum + Number(f.amount || 0), 0)} (history)` : 'N/A')}
+                    </div>
                   </td>
                   <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
                   <td style={styles.td}>
@@ -659,11 +689,13 @@ const StudentsPage = () => {
                   </div>
                   <div style={{ borderTop: '1px solid #eee', paddingTop: 12 }}>
                     <h4>Fees</h4>
-                    <div style={{ marginBottom: 8 }}>Hostel monthly fee: {hostelMonthlyFee != null ? `₹${hostelMonthlyFee}` : 'N/A'}</div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <input type="number" value={feeInput} onChange={(e) => setFeeInput(e.target.value)} placeholder="Enter amount" style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', width: 160 }} />
-                      <button onClick={saveFeeForStudent} style={{ padding: '8px 12px', borderRadius: 6, background: '#10b981', color: 'white', border: 'none' }}>Save Fee</button>
-                    </div>
+                          <div style={{ marginBottom: 8 }}>Hostel monthly fee: {hostelMonthlyFee != null ? `₹${hostelMonthlyFee}` : 'N/A'}</div>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <label style={{ fontSize: 12 }}>Month:</label>
+                            <input type="month" value={feeMonth} onChange={(e) => setFeeMonth(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+                            <input type="number" value={feeInput} onChange={(e) => setFeeInput(e.target.value)} placeholder="Enter amount" style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', width: 160 }} />
+                            <button onClick={saveFeeForStudent} style={{ padding: '8px 12px', borderRadius: 6, background: '#10b981', color: 'white', border: 'none' }}>Save Fee</button>
+                          </div>
                   </div>
                 </div>
               </div>
