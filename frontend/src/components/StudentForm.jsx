@@ -1100,8 +1100,17 @@ const HostelAdmissionForm = () => {
         return;
       }
 
-      // Fallback: for legacy top-level student submissions or other cases, trigger PDF download
+      // Fallback: for legacy top-level student submissions or other cases,
+      // navigate to the submission success page so the user always sees confirmation
+      // and can download the PDF from there. Also attempt to generate the PDF in background.
       try {
+        // Navigate first so UI shows success immediately
+        try {
+          navigate('/submission-success', { state: { combinedId: null, formData: formDataWithStatus } });
+        } catch (navErr) {
+          console.error('Navigation to submission-success failed in fallback', navErr);
+        }
+        // Still attempt to generate PDF (best-effort)
         await downloadStudentPdf(formDataWithStatus);
       } catch (err) {
         console.error('Failed to download PDF after save', err);
