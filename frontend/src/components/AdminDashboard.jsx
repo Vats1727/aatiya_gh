@@ -53,6 +53,9 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
   const [qrHostel, setQrHostel] = useState(null);
   const [qrImageUrl, setQrImageUrl] = useState('');
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsHostel, setSettingsHostel] = useState(null);
+  const [settingsCharge, setSettingsCharge] = useState('');
   const navigate = useNavigate();
 
   // Helper to get Authorization header value. Accepts tokens stored as
@@ -65,7 +68,7 @@ const AdminDashboard = () => {
 
   // Helper to get raw JWT without Bearer prefix (for basic validation)
   const getRawToken = () => {
-        monthlyChargePerPerson: (newHostel.monthlyChargePerPerson != null ? parseFloat(newHostel.monthlyChargePerPerson) : null)
+    const raw = localStorage.getItem('token');
     if (!raw) return null;
     return raw.startsWith('Bearer ') ? raw.slice(7) : raw;
   };
