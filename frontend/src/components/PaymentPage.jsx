@@ -157,40 +157,89 @@ const PaymentPage = () => {
       }}>
         <h2 style={{ marginTop: 0 }}>Payment Details - {student.studentName}</h2>
         
-        <div style={{ 
+        <div className="balance-info" style={{ 
           display: 'flex', 
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '8px',
+          alignItems: 'stretch',
+          gap: '16px',
           marginBottom: '20px',
-          padding: '16px',
-          background: '#f9fafb',
-          borderRadius: '8px'
         }}>
-          <div>
-            <div style={{ fontSize: '14px', color: '#6b7280' }}>Current Balance</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+          <div style={{
+            flex: 1,
+            padding: '16px',
+            background: '#f9fafb',
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>Monthly Fee</div>
+            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
+              ₹{student?.appliedFee || student?.hostelFee || 0}
+              {student?.appliedFee && student?.hostelFee && student?.appliedFee !== student?.hostelFee && (
+                <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>
+                  (Modified from ₹{student.hostelFee})
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div style={{
+            flex: 1,
+            padding: '16px',
+            background: '#f9fafb',
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            <div style={{ 
+              fontSize: '14px', 
+              color: '#6b7280',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              Current Balance
+              <button
+                onClick={() => setShowHistory(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+                title="View Payment History"
+              >
+                <Info size={16} />
+              </button>
+            </div>
+            <div style={{ 
+              fontSize: '20px', 
+              fontWeight: 'bold',
+              color: currentBalance >= 0 ? '#059669' : '#dc2626'
+            }}>
               ₹{currentBalance}
             </div>
           </div>
-          <div>
+
+          <div style={{
+            flex: 1,
+            padding: '16px',
+            background: '#f9fafb',
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
             <div style={{ fontSize: '14px', color: '#6b7280' }}>Closing Balance</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#059669' }}>
+            <div style={{ 
+              fontSize: '20px', 
+              fontWeight: 'bold',
+              color: calculateClosingBalance(currentBalance, paymentAmount) >= 0 ? '#059669' : '#dc2626'
+            }}>
               ₹{calculateClosingBalance(currentBalance, paymentAmount)}
             </div>
           </div>
-          <button
-            onClick={() => setShowHistory(true)}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px'
-            }}
-            title="View Payment History"
-          >
-            <Info size={20} />
-          </button>
         </div>
 
         <form onSubmit={handleSubmitPayment}>
@@ -312,8 +361,9 @@ const PaymentPage = () => {
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e5e7eb' }}>Date</th>
-                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e5e7eb' }}>Amount</th>
-                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e5e7eb' }}>Type</th>
+                    <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #e5e7eb' }}>Debit</th>
+                    <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #e5e7eb' }}>Credit</th>
+                    <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #e5e7eb' }}>Balance</th>
                     <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e5e7eb' }}>Mode</th>
                     <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e5e7eb' }}>Remarks</th>
                   </tr>
@@ -322,13 +372,22 @@ const PaymentPage = () => {
                   {paymentHistory.map((payment, index) => (
                     <tr key={index}>
                       <td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}>
-                        {new Date(payment.timestamp).toLocaleDateString()}
+                        {new Date(payment.timestamp.seconds * 1000).toLocaleDateString()}
                       </td>
-                      <td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}>
-                        ₹{payment.amount}
+                      <td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb', textAlign: 'right', color: '#dc2626' }}>
+                        {payment.type === 'debit' ? `₹${payment.amount}` : '-'}
                       </td>
-                      <td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}>
-                        {payment.type === 'credit' ? 'Received' : 'Debit'}
+                      <td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb', textAlign: 'right', color: '#059669' }}>
+                        {payment.type === 'credit' ? `₹${payment.amount}` : '-'}
+                      </td>
+                      <td style={{ 
+                        padding: '8px', 
+                        borderBottom: '1px solid #e5e7eb', 
+                        textAlign: 'right',
+                        color: payment.balance >= 0 ? '#059669' : '#dc2626',
+                        fontWeight: 'bold'
+                      }}>
+                        ₹{payment.balance}
                       </td>
                       <td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}>
                         {payment.mode}

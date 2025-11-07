@@ -122,20 +122,63 @@ router.get('/:id/pdf', async (req, res) => {
 });
 
 // Get student payments
-router.get('/:id/payments', async (req, res) => {
+router.get('/users/:userId/hostels/:hostelId/students/:studentId/payments', async (req, res) => {
   if (!db) return res.status(500).send('Firestore not initialized');
   try {
-    const { id } = req.params;
-    const doc = await db.collection('students').doc(id).get();
+    const { userId, hostelId, studentId } = req.params;
+    const studentRef = db.collection('users').doc(userId)
+                        .collection('hostels').doc(hostelId)
+                        .collection('students').doc(studentId);
+    
+    const doc = await studentRef.get();
     if (!doc.exists) {
       return res.status(404).json({ error: 'Student not found' });
     }
 
     const data = doc.data();
+    // Get hostel details for fee information
+    const hostelDoc = await db.collection('users').doc(userId)
+                             .collection('hostels').doc(hostelId).get();
+    const hostelData = hostelDoc.exists ? hostelDoc.data() : {};
+
+    // Use appliedFee if set, otherwise use hostel's monthlyFee
+    const feeAmount = data.appliedFee || hostelData.monthlyFee || 0;
+    
+    // Calculate current month's debit
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const monthlyDebit = {
+      amount: feeAmount,
+      type: 'debit',
+      timestamp: monthStart,
+      remarks: `Monthly fee for ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+      mode: 'auto-debit'
+    };
+
+    // Combine automatic debits with manual payments
+    const allTransactions = [...(data.payments || []), monthlyDebit]
+      .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+    // Calculate running balance
+    let runningBalance = 0;
+    const transactionsWithBalance = allTransactions.map(t => {
+      if (t.type === 'debit') {
+        runningBalance -= Number(t.amount);
+      } else {
+        runningBalance += Number(t.amount);
+      }
+      return { ...t, balance: runningBalance };
+    });
+
     res.json({ 
       id: doc.id,
-      currentBalance: data.currentBalance || 0,
-      payments: data.payments || []
+      studentName: data.studentName,
+      currentBalance: runningBalance,
+      feeAmount: feeAmount,
+      payments: transactionsWithBalance,
+      hostelFee: hostelData.monthlyFee,
+      appliedFee: data.appliedFee
     });
   } catch (err) {
     console.error('GET /api/students/:id/payments error', err);
@@ -144,7 +187,7 @@ router.get('/:id/payments', async (req, res) => {
 });
 
 // Add new payment
-router.post('/:id/payments', async (req, res) => {
+router.post('/users/:userId/hostels/:hostelId/students/:studentId/payments', async (req, res) => {
   if (!db) return res.status(500).send('Firestore not initialized');
   try {
     const { id } = req.params;
