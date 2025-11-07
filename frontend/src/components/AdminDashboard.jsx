@@ -32,7 +32,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onr
 const AdminDashboard = () => {
   const [hostels, setHostels] = useState([]);
   const [showAddHostel, setShowAddHostel] = useState(false);
-  const [newHostel, setNewHostel] = useState({ name: '', address: '', name_hi: '', address_hi: '' });
+  const [newHostel, setNewHostel] = useState({ name: '', address: '', name_hi: '', address_hi: '', monthlyChargePerPerson: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const HOSTELS_PER_PAGE = 8;
@@ -65,7 +65,7 @@ const AdminDashboard = () => {
 
   // Helper to get raw JWT without Bearer prefix (for basic validation)
   const getRawToken = () => {
-    const raw = localStorage.getItem('token');
+        monthlyChargePerPerson: (newHostel.monthlyChargePerPerson != null ? parseFloat(newHostel.monthlyChargePerPerson) : null)
     if (!raw) return null;
     return raw.startsWith('Bearer ') ? raw.slice(7) : raw;
   };
@@ -334,6 +334,7 @@ const fetchHostels = async () => {
         // include bilingual fields; backend may store or ignore them
         name_hi: newHostel.name_hi || '',
         address_hi: newHostel.address_hi || ''
+        , monthlyChargePerPerson: newHostel.monthlyChargePerPerson ? parseFloat(newHostel.monthlyChargePerPerson) : null
       };
 
       if (newHostel.id) {
@@ -366,13 +367,43 @@ const fetchHostels = async () => {
         setHostels(prev => [...prev, created]);
       }
 
-      setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' });
+  setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyChargePerPerson: '' });
       setShowAddHostel(false);
       setError('');
       setCurrentPage(1);
     } catch (err) {
       console.error('Hostel save failed', err);
       setError('Failed to save hostel. Please try again.');
+    }
+  };
+
+  // Handle saving hostel settings (monthly charge per person)
+  const handleSaveSettings = async () => {
+    if (!settingsHostel || !settingsHostel.id) return;
+    const authHeader = getAuthHeader();
+    if (!authHeader) {
+      alert('Authentication required');
+      return;
+    }
+    // parse as float or null
+    const value = String(settingsCharge || '').trim();
+    const payload = { monthlyChargePerPerson: value === '' ? null : parseFloat(value) };
+    try {
+      const resp = await fetch(`${API_BASE}/api/users/me/hostels/${settingsHostel.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) throw new Error('Failed to save settings');
+      const data = await resp.json();
+      const updated = data?.data || data || {};
+      setHostels(prev => prev.map(h => h.id === settingsHostel.id ? { ...h, ...updated } : h));
+      setShowSettingsModal(false);
+      setSettingsHostel(null);
+      setSettingsCharge('');
+    } catch (err) {
+      console.error('Failed to save hostel settings', err);
+      alert('Failed to save settings. See console for details.');
     }
   };
 
@@ -1210,12 +1241,24 @@ const fetchHostels = async () => {
                 />
                 <button type="button" onClick={() => { setKeyboardTarget('address_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
               </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <label style={{ minWidth: 150, color: '#374151' }}>Monthly charge per person (₹)</label>
+                <input
+                  name="monthlyChargePerPerson"
+                  className="input"
+                  type="number"
+                  value={newHostel.monthlyChargePerPerson}
+                  onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyChargePerPerson: e.target.value }))}
+                  placeholder="e.g. 1200"
+                  style={{ padding: '0.5rem', borderRadius: 6, border: '1px solid #e5e7eb', flex: 1 }}
+                />
+              </div>
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setError(''); }}
+                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyChargePerPerson: '' }); setError(''); }}
                   style={applyResponsiveStyles(styles.cancelButton)}
                 >
                   Cancel
@@ -1246,12 +1289,29 @@ const fetchHostels = async () => {
           onClose={() => { setShowHindiKeyboard(false); setKeyboardTarget(null); }}
         />
 
+        {showSettingsModal && settingsHostel && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 520, background: 'white', padding: '1rem', borderRadius: 8, boxShadow: '0 12px 40px rgba(2,6,23,0.2)' }}>
+              <h3 style={{ margin: 0, marginBottom: 8 }}>Settings — {settingsHostel.name}</h3>
+              <p style={{ marginTop: 0, marginBottom: 12, color: '#475569' }}>Set monthly charge per person for this hostel. This will be used for student payments.</p>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+                <label style={{ minWidth: 120, color: '#374151' }}>Monthly charge (₹)</label>
+                <input type="number" value={settingsCharge} onChange={(e) => setSettingsCharge(e.target.value)} placeholder="e.g. 1200" style={{ padding: '0.5rem', borderRadius: 6, border: '1px solid #e5e7eb', flex: 1 }} />
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button onClick={() => { setShowSettingsModal(false); setSettingsHostel(null); setSettingsCharge(''); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6, background: '#6b7280', color: 'white', border: 'none' }}>Cancel</button>
+                <button onClick={handleSaveSettings} style={{ padding: '0.5rem 0.75rem', borderRadius: 6, background: '#0ea5a4', color: 'white', border: 'none' }}>Save</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div style={applyResponsiveStyles(styles.header)}>
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%'}}>
             <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
             <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
               <button
-                onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setShowAddHostel(true); }}
+                onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyChargePerPerson: '' }); setShowAddHostel(true); }}
                 className="btn btn-primary"
                 style={{
                   ...applyResponsiveStyles(styles.addButton),
@@ -1285,12 +1345,16 @@ const fetchHostels = async () => {
                 <div key={hostel.id} style={applyResponsiveStyles(styles.hostelCard)}>
                   <h4 style={{ margin: 0, fontSize: '1rem', color: '#111827' }}>{hostel.name}</h4>
                   <div style={{ color: '#6b7280', marginTop: 6 }}>{hostel.address || ''}</div>
+                  {hostel.monthlyChargePerPerson != null && hostel.monthlyChargePerPerson !== '' ? (
+                    <div style={{ color: '#0f766e', marginTop: 6, fontWeight: 600 }}>Monthly: ₹{hostel.monthlyChargePerPerson}</div>
+                  ) : null}
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
                     <button onClick={() => handleViewStudents(hostel.id)} className="btn btn-primary" style={{ ...styles.viewButton, flex: 1 }}>
                       View Students
                     </button>
                     <button onClick={() => generateQrForHostel(hostel)} className="btn" style={{ padding: '0.5rem' }} title="QR"><UserPlus size={16} /></button>
-                    <button onClick={() => { setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '' }); setShowAddHostel(true); }} className="btn" style={{ padding: '0.5rem' }} title="Edit"><Edit size={16} /></button>
+                    <button onClick={() => { setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '', monthlyChargePerPerson: (hostel.monthlyChargePerPerson != null ? String(hostel.monthlyChargePerPerson) : '') }); setShowAddHostel(true); }} className="btn" style={{ padding: '0.5rem' }} title="Edit"><Edit size={16} /></button>
+                    <button onClick={() => { setSettingsHostel(hostel); setSettingsCharge(hostel.monthlyChargePerPerson != null ? String(hostel.monthlyChargePerPerson) : ''); setShowSettingsModal(true); }} className="btn" style={{ padding: '0.5rem' }} title="Settings">💰</button>
                   </div>
                 </div>
               ))}
@@ -1323,6 +1387,14 @@ const fetchHostels = async () => {
                           <ArrowRight size={16} />
                         </button>
                         <button
+                          onClick={() => { setSettingsHostel(hostel); setSettingsCharge(hostel.monthlyChargePerPerson != null ? String(hostel.monthlyChargePerPerson) : ''); setShowSettingsModal(true); }}
+                          className="btn btn-icon"
+                          style={{ ...styles.actionButton }}
+                          title="Hostel Settings"
+                        >
+                          💰
+                        </button>
+                        <button
                           onClick={() => generateQrForHostel(hostel)}
                           className="btn btn-icon"
                           style={{ ...styles.actionButton }}
@@ -1332,7 +1404,7 @@ const fetchHostels = async () => {
                         </button>
                         <button
                           onClick={() => {
-                            setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '' });
+                            setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '', monthlyChargePerPerson: (hostel.monthlyChargePerPerson != null ? String(hostel.monthlyChargePerPerson) : '') });
                             setShowAddHostel(true);
                           }}
                           className="btn btn-icon btn-secondary"
