@@ -470,8 +470,9 @@ const StudentsPage = () => {
   }
 
 
-  return (
-    <div className="container" style={styles.container}>
+  try {
+    return (
+      <div className="container" style={styles.container}>
       {/* Static profile navbar (sticky) - show current admin info if available */}
       {(() => {
         let stored = null;
@@ -938,8 +939,21 @@ const StudentsPage = () => {
           </div>
         )}
       </div>
-    </div>
-  );
+      </div>
+    );
+  } catch (renderErr) {
+    // Defensive: catch any unexpected runtime error (eg. ReferenceError) during render
+    console.error('StudentsPage render error:', renderErr);
+    return (
+      <div style={{ padding: 24 }}>
+        <h3>Something went wrong while rendering the students list</h3>
+        <div style={{ color: '#6b7280' }}>{String(renderErr && renderErr.message)}</div>
+        <div style={{ marginTop: 12 }}>
+          Please check the browser console for details. If you need help, share the stack trace.
+        </div>
+      </div>
+    );
+  }
 };
 
 const styles = {
