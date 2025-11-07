@@ -159,7 +159,11 @@ const StudentPayments = () => {
     });
   };
 
-  const formatCurrency = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
+  const formatCurrency = (v) => {
+    const num = Number(v || 0);
+    const abs = Math.abs(num).toLocaleString('en-IN');
+    return num < 0 ? `-₹${abs}` : `₹${abs}`;
+  };
 
   const calculateTotals = (paymentsArr) => {
     let totalCredit = 0;
@@ -206,7 +210,10 @@ const StudentPayments = () => {
           <h2 style={styles.studentName}>{student.studentName}</h2>
           <div style={styles.balanceSection}>
             <span>Current Balance:</span>
-            <div style={styles.balanceAmount}>
+            <div style={{
+              ...styles.balanceAmount,
+              color: derivedCurrentBalance < 0 ? '#dc2626' : '#059669'
+            }}>
               {formatCurrency(derivedCurrentBalance)}
               <button 
                 onClick={() => setShowHistory(!showHistory)} 
@@ -334,6 +341,16 @@ const StudentPayments = () => {
                         </tr>
                       </thead>
                       <tbody>
+                        {/* If a used fee exists, show it as the initial debit row so the table shows fee vs payments */}
+                        {usedFee != null && (
+                          <tr key="fee-row" style={styles.tr}>
+                            <td style={styles.td}>—</td>
+                            <td style={styles.td}>Fee</td>
+                            <td style={styles.td}>{appliedFee > 0 && appliedFee !== monthlyFee ? 'Applied Fee' : 'Monthly Fee'}</td>
+                            <td style={{ ...styles.td, textAlign: 'right', color: '#b91c1c' }}>{formatCurrency(usedFee)}</td>
+                            <td style={{ ...styles.td, textAlign: 'right' }}></td>
+                          </tr>
+                        )}
                         {payments.map((payment, index) => (
                           <tr key={payment.id || index} style={styles.tr}>
                             <td style={styles.td}>{formatDate(payment.timestamp)}</td>
