@@ -216,8 +216,9 @@ const StudentsPage = () => {
     fetchHostelsForName();
   }, [hostelId]);
 
-  const handleAddStudent = () => {
-    navigate(`/hostel/${hostelId}/add-student`);
+  const handleAddStudent = (e) => {
+    e.preventDefault();
+    window.open(`/hostel/${hostelId}/add-student`, '_blank');
   };
 
   const updateStudentStatus = async (studentId, newStatus) => {
@@ -267,9 +268,27 @@ const StudentsPage = () => {
         throw new Error(txt || 'Failed to update student');
       }
       const updated = await res.json();
-      setStudents(prev => prev.map(s => s.id === previewStudent.id ? { ...s, ...updated } : s));
+      
+      // Update the student in the local state
+      setStudents(prevStudents => 
+        prevStudents.map(s => 
+          s.id === previewStudent.id 
+            ? { 
+                ...s, 
+                status: 'approved', 
+                appliedFee: Number(payload.appliedFee),
+                appliedFeeCurrency: payload.appliedFeeCurrency,
+                updatedAt: new Date().toISOString()
+              } 
+            : s
+        )
+      );
+      
       setPreviewVisible(false);
       setPreviewStudent(null);
+      
+      // Optional: Show a success message
+      // alert('Student accepted successfully!');
     } catch (err) {
       console.error('Failed to accept with fee:', err);
       alert('Failed to accept student');
