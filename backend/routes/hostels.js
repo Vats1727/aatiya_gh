@@ -35,6 +35,38 @@ router.post('/public/hostels/:hostelDocId/students', async (req, res) => {
   }
 });
 
+// Public endpoint to fetch hostel metadata for anonymous flows (requires ownerUserId query param)
+// GET /api/public/hostels/:hostelDocId?ownerUserId=...
+router.get('/public/hostels/:hostelDocId', async (req, res) => {
+  try {
+    const { hostelDocId } = req.params;
+    const ownerUserId = req.query && (req.query.ownerUserId || req.query.ownerId);
+    if (!hostelDocId || !ownerUserId) return res.status(400).json({ success: false, error: 'Missing hostelDocId or ownerUserId' });
+
+    const hostelRef = db.collection('users').doc(ownerUserId).collection('hostels').doc(hostelDocId);
+    const snap = await hostelRef.get();
+    if (!snap.exists) return res.status(404).json({ success: false, error: 'Hostel not found' });
+
+    const data = { id: snap.id, ...snap.data() };
+    // Return limited public fields only
+    const publicData = {
+      id: data.id,
+      hostelId: data.hostelId || null,
+      name: data.name || null,
+      name_en: data.name_en || null,
+      name_hi: data.name_hi || null,
+      address: data.address || null,
+      address_en: data.address_en || null,
+      address_hi: data.address_hi || null,
+      qrDataUrl: data.qrDataUrl || null
+    };
+    res.json({ success: true, data: publicData });
+  } catch (err) {
+    console.error('Error fetching public hostel metadata:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to fetch hostel metadata' });
+  }
+});
+
 // Use imported auth middleware for protected routes
 // (authMiddleware is imported from ../middleware/auth.js)
 router.use(authMiddleware);

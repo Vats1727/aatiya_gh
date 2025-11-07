@@ -43,12 +43,17 @@ export const renderStudentPrintHtml = (student = {}) => {
     return `${dd}/${mm}/${yy}`;
   };
 
+  // Allow the student data to include hostel bilingual fields (hostelNameHi, hostelNameEn, hostelAddressHi, hostelAddressEn)
+  const headerHi = s.hostelNameHi || s.hostelName || s.hostelNameEn || 'आतिया गर्ल्स हॉस्टल';
+  const headerEn = s.hostelNameEn || (s.hostelNameHi ? '' : (s.hostelName || 'ATIYA GIRLS HOSTEL'));
+  const addressLine = (s.hostelAddressHi || s.hostelAddressEn) ? `${s.hostelAddressHi || ''}${s.hostelAddressHi && s.hostelAddressEn ? ' / ' : ''}${s.hostelAddressEn || ''}` : 'रामपाड़ा कटिहार / Rampada Katihar';
+
   const formHtml = `
   <div style="${pageStyle}">
       <div style="text-align:center;border-bottom:3px solid #9ca3af;padding-bottom:8px;margin-bottom:12px;">
-        <h1 style="margin:0;font-size:28px;color:#db2777">आतिया गर्ल्स हॉस्टल</h1>
-        <h2 style="margin:0;font-size:20px;color:#ec4899">ATIYA GIRLS HOSTEL</h2>
-        <p style="margin:6px 0;font-size:14px;color:#4b5563">रामपाड़ा कटिहार / Rampada Katihar</p>
+        <h1 style="margin:0;font-size:28px;color:#db2777">${escape(headerHi)}</h1>
+        ${headerEn ? `<h2 style="margin:0;font-size:20px;color:#ec4899">${escape(headerEn)}</h2>` : ''}
+        <p style="margin:6px 0;font-size:14px;color:#4b5563">${escape(addressLine)}</p>
         <div style="font-weight:700;margin-top:6px;font-size:16px;color:#111827">नामांकन फॉर्म / ADMISSION FORM</div>
         <div style="font-size:12px;color:#6b7280;margin-top:6px">दिनांक / Date: ${escape(formatDateDDMMYYYY(s.admissionDate))}</div>
       </div>

@@ -265,6 +265,51 @@ const HostelAdmissionForm = () => {
     loadHostels();
   }, []);
 
+  // If this is an anonymous QR flow (preHostelId + preOwnerUserId), fetch public hostel metadata
+  useEffect(() => {
+    const shouldFetchPublic = preHostelId && preOwnerUserId;
+    if (!shouldFetchPublic) return;
+    // If we already have the hostel in hostels list, skip
+    const found = (hostels || []).find(h => h && (h.id === preHostelId || h.hostelId === preHostelId));
+    if (found) return;
+
+    let mounted = true;
+    (async () => {
+      try {
+        const url = `${API_BASE}/api/public/hostels/${encodeURIComponent(preHostelId)}?ownerUserId=${encodeURIComponent(preOwnerUserId)}`;
+        const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
+        if (!res.ok) return;
+        const payload = await res.json();
+        const data = payload && (payload.data || payload);
+        if (!data) return;
+        if (!mounted) return;
+        // Normalize fields to match existing hostels shape
+        const normalized = {
+          id: data.id,
+          hostelId: data.hostelId || data.id,
+          name: data.name || data.name_en || data.name_hi || '',
+          name_en: data.name_en || (typeof data.name === 'string' ? data.name : ''),
+          name_hi: data.name_hi || '',
+          address: data.address || data.address_en || data.address_hi || '',
+          address_en: data.address_en || '',
+          address_hi: data.address_hi || '',
+          qrDataUrl: data.qrDataUrl || null
+        };
+        setHostels(prev => {
+          const next = Array.isArray(prev) ? [...prev] : [];
+          next.push(normalized);
+          return next;
+        });
+        // Preselect the hostelDocId for the form so header shows immediately
+        setFormData(prev => ({ ...prev, hostelDocId: preHostelId }));
+        setFixedHostel(true);
+      } catch (e) {
+        // ignore
+      }
+    })();
+    return () => { mounted = false; };
+  }, [preHostelId, preOwnerUserId, hostels]);
+
   // Responsive styles with mobile-first approach
   const styles = {
     container: {
@@ -1085,7 +1130,17 @@ const HostelAdmissionForm = () => {
         }
         // Navigate to success page regardless so user sees confirmation and can download PDF.
         try {
-          navigate('/submission-success', { state: { combinedId: combined, formData: formDataWithStatus } });
+            // Attach hostel bilingual metadata to formData so success page and PDF can show correct Hindi/English
+            try {
+              const hb = getHostelBilingual(effectiveHostelId) || {};
+              formDataWithStatus.hostelNameEn = hb.nameEn || hb.name || '';
+              formDataWithStatus.hostelNameHi = hb.nameHi || '';
+              formDataWithStatus.hostelAddressEn = hb.addressEn || hb.address || '';
+              formDataWithStatus.hostelAddressHi = hb.addressHi || '';
+            } catch (e) {
+              // ignore
+            }
+            navigate('/submission-success', { state: { combinedId: combined, formData: formDataWithStatus } });
         } catch (e) {
           console.error('Navigation to submission-success failed', e);
           alert('Submission saved. You can download the PDF from the dashboard or try again later.');
