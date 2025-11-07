@@ -539,8 +539,6 @@ const StudentsPage = () => {
               }
 
               const main = hi || en || 'Hostel Students';
-              const displayBalance = (student.currentBalance != null) ? student.currentBalance : (balancesLoaded ? 0 : '—');
-
               return (
                 <>
                   <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{main}</div>
@@ -638,6 +636,7 @@ const StudentsPage = () => {
                 if (student.studentId && hostelCode) return `${String(hostelCode)}${String(student.studentId)}`;
                 return 'N/A';
               })();
+              const displayBalance = (student.currentBalance != null) ? student.currentBalance : (balancesLoaded ? 0 : '—');
 
               return (
                 <div key={student.id} style={styles.studentCard}>
