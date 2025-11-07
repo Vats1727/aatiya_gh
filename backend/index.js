@@ -126,15 +126,16 @@ try {
           const studentsSnap = await db.collection('users').doc(ownerUserId).collection('hostels').doc(hostelId).collection('students').get();
           for (const studentDoc of studentsSnap.docs) {
             const studentId = studentDoc.id;
-            const existing = await db.collection('payments')
-              .where('student_id', '==', studentId)
-              .where('hostel_id', '==', hostelId)
-              .where('month', '==', monthLabel)
-              .limit(1)
-              .get();
+            // Check existing payments in the student's payments subcollection
+            const paymentsRef = db.collection('users').doc(ownerUserId)
+              .collection('hostels').doc(hostelId)
+              .collection('students').doc(studentId)
+              .collection('payments');
+
+            const existing = await paymentsRef.where('month', '==', monthLabel).limit(1).get();
             if (!existing.empty) continue;
 
-            await db.collection('payments').add({
+            await paymentsRef.add({
               student_id: studentId,
               hostel_id: hostelId,
               owner_user_id: ownerUserId,

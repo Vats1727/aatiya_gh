@@ -16,8 +16,14 @@ export default function PaymentModal({ visible, onClose, student, hostelId, host
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/api/payments/${encodeURIComponent(student.id)}`);
-        if (!res.ok) throw new Error('Failed to load payments');
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const url = `${API_BASE}/api/payments/${encodeURIComponent(student.id)}?hostelId=${encodeURIComponent(hostelId || '')}`;
+        const res = await fetch(url, { headers });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt || 'Failed to load payments');
+        }
         const payload = await res.json();
         if (!mounted) return;
         setPayments(payload.data || []);
