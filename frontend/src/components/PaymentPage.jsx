@@ -4,6 +4,13 @@ import { Info } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_API_BASE || '';
 
+// Helper to calculate closing balance
+const calculateClosingBalance = (currentBalance, amount) => {
+  const current = parseFloat(currentBalance) || 0;
+  const payment = parseFloat(amount) || 0;
+  return (current + payment).toFixed(2);
+};
+
 const PaymentPage = () => {
   const { hostelId, studentId } = useParams();
   const navigate = useNavigate();
@@ -14,6 +21,8 @@ const PaymentPage = () => {
   const [paymentMode, setPaymentMode] = useState('cash');
   const [remarks, setRemarks] = useState('');
   const [paymentHistory, setPaymentHistory] = useState([]);
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [closingBalance, setClosingBalance] = useState(0);
 
   useEffect(() => {
     const fetchStudentAndPayments = async () => {
@@ -35,11 +44,14 @@ const PaymentPage = () => {
         if (!response.ok) throw new Error('Failed to fetch student');
 
         const data = await response.json();
-        setStudent(data);
+        const studentData = data.data || data; // Handle both response formats
+        
+        setStudent(studentData);
+        setCurrentBalance(studentData.currentBalance || 0);
         
         // Fetch payment history if it exists
-        if (data.payments) {
-          setPaymentHistory(data.payments);
+        if (studentData.payments && Array.isArray(studentData.payments)) {
+          setPaymentHistory(studentData.payments);
         }
 
       } catch (err) {
@@ -51,7 +63,7 @@ const PaymentPage = () => {
     };
 
     fetchStudentAndPayments();
-  }, [hostelId, studentId]);
+  }, [hostelId, studentId, navigate]);
 
   const handleSubmitPayment = async (e) => {
     e.preventDefault();
@@ -64,7 +76,9 @@ const PaymentPage = () => {
         mode: paymentMode,
         remarks,
         timestamp: new Date().toISOString(),
-        type: 'credit' // credit means payment received
+        type: 'credit', // credit means payment received
+        currentBalance: Number(currentBalance),
+        closingBalance: Number(calculateClosingBalance(currentBalance, paymentAmount))
       };
 
       const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
@@ -79,9 +93,12 @@ const PaymentPage = () => {
       if (!res.ok) throw new Error('Failed to save payment');
 
       const updated = await res.json();
-      setStudent(updated);
-      if (updated.payments) {
-        setPaymentHistory(updated.payments);
+      const updatedData = updated.data || updated;
+      
+      setStudent(updatedData);
+      setCurrentBalance(updatedData.currentBalance || 0);
+      if (updatedData.payments) {
+        setPaymentHistory(updatedData.payments);
       }
       
       // Reset form
@@ -144,11 +161,24 @@ const PaymentPage = () => {
         <div style={{ 
           display: 'flex', 
           alignItems: 'center',
+          justifyContent: 'space-between',
           gap: '8px',
-          marginBottom: '20px'
+          marginBottom: '20px',
+          padding: '16px',
+          background: '#f9fafb',
+          borderRadius: '8px'
         }}>
-          <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
-            Current Balance: ₹{student.currentBalance || 0}
+          <div>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>Current Balance</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+              ₹{currentBalance}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '14px', color: '#6b7280' }}>Closing Balance</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#059669' }}>
+              ₹{calculateClosingBalance(currentBalance, paymentAmount)}
+            </div>
           </div>
           <button
             onClick={() => setShowHistory(true)}
@@ -172,7 +202,10 @@ const PaymentPage = () => {
             <input
               type="number"
               value={paymentAmount}
-              onChange={(e) => setPaymentAmount(e.target.value)}
+              onChange={(e) => {
+                setPaymentAmount(e.target.value);
+                setClosingBalance(calculateClosingBalance(currentBalance, e.target.value));
+              }}
               required
               style={{
                 width: '100%',
