@@ -101,7 +101,7 @@ const StudentPayments = () => {
       if (!res.ok) throw new Error('Failed to add payment');
 
       const data = await res.json();
-      
+
       // Update payments list and reset form
       const newEntry = {
         ...data,
@@ -177,17 +177,22 @@ const StudentPayments = () => {
     return { totalCredit, totalDebit, netPaid };
   };
 
-  // derived totals for UI
-  const totals = calculateTotals(payments);
+  // Determine the applicable fee (student-specific or default)
+  const appliedFee = Number(student?.appliedFee) || 0;
+  const monthlyFee = Number(student?.monthlyFee) || 0;
+  const usedFee = appliedFee > 0 ? appliedFee : monthlyFee;
 
-  // Detect various fee properties: per-student applied fee (explicit override) and hostel/default monthly fee
-  const appliedFee = Number(student?.appliedFee ?? student?.appliedFees ?? student?.applied_fee ?? null);
-  const monthlyFee = Number(student?.monthlyFee ?? student?.hostelMonthlyFee ?? student?.hostelFees ?? student?.fees ?? student?.totalFees ?? 0);
+  // Calculate totals
+  const totalCredit = payments.filter(p => p.type === 'credit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
+  const totalDebit = payments.filter(p => p.type === 'debit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
+  const netPaid = totalCredit - totalDebit;
 
-  // Pick usedFee: prefer appliedFee when set (non-NaN and > 0), otherwise monthlyFee
-  const usedFee = (appliedFee > 0) ? appliedFee : (monthlyFee > 0 ? monthlyFee : null);
+  // Calculate current balance (positive = pending, negative = advance)
+  const currentBalance = usedFee - netPaid;
 
-  const feesDue = (usedFee != null) ? Math.max(0, usedFee - totals.netPaid) : null;
+  // For UI
+  const feesDue = currentBalance > 0 ? currentBalance : 0;
+  const advancePaid = currentBalance < 0 ? Math.abs(currentBalance) : 0;
 
   // derive current balance: prefer fee-based calculation (applied or monthly) when available,
   // fallback to student.currentBalance when fee info is missing
@@ -215,8 +220,8 @@ const StudentPayments = () => {
               color: derivedCurrentBalance < 0 ? '#dc2626' : '#059669'
             }}>
               {formatCurrency(derivedCurrentBalance)}
-              <button 
-                onClick={() => setShowHistory(!showHistory)} 
+              <button
+                onClick={() => setShowHistory(!showHistory)}
                 style={styles.infoButton}
                 title="View Payment History"
               >
@@ -298,31 +303,31 @@ const StudentPayments = () => {
                   <div style={styles.summaryLabel}>Total Refunds</div>
                   <div style={{ ...styles.summaryValue, color: '#dc2626' }}>{formatCurrency(totals.totalDebit)}</div>
                 </div>
+                <div style={styles.summaryItem}>
+                  <div style={styles.summaryLabel}>Net Paid</div>
+                  <div style={styles.summaryValue}>{formatCurrency(totals.netPaid)}</div>
+                </div>
+
+                {/* Show applied vs monthly fee when available */}
+                {usedFee != null && (
                   <div style={styles.summaryItem}>
-                    <div style={styles.summaryLabel}>Net Paid</div>
-                    <div style={styles.summaryValue}>{formatCurrency(totals.netPaid)}</div>
+                    <div style={styles.summaryLabel}>Applied Fee</div>
+                    <div style={styles.summaryValue}>{formatCurrency(usedFee)}</div>
                   </div>
+                )}
+                {appliedFee > 0 && monthlyFee > 0 && appliedFee !== monthlyFee && (
+                  <div style={styles.summaryItem}>
+                    <div style={styles.summaryLabel}>Standard Monthly Fee</div>
+                    <div style={styles.summaryValue}>{formatCurrency(monthlyFee)}</div>
+                  </div>
+                )}
 
-                  {/* Show applied vs monthly fee when available */}
-                  {usedFee != null && (
-                    <div style={styles.summaryItem}>
-                      <div style={styles.summaryLabel}>Applied Fee</div>
-                      <div style={styles.summaryValue}>{formatCurrency(usedFee)}</div>
-                    </div>
-                  )}
-                  {appliedFee > 0 && monthlyFee > 0 && appliedFee !== monthlyFee && (
-                    <div style={styles.summaryItem}>
-                      <div style={styles.summaryLabel}>Standard Monthly Fee</div>
-                      <div style={styles.summaryValue}>{formatCurrency(monthlyFee)}</div>
-                    </div>
-                  )}
-
-                  {feesDue != null && (
-                    <div style={styles.summaryItem}>
-                      <div style={styles.summaryLabel}>Fees Due</div>
-                      <div style={{ ...styles.summaryValue, color: feesDue > 0 ? '#b91c1c' : '#059669' }}>{formatCurrency(feesDue)}</div>
-                    </div>
-                  )}
+                {feesDue != null && (
+                  <div style={styles.summaryItem}>
+                    <div style={styles.summaryLabel}>Fees Due</div>
+                    <div style={{ ...styles.summaryValue, color: feesDue > 0 ? '#b91c1c' : '#059669' }}>{formatCurrency(feesDue)}</div>
+                  </div>
+                )}
               </div>
 
               <div style={styles.historyList}>
@@ -341,30 +346,34 @@ const StudentPayments = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {/* If a used fee exists, show it as the initial debit row so the table shows fee vs payments */}
-                        {usedFee != null && (
-                          <tr key="fee-row" style={styles.tr}>
-                            <td style={styles.td}>—</td>
-                            <td style={styles.td}>Fee</td>
-                            <td style={styles.td}>{appliedFee > 0 && appliedFee !== monthlyFee ? 'Applied Fee' : 'Monthly Fee'}</td>
-                            <td style={{ ...styles.td, textAlign: 'right', color: '#b91c1c' }}>{formatCurrency(usedFee)}</td>
-                            <td style={{ ...styles.td, textAlign: 'right' }}></td>
-                          </tr>
-                        )}
-                        {payments.map((payment, index) => (
-                          <tr key={payment.id || index} style={styles.tr}>
-                            <td style={styles.td}>{formatDate(payment.timestamp)}</td>
-                            <td style={styles.td}>{payment.paymentMode}</td>
-                            <td style={styles.td}>{payment.remarks || '—'}</td>
-                            <td style={{ ...styles.td, textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
+                        <tr>
+                          <td>—</td>
+                          <td>Fee</td>
+                          <td>{appliedFee > 0 && appliedFee !== monthlyFee ? 'Applied Fee' : 'Monthly Fee'}</td>
+                          <td style={{ textAlign: 'right', color: '#dc2626' }}>{formatCurrency(usedFee)}</td>
+                          <td></td>
+                        </tr>
+                        {payments.map((payment, i) => (
+                          <tr key={i}>
+                            <td>{formatDate(payment.timestamp)}</td>
+                            <td>{payment.paymentMode}</td>
+                            <td>{payment.remarks || '—'}</td>
+                            <td style={{ textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
                               {payment.type === 'debit' ? formatCurrency(payment.amount) : ''}
                             </td>
-                            <td style={{ ...styles.td, textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
+                            <td style={{ textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
                               {payment.type === 'credit' ? formatCurrency(payment.amount) : ''}
                             </td>
                           </tr>
                         ))}
+                        <tr>
+                          <td colSpan={3} style={{ textAlign: 'right', fontWeight: '600' }}>Balance</td>
+                          <td colSpan={2} style={{ textAlign: 'right', color: currentBalance > 0 ? '#b91c1c' : '#059669' }}>
+                            {currentBalance > 0 ? `Due: ${formatCurrency(currentBalance)}` : `Advance: ${formatCurrency(Math.abs(currentBalance))}`}
+                          </td>
+                        </tr>
                       </tbody>
+
                     </table>
                   </div>
                 )}
