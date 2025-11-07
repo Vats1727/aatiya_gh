@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight, CreditCard, Info } from 'lucide-react';
 import { renderStudentPrintHtml, renderRulesHtml } from '../utils/printTemplate';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import '../styles.css';
@@ -17,6 +17,15 @@ const StudentsPage = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewFee, setPreviewFee] = useState('');
   const [previewCurrency, setPreviewCurrency] = useState('INR');
+  // Payment UI state
+  const [paymentVisible, setPaymentVisible] = useState(false);
+  const [paymentStudent, setPaymentStudent] = useState(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMode, setPaymentMode] = useState('Cash');
+  const [paymentRemarks, setPaymentRemarks] = useState('');
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [paymentInfoOpen, setPaymentInfoOpen] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -334,6 +343,119 @@ const StudentsPage = () => {
     }
   };
 
+      // Helper: compute number of whole months between admission (or start) and now
+      const getMonthsSince = (dateStr) => {
+        try {
+          const start = dateStr ? new Date(dateStr) : null;
+          if (!start || isNaN(start)) return 0;
+          const now = new Date();
+          const years = now.getFullYear() - start.getFullYear();
+          const months = now.getMonth() - start.getMonth();
+          const total = years * 12 + months + (now.getDate() >= start.getDate() ? 0 : 0);
+          return Math.max(0, total + 1); // include current month as due
+        } catch (e) {
+          return 0;
+        }
+      };
+
+      // Open payment modal for a student: enrich with hostel metadata and compute balances
+      const openPayment = async (student) => {
+        try {
+          let merged = { ...student };
+          const hostelDoc = student.hostelDocId || student.ownerHostelDocId || hostel?.id || hostelId;
+          // Try authenticated fetch of hostel
+          const token = localStorage.getItem('token');
+          if (token) {
+            try {
+              const resp = await fetch(`${API_BASE}/api/users/me/hostels`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+              if (resp.ok) {
+                const p = await resp.json();
+                const list = p?.data || p || [];
+                const found = list.find(h => String(h.id) === String(hostelDoc) || String(h.docId) === String(hostelDoc));
+                if (found) merged = { ...found, ...merged, monthlyFee: (found.monthlyFee != null ? found.monthlyFee : merged.monthlyFee), monthlyFeeCurrency: found.monthlyFeeCurrency || merged.monthlyFeeCurrency || 'INR' };
+              }
+            } catch (e) { /* continue to public */ }
+          }
+
+          if ((!merged.monthlyFee && merged.monthlyFee !== 0) || merged.monthlyFee == null) {
+            const pub = await fetchPublicHostel(hostelDoc, student.ownerUserId || student.owner || student.ownerId || null);
+            if (pub) merged = { ...merged, monthlyFee: (pub.monthlyFee != null ? pub.monthlyFee : merged.monthlyFee), monthlyFeeCurrency: pub.monthlyFeeCurrency || merged.monthlyFeeCurrency || 'INR' };
+          }
+
+          // Payment history stored on student.payments (if any)
+          const history = Array.isArray(merged.payments) ? merged.payments.slice().sort((a,b)=> new Date(b.date) - new Date(a.date)) : [];
+          setPaymentHistory(history);
+
+          // compute fee per month: prefer student.appliedFee, else hostel monthlyFee
+          const feePerMonth = (merged.appliedFee != null && merged.appliedFee !== '') ? Number(merged.appliedFee) : Number(merged.monthlyFee || 0);
+          const startDate = merged.admissionDate || merged.createdAt || merged._createdAt || merged.joinedAt || null;
+          const monthsDue = getMonthsSince(startDate);
+          const totalDue = monthsDue * feePerMonth;
+          const totalPaid = history.reduce((s, p) => s + (Number(p.amount || 0)), 0);
+          const currentBal = Number(totalDue) - Number(totalPaid);
+
+          setPaymentStudent(merged);
+          setPaymentAmount('');
+          setPaymentMode('Cash');
+          setPaymentRemarks('');
+          setPaymentVisible(true);
+          // store computed balances on state by reusing previewFee for display -- but better create locals
+          // We'll store as properties on paymentStudent for quick display
+          setPaymentHistory(history);
+          // attach computed balances
+          merged.__computed = { feePerMonth, monthsDue, totalDue, totalPaid, currentBal };
+          setPaymentStudent(merged);
+        } catch (err) {
+          console.error('openPayment error', err);
+          setPaymentStudent(student);
+          setPaymentHistory(Array.isArray(student.payments) ? student.payments : []);
+          setPaymentVisible(true);
+        }
+      };
+
+      // Save a payment for the current paymentStudent by appending to payments and persisting via PUT
+      const handleSavePayment = async () => {
+        if (!paymentStudent) return;
+        const amt = Number(paymentAmount);
+        if (!amt || isNaN(amt) || amt <= 0) return alert('Please enter a valid payment amount');
+        setPaymentProcessing(true);
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) { alert('Not authenticated'); setPaymentProcessing(false); return; }
+          const studentId = paymentStudent.id;
+          const newPayment = { date: new Date().toISOString(), amount: Number(amt), mode: paymentMode || 'Cash', remarks: paymentRemarks || '' };
+          const updatedPayments = Array.isArray(paymentHistory) ? [ ...paymentHistory, newPayment ] : [ newPayment ];
+
+          const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ payments: updatedPayments })
+          });
+
+          if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(txt || 'Failed to save payment');
+          }
+
+          const payload = await res.json();
+          const updatedStudent = (payload && payload.data) ? payload.data : payload;
+          // update local students list
+          setStudents(prev => prev.map(s => (s.id === updatedStudent.id ? updatedStudent : s)));
+          // close modal and reset
+          setPaymentVisible(false);
+          setPaymentStudent(null);
+          setPaymentHistory([]);
+          setPaymentAmount('');
+          setPaymentRemarks('');
+          alert('Payment recorded');
+        } catch (err) {
+          console.error('Failed to save payment', err);
+          alert('Failed to record payment');
+        } finally {
+          setPaymentProcessing(false);
+        }
+      };
+
   // Move hooks to the top level
   const filteredStudents = useMemo(() => {
     if (loading) return [];
@@ -624,6 +746,7 @@ const StudentsPage = () => {
                     <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
                     <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
                     <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
+                    <button onClick={() => openPayment(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Payment"><CreditCard size={16} /></button>
                     <button onClick={async () => {
                       if (!confirm('Delete this student? This cannot be undone.')) return;
                       try {
@@ -712,6 +835,9 @@ const StudentsPage = () => {
                       <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
                         <Eye size={16} />
                       </button>
+                      <button onClick={() => openPayment(student)} style={{ ...styles.iconButton, ...styles.acceptButton }} title="Payment">
+                        <CreditCard size={16} />
+                      </button>
                       <button onClick={async () => {
                           if (!confirm('Delete this student? This cannot be undone.')) return;
                           try {
@@ -734,6 +860,63 @@ const StudentsPage = () => {
             })}
             </tbody>
           </table>
+        )}
+        {paymentVisible && paymentStudent && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 'min(720px, 96%)', maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: 8, padding: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <h3 style={{ margin: 0 }}>Record payment — {paymentStudent.studentName || paymentStudent.name}</h3>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => { setPaymentVisible(false); setPaymentStudent(null); }} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>Close</button>
+                  <button onClick={handleSavePayment} disabled={paymentProcessing} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff' }}>{paymentProcessing ? 'Saving...' : 'Save Payment'}</button>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Current balance</div>
+                  <div style={{ fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div>{paymentStudent.__computed ? (paymentStudent.__computed.currentBal || 0) : '0'}</div>
+                    <Info size={16} style={{ cursor: 'pointer', color: '#6b7280' }} onClick={() => setPaymentInfoOpen(v => !v)} />
+                  </div>
+
+                  {paymentInfoOpen && (
+                    <div style={{ border: '1px solid #e5e7eb', padding: 10, borderRadius: 6, background: '#fafafa', marginBottom: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Payment history</div>
+                      {paymentHistory.length === 0 && <div style={{ fontSize: 12, color: '#6b7280' }}>No payments recorded</div>}
+                      {paymentHistory.map((p, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px dashed #eee' }}>
+                          <div style={{ fontSize: 13 }}>{new Date(p.date).toLocaleDateString()} • {p.mode || 'Cash'}</div>
+                          <div style={{ fontWeight: 600 }}>{p.amount}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Remarks</div>
+                  <textarea value={paymentRemarks} onChange={(e) => setPaymentRemarks(e.target.value)} rows={4} style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }} />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Amount</div>
+                  <input type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb', width: '100%', marginBottom: 12 }} />
+
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Mode</div>
+                  <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} style={{ padding: '8px', borderRadius: 6, border: '1px solid #e5e7eb', width: '100%', marginBottom: 12 }}>
+                    <option>Cash</option>
+                    <option>UPI</option>
+                    <option>Card</option>
+                    <option>Bank Transfer</option>
+                  </select>
+
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Closing balance</div>
+                  <div style={{ fontWeight: 700, marginTop: 6 }}>
+                    {paymentStudent.__computed ? (Number(paymentStudent.__computed.currentBal) - (Number(paymentAmount) || 0)) : (-(Number(paymentAmount) || 0))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
         
         {/* Pagination */}
