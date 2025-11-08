@@ -146,15 +146,9 @@ const StudentPayments = () => {
         type: 'credit'
       });
 
-      // Update student's current balance (assume currentBalance = amount owed)
-      setStudent(prev => {
-        const prevBalance = Number(prev?.currentBalance) || 0;
-        const newBalance = type === 'credit' ? prevBalance - amount : prevBalance + amount;
-        return {
-          ...prev,
-          currentBalance: newBalance
-        };
-      });
+      // Do not mutate student's currentBalance here. The UI derives balance
+      // from `usedFee` and the `payments` array, so updating `payments` above
+      // is sufficient and avoids desyncs.
 
     } catch (err) {
       console.error('Failed to add payment:', err);
@@ -231,7 +225,7 @@ const StudentPayments = () => {
   // Current balance (positive = pending, negative = advance)
   const currentBalance = usedFee - (totalCredit - totalDebit);
 
-  // For UI
+  // For UI: separate due vs advance so we can display them in Debit/Credit columns
   const feesDue = currentBalance > 0 ? currentBalance : 0;
   const advancePaid = currentBalance < 0 ? Math.abs(currentBalance) : 0;
 
@@ -252,11 +246,11 @@ const StudentPayments = () => {
             <span>Current Balance:</span>
             <div style={{
               ...styles.balanceAmount,
-              color: currentBalance > 0 ? '#dc2626' : '#059669'  // Red if balance is positive (payment due), green if negative (advance)
+              color: feesDue > 0 ? '#dc2626' : (advancePaid > 0 ? '#059669' : '#6b7280')  // Red if due, green if advance, gray if zero
             }}>
-              {currentBalance > 0 ? 
-                `Due: ${formatCurrency(currentBalance)}` : 
-                `Advance: ${formatCurrency(Math.abs(currentBalance))}`}
+              {feesDue > 0 ? 
+                `Due: ${formatCurrency(feesDue)}` : 
+                (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
               <button
                 onClick={() => setShowHistory(!showHistory)}
                 style={styles.infoButton}
@@ -335,18 +329,18 @@ const StudentPayments = () => {
                   <div style={styles.summaryLabel}>Total Received</div>
                   <div style={{ ...styles.summaryValue, color: '#059669' }}>{formatCurrency(totalCredit)}</div>
                 </div>
-                <div style={{ ...styles.summaryItem, borderTop: '1px solid #e5e7eb', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
-                  <div style={{ ...styles.summaryLabel, fontWeight: '600' }}>Current Balance</div>
-                  <div style={{ 
-                    ...styles.summaryValue, 
-                    color: currentBalance > 0 ? '#b91c1c' : '#059669',
-                    fontWeight: '600'
-                  }}>
-                    {currentBalance > 0 
-                      ? `Due: ${formatCurrency(currentBalance)}` 
-                      : `Advance: ${formatCurrency(Math.abs(currentBalance))}`}
-                  </div>
-                </div>
+                      <div style={{ ...styles.summaryItem, borderTop: '1px solid #e5e7eb', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
+                        <div style={{ ...styles.summaryLabel, fontWeight: '600' }}>Current Balance</div>
+                        <div style={{ 
+                          ...styles.summaryValue, 
+                          color: feesDue > 0 ? '#b91c1c' : (advancePaid > 0 ? '#059669' : '#6b7280'),
+                          fontWeight: '600'
+                        }}>
+                          {feesDue > 0 
+                            ? `Due: ${formatCurrency(feesDue)}` 
+                            : (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
+                        </div>
+                      </div>
               </div>
 
               <div style={styles.historyList}>
@@ -398,8 +392,11 @@ const StudentPayments = () => {
                         ))}
                         <tr>
                           <td colSpan={3} style={{ textAlign: 'right', fontWeight: '600' }}>Balance</td>
-                          <td colSpan={2} style={{ textAlign: 'right', color: currentBalance > 0 ? '#b91c1c' : '#059669' }}>
-                            {currentBalance > 0 ? `Due: ${formatCurrency(currentBalance)}` : `Advance: ${formatCurrency(Math.abs(currentBalance))}`}
+                          <td style={{ textAlign: 'right', color: feesDue > 0 ? '#b91c1c' : '#6b7280', fontWeight: 600 }}>
+                            {feesDue > 0 ? formatCurrency(feesDue) : '—'}
+                          </td>
+                          <td style={{ textAlign: 'right', color: advancePaid > 0 ? '#059669' : '#6b7280', fontWeight: 600 }}>
+                            {advancePaid > 0 ? formatCurrency(advancePaid) : '—'}
                           </td>
                         </tr>
                       </tbody>
