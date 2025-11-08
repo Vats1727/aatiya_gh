@@ -56,15 +56,64 @@ const StudentsPage = () => {
         if (!response.ok) throw new Error('Failed to fetch students');
 
         const data = await response.json();
-        setStudents(data.data || []);
+        const rawStudents = data.data || [];
+
+        // Enrich each student with computed currentBalance derived from payment history
+        const enrichBalances = async (list) => {
+          const token = localStorage.getItem('token');
+          // Try to get a hostel-level monthlyFee fallback from the first student
+          const hostelMonthlyFallback = (list && list[0] && (list[0].monthlyFee != null ? Number(list[0].monthlyFee) : null)) || null;
+
+          const promises = (list || []).map(async (s) => {
+            try {
+              // determine usedFee: appliedFee if present (>0), otherwise student's monthlyFee, otherwise hostel fallback
+              const applied = (s.appliedFee != null && s.appliedFee !== '') ? Number(s.appliedFee) : 0;
+              const studentMonthly = (s.monthlyFee != null && s.monthlyFee !== '') ? Number(s.monthlyFee) : (hostelMonthlyFallback != null ? Number(hostelMonthlyFallback) : 0);
+              const usedFee = (applied > 0) ? applied : studentMonthly;
+
+              // fetch payments for this student
+              let paymentsArr = [];
+              if (token) {
+                try {
+                  const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${s.id}/payments`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                  });
+                  if (resp.ok) {
+                    const payload = await resp.json();
+                    paymentsArr = payload?.data || [];
+                  }
+                } catch (e) {
+                  // ignore per-student payments fetch errors
+                }
+              }
+
+              const totalCredit = (paymentsArr || []).filter(p => (p.type || 'credit') === 'credit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
+              const totalDebit = (paymentsArr || []).filter(p => (p.type || 'credit') === 'debit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
+
+              // compute currentBalance same as in StudentPayments
+              const currentBalance = usedFee - (totalCredit - totalDebit);
+
+              return { ...s, currentBalance };
+            } catch (err) {
+              // fallback: keep student unchanged
+              return s;
+            }
+          });
+
+          const results = await Promise.all(promises);
+          return results;
+        };
+
+        const studentsWithBalances = await enrichBalances(rawStudents);
+        setStudents(studentsWithBalances);
 
         // If we have students, we can get hostel details from the first student or set a default
-        if (data.data && data.data.length > 0) {
+        if (studentsWithBalances && studentsWithBalances.length > 0) {
           setHostel({
             id: hostelId,
             // prefer explicit hostelName stored on student doc, fallback to fetch
-            name: data.data[0].hostelName || 'Hostel',
-            address: data.data[0].hostelAddress || ''
+            name: studentsWithBalances[0].hostelName || 'Hostel',
+            address: studentsWithBalances[0].hostelAddress || ''
           });
         }
 
