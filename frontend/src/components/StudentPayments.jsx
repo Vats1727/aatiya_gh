@@ -37,8 +37,37 @@ const StudentPayments = () => {
         });
 
         if (!studentRes.ok) throw new Error('Failed to fetch student');
-        const studentData = await studentRes.json();
-        setStudent(studentData);
+        const studentPayload = await studentRes.json();
+        // normalize payload shape (backend may return { data: student } or student directly)
+        let studentObj = (studentPayload && (studentPayload.data || studentPayload)) || null;
+
+        // If monthlyFee missing on student, try to enrich from hostels list (authenticated)
+        try {
+          if (studentObj && (studentObj.monthlyFee == null || studentObj.monthlyFee === '' || Number(studentObj.monthlyFee) === 0)) {
+            const hostelsRes = await fetch(`${API_BASE}/api/users/me/hostels`, {
+              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            if (hostelsRes.ok) {
+              const hostelsPayload = await hostelsRes.json();
+              const list = hostelsPayload?.data || hostelsPayload || [];
+              const found = (list || []).find(h => String(h.id) === String(hostelId) || String(h._id) === String(hostelId) || String(h.hostelId) === String(hostelId));
+              if (found) {
+                // prefer numeric values
+                const mf = found.monthlyFee != null ? Number(found.monthlyFee) : (found.monthlyfee != null ? Number(found.monthlyfee) : 0);
+                studentObj = {
+                  ...studentObj,
+                  monthlyFee: mf,
+                  monthlyFeeCurrency: found.monthlyFeeCurrency || found.monthlyfeeCurrency || studentObj.monthlyFeeCurrency || 'INR'
+                };
+              }
+            }
+          }
+        } catch (e) {
+          // ignore enrichment errors and continue with whatever studentObj we have
+          console.warn('Failed to enrich student with hostel data:', e);
+        }
+
+        setStudent(studentObj);
 
         // Fetch payment history
         const paymentsRes = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
