@@ -64,13 +64,13 @@ export const renderStudentPrintHtml = (student = {}) => {
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
         <div>${photoBlock('पिता/माता का फोटो / Parent Photo', s.parentPhoto)}</div>
-        <div>${photoBlock('छात्रा का फोटो / Student Photo', s.studentPhoto)}</div>
+        <div>${photoBlock('छात्र/छात्रा का फोटो / Student Photo', s.studentPhoto)}</div>
       </div>
 
   <div style="margin-bottom:10px">
         <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">व्यक्तिगत जानकारी / Personal Information</h3>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
-          <div><strong>छात्रा का नाम:</strong> ${escape(s.studentName)}</div>
+          <div><strong>छात्र/छात्रा का नाम:</strong> ${escape(s.studentName)}</div>
           <div><strong>माता का नाम:</strong> ${escape(s.motherName)}</div>
           <div><strong>पिता का नाम:</strong> ${escape(s.fatherName)}</div>
           <div><strong>जन्म तिथि:</strong> ${escape(formatDateDDMMYYYY(s.dob))}</div>
@@ -97,7 +97,7 @@ export const renderStudentPrintHtml = (student = {}) => {
       </div>
 
       <div style="margin-bottom:10px">
-        <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">छात्रा से मिलने वाले का नाम / Allowed Visitors</h3>
+        <h3 style="background:#f3e8ff;padding:6px;border-radius:4px;font-weight:700;color:#9333ea;margin:0 0 8px 0">छात्र/छात्रा से मिलने वाले का नाम / Allowed Visitors</h3>
         <div style="font-size:12px;">
           ${(() => {
             const arr = [];
@@ -130,7 +130,7 @@ export const renderStudentPrintHtml = (student = {}) => {
       <!-- Place a single student signature on the bottom-right of page 1 -->
       <div style="position:absolute;right:24px;bottom:24px;width:260px;text-align:right;">
         <div style="border-top:2px solid #9ca3af;padding-top:4px;min-height:36px">${escape(s.studentSignature) || ''}</div>
-        <div style="font-size:12px;color:#666;margin-top:2px">छात्रा का हस्ताक्षर / Student Signature</div>
+        <div style="font-size:12px;color:#666;margin-top:2px">छात्र/छात्रा का हस्ताक्षर / Student Signature</div>
       </div>
     </div>
   `;
@@ -177,11 +177,11 @@ export const renderRulesHtml = (student = {}) => {
         
         2. कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है.
         
-        3. छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है.
+        3. छात्र/छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है.
         
         4. कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा.
         
-        5. यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा.
+        5. यदि छात्र/छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा.
         
         6. हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है.
         
@@ -193,7 +193,7 @@ export const renderRulesHtml = (student = {}) => {
         
         10. खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें.
         
-        11. छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है.
+        11. छात्र/छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है.
         
         12. किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें.
         
@@ -207,7 +207,7 @@ export const renderRulesHtml = (student = {}) => {
         </div>
         <div style="text-align:right;width:45%">
           <div style="border-top:2px solid #9ca3af;padding-top:8px;min-height:48px">${escape(s.studentSignature) || ''}</div>
-          <div style="font-size:12px;color:#666;margin-top:4px">छात्रा का हस्ताक्षर / Student Signature</div>
+          <div style="font-size:12px;color:#666;margin-top:4px">छात्र/छात्रा का हस्ताक्षर / Student Signature</div>
         </div>
       </div>
     </div>

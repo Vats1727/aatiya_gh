@@ -1280,7 +1280,7 @@ const HostelAdmissionForm = () => {
                   borderBottom: '1px solid #e5e7eb',
                   color: '#4f46e5',
                   fontSize: '18px'
-                }}>छात्रा की जानकारी / Student Information</h3>
+                }}>छात्र/छात्र/छात्रा की जानकारी / Student Information</h3>
                 
                 <div style={{
                   display: 'grid',
@@ -1289,7 +1289,7 @@ const HostelAdmissionForm = () => {
                   marginBottom: '15px'
                 }}>
                   <div>
-                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>छात्रा का नाम / Student Name</p>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>छात्र/छात्र/छात्रा का नाम / Student Name</p>
                     <p style={{
                       margin: '5px 0',
                       fontSize: '16px',
@@ -1463,7 +1463,7 @@ const HostelAdmissionForm = () => {
                     )}
                   </div>
                   <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#666' }}>
-                    छात्रा का फोटो / Student Photo
+                    छात्र/छात्र/छात्रा का फोटो / Student Photo
                   </p>
                 </div>
               </div>
@@ -1512,7 +1512,7 @@ const HostelAdmissionForm = () => {
                       {formData.studentSignature || 'Student Name'}
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#666' }}>
-                      छात्रा का हस्ताक्षर / Student's Signature
+                      छात्र/छात्र/छात्रा का हस्ताक्षर / Student's Signature
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#666' }}>
                       दिनांक / Date: {formatDateDDMMYYYY(formData.admissionDate || new Date())}
@@ -1557,15 +1557,15 @@ const HostelAdmissionForm = () => {
               }}>
                 <p><strong>1.</strong> हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</p>
                 <p><strong>2.</strong> कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है।</p>
-                <p><strong>3.</strong> छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</p>
+                <p><strong>3.</strong> छात्र/छात्र/छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</p>
                 <p><strong>4.</strong> कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा।</p>
-                <p><strong>5.</strong> यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</p>
+                <p><strong>5.</strong> यदि छात्र/छात्र/छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</p>
                 <p><strong>6.</strong> हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है।</p>
                 <p><strong>7.</strong> अभिभावकों से अनुरोध है कि वे अपने बच्चे से केवल रविवार को मिलें; मिलने वालों में माता-पिता और भाई-बहन ही शामिल होंगे।</p>
                 <p><strong>8.</strong> किसी भी विज़िट से पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है; विज़िटर्स को आवासीय क्षेत्रों में प्रवेश की अनुमति नहीं होगी।</p>
                 <p><strong>9.</strong> खिड़कियों के पास खड़ा होना सख्त मना है।</p>
                 <p><strong>10.</strong> खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</p>
-                <p><strong>11.</strong> छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
+                <p><strong>11.</strong> छात्र/छात्र/छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
                 <p><strong>12.</strong> किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें।</p>
                 <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह का शुल्क लिया जाएगा।</p>
               </div>
@@ -1582,7 +1582,7 @@ const HostelAdmissionForm = () => {
                 <div style={{textAlign: 'right', width: '45%'}}>
                   <div style={{borderTop: '1px solid #000', paddingTop: '4px', minHeight: '36px'}}>
                     <p style={{margin: '2px 0', fontSize: '14px', fontWeight: 500}}>{formData.studentSignature || ''}</p>
-                    <p style={{margin: '2px 0 0', fontSize: '12px', color: '#666'}}>छात्रा का हस्ताक्षर / Student Signature</p>
+                    <p style={{margin: '2px 0 0', fontSize: '12px', color: '#666'}}>छात्र/छात्रा का हस्ताक्षर / Student Signature</p>
                   </div>
                 </div>
               </div>
@@ -1725,7 +1725,7 @@ const HostelAdmissionForm = () => {
                 color: '#4b5563',
                 fontWeight: '500'
               }}>
-                छात्रा का फोटो
+                छात्र/छात्रा का फोटो
               </p>
             </div>
           </div>
@@ -1738,7 +1738,7 @@ const HostelAdmissionForm = () => {
             <div style={responsiveStyles.gridTwo}>
               <div style={responsiveStyles.formGroup}>
                 <label style={responsiveStyles.label}>
-                  छात्रा का नाम / Student Name *
+                  छात्र/छात्रा का नाम / Student Name *
                 </label>
                 <input
                   type="text"
@@ -1923,7 +1923,7 @@ const HostelAdmissionForm = () => {
           <div>
             <h3 style={responsiveStyles.sectionTitle}>
               <Users size={20} style={{display: 'inline', marginRight: '0.5rem'}} />
-              छात्रा से मिलने वाले का नाम / Names of Persons Allowed to Meet
+              छात्र/छात्रा से मिलने वाले का नाम / Names of Persons Allowed to Meet
             </h3>
             <div style={responsiveStyles.gridTwo}>
               {allowedVisitors && allowedVisitors.length > 0 ? (
@@ -2094,7 +2094,7 @@ const HostelAdmissionForm = () => {
             <div style={responsiveStyles.gridTwo}>
               <div style={responsiveStyles.formGroup}>
                 <label style={responsiveStyles.label}>
-                  छात्रा का हस्ताक्षर / Student Signature *
+                  छात्र/छात्रा का हस्ताक्षर / Student Signature *
                 </label>
                 <div style={{
                   ...responsiveStyles.input,
@@ -2166,15 +2166,15 @@ const HostelAdmissionForm = () => {
       <div style={{fontSize: '0.875rem', lineHeight: '1.8', textAlign: 'justify'}}>
         <p><strong>1.</strong> हॉस्टल से बाहर निकलने और वापस आने पर हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है।</p>
         <p><strong>2.</strong> कोचिंग के समय से 30 मिनट पूर्व कोचिंग के लिए निकलना और कोचिंग समाप्ति के 30 मिनट के भीतर वापस आना अनिवार्य है।</p>
-        <p><strong>3.</strong> छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</p>
+        <p><strong>3.</strong> छात्र/छात्रा अपनी जगह की साफ-सफाई की जिम्मेदार है।</p>
         <p><strong>4.</strong> कमरे से बाहर निकलते समय पंखे और लाइटें बंद करना अनिवार्य है; ऐसा न करने पर ₹50 का जुर्माना लगेगा।</p>
-        <p><strong>5.</strong> यदि छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</p>
+        <p><strong>5.</strong> यदि छात्र/छात्रा परिसर से बाहर जाने के बाद भाग जाती है तो हॉस्टल जिम्मेदार नहीं होगा।</p>
         <p><strong>6.</strong> हॉस्टल की फीस प्रत्येक माह की 1 तारिख से 5 तारिख के बीच जमा करना अनिवार्य है।</p>
         <p><strong>7.</strong> अभिभावकों से अनुरोध है कि वे अपने बच्चे से केवल रविवार को मिलें; मिलने वालों में माता-पिता और भाई-बहन ही शामिल होंगे।</p>
         <p><strong>8.</strong> किसी भी विज़िट से पहले हॉस्टल इंचार्ज से अनुमति लेना अनिवार्य है; विज़िटर्स को आवासीय क्षेत्रों में प्रवेश की अनुमति नहीं होगी।</p>
         <p><strong>9.</strong> खिड़कियों के पास खड़ा होना सख्त मना है।</p>
         <p><strong>10.</strong> खिड़की से कोई भी वस्तु बाहर न फेंके; उपलब्ध कचरा डिब्बे का प्रयोग करें।</p>
-        <p><strong>11.</strong> छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
+        <p><strong>11.</strong> छात्र/छात्राओं को पढ़ाई पर ध्यान केंद्रित करना आवश्यक है।</p>
         <p><strong>12.</strong> किसी भी समस्या या शिकायत की सूचना सीधे हॉस्टल इंचार्ज को दें।</p>
         <p><strong>13.</strong> हॉस्टल खाली करने के लिए एक महीने का नोटिस देना अनिवार्य है; अन्यथा अगले माह की फीस लागू होगी।</p>
         <p><strong>14.</strong> हॉस्टल प्रशासन आवश्यकतानुसार नियमों में परिवर्तन करने का अधिकार रखता है।</p>
