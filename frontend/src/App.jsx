@@ -33,6 +33,12 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
+// Dashboard wrapper - shows SuperAdmin or Admin dashboard based on role
+const DashboardRoute = () => {
+  const isSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
+  return isSuperAdmin ? <SuperAdminPage /> : <AdminDashboard />;
+};
+
 export default function App() {
   return (
     <Routes>
@@ -51,13 +57,10 @@ export default function App() {
         </PublicRoute>
       } />
 
-      {/* Super Admin routes */}
-      <Route path="/superadmin" element={<SuperAdminPage />} />
-
       {/* Protected routes */}
       <Route path="/admin/dashboard" element={
         <PrivateRoute>
-          <AdminDashboard />
+          <DashboardRoute />
         </PrivateRoute>
       } />
 

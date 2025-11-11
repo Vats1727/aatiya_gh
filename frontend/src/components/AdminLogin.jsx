@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { auth, signInWithEmailAndPassword } from '../firebase';
 
+// Hardcoded superadmin credentials
+const SUPERADMIN_CREDENTIALS = {
+  username: 'superadmin@gmail.com',
+  password: 'superadmin@123'
+};
+
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({
     username: '',
@@ -158,43 +164,59 @@ const styles = {
     setError('');
 
     try {
+      // Check if superadmin credentials
+      if (
+        credentials.username === SUPERADMIN_CREDENTIALS.username &&
+        credentials.password === SUPERADMIN_CREDENTIALS.password
+      ) {
+        // Set superadmin token and navigate to superadmin dashboard
+        localStorage.setItem('token', 'superadmin-token');
+        localStorage.setItem('isSuperAdmin', 'true');
+        const profile = { name: 'Super Admin', email: credentials.username };
+        localStorage.setItem('user', JSON.stringify(profile));
+        navigate('/admin/dashboard');
+        return;
+      }
+
+      // Regular admin login via Firebase
       const userCredential = await signInWithEmailAndPassword(
         auth,
         credentials.username,
         credentials.password
       );
       
-  // Get the ID token
-  const idToken = await userCredential.user.getIdToken();
+      // Get the ID token
+      const idToken = await userCredential.user.getIdToken();
 
-  // Store the raw token (no 'Bearer ' prefix)
-  localStorage.setItem('token', idToken);
-  // Decode token payload and store a lightweight user profile for UI
-  try {
-    const payloadPart = idToken.split('.')[1];
-    if (payloadPart) {
-      const padded = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
-      const json = decodeURIComponent(atob(padded).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      const payload = JSON.parse(json);
-      const profile = { name: payload.name || payload.displayName || payload.email?.split?.('@')?.[0] || '', email: payload.email };
-      localStorage.setItem('user', JSON.stringify(profile));
-    }
-  } catch (e) {
-    // ignore decode errors
-  }
+      // Store the raw token (no 'Bearer ' prefix)
+      localStorage.setItem('token', idToken);
+      localStorage.setItem('isSuperAdmin', 'false');
       
-  // Navigate after successful login
-  // Use the admin dashboard route to match admin area routing
-  navigate('/admin/dashboard');
+      // Decode token payload and store a lightweight user profile for UI
+      try {
+        const payloadPart = idToken.split('.')[1];
+        if (payloadPart) {
+          const padded = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+          const json = decodeURIComponent(atob(padded).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          const payload = JSON.parse(json);
+          const profile = { name: payload.name || payload.displayName || payload.email?.split?.('@')?.[0] || '', email: payload.email };
+          localStorage.setItem('user', JSON.stringify(profile));
+        }
+      } catch (e) {
+        // ignore decode errors
+      }
+      
+      // Navigate after successful login
+      navigate('/admin/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       setError('Invalid email or password');
     } finally {
       setIsLoading(false);
     }
-};
+  };
 
   return (
     <div style={styles.container}>

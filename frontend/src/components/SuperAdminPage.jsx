@@ -4,69 +4,40 @@ import { LogOut, ChevronDown, ChevronUp, Users, Building2, FileText, IndianRupee
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onrender.com';
 
-// Hardcoded superadmin credentials
-const SUPERADMIN_CREDENTIALS = {
-  username: 'superadmin@gmail.com',
-  password: 'superadmin@123'
-};
-
 const SuperAdminPage = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [credentials, setCredentials] = useState({
-    username: '',
-    password: '',
-  });
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [allData, setAllData] = useState({});
   const [expandedUsers, setExpandedUsers] = useState({});
   const [expandedHostels, setExpandedHostels] = useState({});
   const [expandedStudents, setExpandedStudents] = useState({});
   const [dataLoading, setDataLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if already authenticated
-    const superadminToken = localStorage.getItem('superadminToken');
-    if (superadminToken) {
-      setIsAuthenticated(true);
-      fetchAllData();
+    // Check if superadmin is authenticated
+    const isSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
+    if (!isSuperAdmin) {
+      navigate('/admin/dashboard');
+      return;
     }
-  }, []);
+    fetchAllData();
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setCredentials(prev => ({
-      ...prev,
-      [name]: value
-    }));
     if (error) setError('');
   };
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    // Validate superadmin credentials
-    if (
-      credentials.username === SUPERADMIN_CREDENTIALS.username &&
-      credentials.password === SUPERADMIN_CREDENTIALS.password
-    ) {
-      localStorage.setItem('superadminToken', 'verified');
-      setIsAuthenticated(true);
-      fetchAllData();
-      setCredentials({ username: '', password: '' });
-    } else {
-      setError('Invalid superadmin credentials');
-    }
-    setIsLoading(false);
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('isSuperAdmin');
+    localStorage.removeItem('user');
+    navigate('/admin');
   };
 
   const fetchAllData = async () => {
     try {
       setDataLoading(true);
-      // Fetch all users and their data from backend
       const response = await fetch(`${API_BASE}/api/superadmin/all-data`, {
         headers: {
           'Authorization': 'Bearer superadmin-token',
@@ -83,7 +54,6 @@ const SuperAdminPage = () => {
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Failed to load data. Please ensure backend supports superadmin endpoint.');
-      // Show sample data structure for testing
       setSampleData();
     } finally {
       setDataLoading(false);
@@ -91,7 +61,6 @@ const SuperAdminPage = () => {
   };
 
   const setSampleData = () => {
-    // Sample data structure for UI testing
     setAllData({
       users: [
         {
@@ -142,13 +111,6 @@ const SuperAdminPage = () => {
       ...prev,
       [key]: !prev[key]
     }));
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('superadminToken');
-    setIsAuthenticated(false);
-    setAllData({});
-    setCredentials({ username: '', password: '' });
   };
 
   const styles = {
@@ -372,59 +334,6 @@ const SuperAdminPage = () => {
       boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
     }
   };
-
-  // Login UI
-  if (!isAuthenticated) {
-    return (
-      <div style={styles.loginContainer}>
-        <form style={styles.loginForm} onSubmit={handleLogin}>
-          <h1 style={styles.title}>Super Admin Login</h1>
-          
-          {error && (
-            <div style={styles.error}>{error}</div>
-          )}
-          
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Email</label>
-            <input
-              type="email"
-              name="username"
-              value={credentials.username}
-              onChange={handleChange}
-              style={styles.input}
-              placeholder="superadmin@gmail.com"
-              required
-            />
-          </div>
-          
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Password</label>
-            <input
-              type="password"
-              name="password"
-              value={credentials.password}
-              onChange={handleChange}
-              style={styles.input}
-              placeholder="Enter password"
-              required
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={isLoading}
-            style={{
-              ...styles.button,
-              opacity: isLoading ? 0.7 : 1,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-      </div>
-    );
-  }
 
   // Main Dashboard UI
   return (
