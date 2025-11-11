@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { renderStudentPrintHtml, renderRulesHtml } from '../utils/printTemplate';
 import { downloadStudentPdf } from '../utils/pdfUtils';
-import '../styles.css';
+import '../Styles/styles.css';
+import '../Styles/StudentsPage.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -482,16 +483,16 @@ const StudentsPage = () => {
 
   if (loading) {
     return (
-      <div style={styles.container}>
-        <div style={styles.loading}>Loading...</div>
+      <div className="students-container">
+        <div className="students-loading">Loading...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={styles.container}>
-        <div style={styles.error}>
+      <div className="students-container">
+        <div className="students-error">
           <strong>Error:</strong> {error}
         </div>
         {/* Back navigation moved to the profile navbar (sticky) */}
@@ -501,7 +502,7 @@ const StudentsPage = () => {
 
 
   return (
-    <div className="container" style={styles.container}>
+    <div className="students-container">
       {/* Static profile navbar (sticky) - show current admin info if available */}
       {(() => {
         let stored = null;
@@ -509,26 +510,24 @@ const StudentsPage = () => {
         const display = stored?.name || stored?.displayName || (stored?.email && stored.email.split('@')[0]) || null;
         if (!display) return null;
         return (
-          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 8, zIndex: 50 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.25rem', fontWeight: 'bold' }}>
-                  {String(display).charAt(0).toUpperCase()}
-                </div>
+          <div className="students-header">
+            <div className="students-headerInner">
+              <div className="students-headerLeft">
+                <div className="students-avatarLarge">{String(display).charAt(0).toUpperCase()}</div>
                 <div>
-                  <div style={{ fontSize: '1rem', fontWeight: 600, color: '#111827' }}>{display}</div>
-                  <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{stored?.email || ''}</div>
+                  <div className="students-displayName">{display}</div>
+                  <div className="students-email">{stored?.email || ''}</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <button onClick={() => navigate('/admin/dashboard')} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: 'none', background: '#06b6d4', color: 'white', cursor: 'pointer' }}>Hostel list</button>
-                <button onClick={() => { localStorage.removeItem('token'); navigate('/admin'); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer' }}>Logout</button>
+              <div className="students-headerActions">
+                <button onClick={() => navigate('/admin/dashboard')} className="students-backButton">Hostel list</button>
+                <button onClick={() => { localStorage.removeItem('token'); navigate('/admin'); }} className="students-logoutButton">Logout</button>
               </div>
             </div>
           </div>
         );
       })()}
-      <div className="header" style={styles.header}>
+  <div className="students-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {(() => {
@@ -542,10 +541,10 @@ const StudentsPage = () => {
               if (hasDevanagari && en) {
                 return (
                   <>
-                    <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{hi}</div>
-                    <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{en} - Student list</div>
+                    <div className="students-titleMain">{hi}</div>
+                    <div className="students-subTitle">{en} - Student list</div>
                     {(hostel && (hostel.monthlyFee != null && hostel.monthlyFee !== '')) && (
-                      <div style={{ fontSize: '0.9rem', color: '#374151', marginTop: 6 }}>
+                      <div className="students-monthlyFee">
                         Monthly fee: {hostel.monthlyFeeCurrency === 'INR' ? `₹${hostel.monthlyFee}` : `${hostel.monthlyFee} ${hostel.monthlyFeeCurrency}`} per student
                       </div>
                     )}
@@ -556,10 +555,10 @@ const StudentsPage = () => {
               if (different) {
                 return (
                   <>
-                    <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{en}</div>
-                    <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{hi} - Student list</div>
+                    <div className="students-titleMain">{en}</div>
+                    <div className="students-subTitle">{hi} - Student list</div>
                     {(hostel && (hostel.monthlyFee != null && hostel.monthlyFee !== '')) && (
-                      <div style={{ fontSize: '0.9rem', color: '#374151', marginTop: 6 }}>
+                      <div className="students-monthlyFee">
                         Monthly fee: {hostel.monthlyFeeCurrency === 'INR' ? `₹${hostel.monthlyFee}` : `${hostel.monthlyFee} ${hostel.monthlyFeeCurrency}`} per student
                       </div>
                     )}
@@ -570,9 +569,9 @@ const StudentsPage = () => {
               const main = hi || en || 'Hostel Students';
               return (
                 <>
-                  <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{main}</div>
+                  <div className="students-titleMain">{main}</div>
                   {(hostel && (hostel.monthlyFee != null && hostel.monthlyFee !== '')) && (
-                    <div style={{ fontSize: '0.9rem', color: '#374151', marginTop: 6 }}>
+                    <div className="students-monthlyFee">
                       Monthly fee: {hostel.monthlyFeeCurrency === 'INR' ? `₹${hostel.monthlyFee}` : `${hostel.monthlyFee} ${hostel.monthlyFeeCurrency}`} per student
                     </div>
                   )}
@@ -581,10 +580,10 @@ const StudentsPage = () => {
             })()}
           </div>
 
-          <div style={{ marginLeft: 'auto' }}>
+            <div style={{ marginLeft: 'auto' }}>
             <button
               onClick={handleAddStudent}
-              style={styles.addButton}
+              className="students-addButton"
               aria-label="Add New Student"
             >
               <UserPlus size={18} style={{ marginLeft: '6px', flexShrink: 0 }} />
@@ -595,9 +594,9 @@ const StudentsPage = () => {
       </div>
 
       {/* Search and Filter Section */}
-      <div style={styles.searchFilterContainer}>
-        <div style={styles.searchContainer}>
-          <Search size={18} style={styles.searchIcon} />
+      <div className="students-searchFilterContainer">
+        <div className="students-searchContainer">
+          <Search size={18} className="students-searchIcon" />
           <input
             type="text"
             placeholder="Search by name or application number..."
@@ -606,18 +605,18 @@ const StudentsPage = () => {
               setSearchTerm(e.target.value);
               setCurrentPage(1); // Reset to first page when searching
             }}
-            style={styles.searchInput}
+            className="students-searchInput"
           />
         </div>
 
-        <div style={styles.filterContainer}>
+        <div className="students-filterContainer">
           <select
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
               setCurrentPage(1); // Reset to first page when changing filter
             }}
-            style={styles.statusFilter}
+            className="students-statusFilter"
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
@@ -626,11 +625,11 @@ const StudentsPage = () => {
           </select>
         </div>
 
-        <div style={styles.filterContainer}>
+        <div className="students-filterContainer">
           <select
             value={sortOption}
             onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
-            style={styles.statusFilter}
+            className="students-statusFilter"
             aria-label="Sort students"
           >
             <option value="name_asc">Name: A → Z</option>
@@ -643,20 +642,20 @@ const StudentsPage = () => {
         </div>
       </div>
 
-      <div className="card" style={styles.tableContainer}>
-        <div style={styles.tableHeader}>
+      <div className="students-tableContainer">
+        <div className="students-tableHeader">
           <h3>Students</h3>
-          <div style={styles.resultCountTop}>
+          <div className="students-resultCountTop">
             Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of {filteredStudents.length} students
           </div>
         </div>
 
         {filteredStudents.length === 0 ? (
-          <div style={styles.emptyState}>
+          <div className="students-emptyState">
             <p>No students found matching your criteria.</p>
           </div>
         ) : isMobile ? (
-          <div style={styles.studentsGrid}>
+          <div className="students-studentsGrid">
             {currentStudents.map((student, index) => {
               const computedAppNo = (() => {
                 if (student.applicationNumber) return student.applicationNumber;
@@ -667,12 +666,12 @@ const StudentsPage = () => {
               })();
 
               return (
-                <div key={student.id} style={styles.studentCard}>
+                <div key={student.id} className="students-studentCard">
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                      <div style={styles.avatar}>{String((student.studentName || 'U').charAt(0)).toUpperCase()}</div>
+                      <div className="students-avatar">{String((student.studentName || 'U').charAt(0)).toUpperCase()}</div>
                       <div>
-                        <div style={styles.nameText}>{student.studentName || student.name || 'N/A'}</div>
+                        <div className="students-nameText">{student.studentName || student.name || 'N/A'}</div>
                         <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{student.mobile1 || 'N/A'}</div>
                       </div>
                     </div>
@@ -725,16 +724,16 @@ const StudentsPage = () => {
               );
             })}
           </div>
-        ) : (
-          <table style={styles.table}>
+          ) : (
+          <table className="students-table">
             <thead>
               <tr>
-                <th style={styles.th}>Application No.</th>
-                <th style={styles.th}>Name</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Mobile Number</th>
-                <th style={styles.th}>Current Balance</th>
-                <th style={styles.th}>Actions</th>
+                <th>Application No.</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Mobile Number</th>
+                <th>Current Balance</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -748,28 +747,25 @@ const StudentsPage = () => {
                 })();
 
                 return (
-                  <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
-                    <td style={styles.td}>{computedAppNo}</td>
-                    <td style={styles.td}>
-                      <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
+                  <tr key={student.id}>
+                    <td>{computedAppNo}</td>
+                    <td>
+                      <span className="students-nameText">{student.studentName || student.name || 'N/A'}</span>
                     </td>
-                    <td style={styles.td}>
-                      <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
+                    <td>
+                      <span className="students-statusBadge" style={{ ...(student.status === 'approved' ? { background: '#dcfce7', color: '#166534' } : student.status === 'rejected' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#fef3c7', color: '#92400e' }) }}>
                         {student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
                       </span>
                     </td>
-                    <td style={styles.td}>{student.mobile1 || 'N/A'}</td>
-                    <td style={styles.td}>
-                      <div style={{
-                        ...styles.balanceContainer,
-                        color: (student.currentBalance || 0) > 0 ? '#dc2626' : '#059669'
-                      }}>
+                    <td>{student.mobile1 || 'N/A'}</td>
+                    <td>
+                      <div className="students-balanceContainer" style={{ color: (student.currentBalance || 0) > 0 ? '#dc2626' : '#059669' }}>
                         {(student.currentBalance || 0) > 0 ? 
                           `Due: ₹${Math.abs(student.currentBalance)}` : 
                           `Advance: ₹${Math.abs(student.currentBalance || 0)}`}
                       </div>
                     </td>
-                    <td style={styles.td}>
+                    <td>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
                           onClick={() => handleAccept(student)}
@@ -845,7 +841,7 @@ const StudentsPage = () => {
 
         {/* Pagination */}
         {filteredStudents.length > ITEMS_PER_PAGE && (
-          <div style={styles.pagination}>
+          <div className="students-pagination">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
@@ -902,7 +898,7 @@ const StudentsPage = () => {
               <ChevronRight size={18} />
             </button>
 
-            <div style={styles.pageInfo}>
+            <div className="students-pageInfo">
               Page {currentPage} of {totalPages}
             </div>
           </div>

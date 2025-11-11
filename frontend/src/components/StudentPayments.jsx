@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Info } from 'lucide-react';
+import '../Styles/StudentPayments.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -158,16 +159,16 @@ const StudentPayments = () => {
 
   if (loading) {
     return (
-      <div style={styles.container}>
-        <div style={styles.loading}>Loading...</div>
+      <div className="studentpayments-container">
+        <div className="studentpayments-loading">Loading...</div>
       </div>
     );
   }
 
   if (!student) {
     return (
-      <div style={styles.container}>
-        <div style={styles.error}>Student not found</div>
+      <div className="studentpayments-container">
+        <div className="studentpayments-error">Student not found</div>
       </div>
     );
   }
@@ -230,30 +231,27 @@ const StudentPayments = () => {
   const advancePaid = currentBalance < 0 ? Math.abs(currentBalance) : 0;
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <button onClick={() => navigate(`/hostel/${hostelId}/students`)} style={styles.backButton}>
+    <div className="studentpayments-container">
+      <div className="studentpayments-header">
+        <button onClick={() => navigate(`/hostel/${hostelId}/students`)} className="studentpayments-backButton">
           <ArrowLeft size={18} />
-          <span style={{ marginLeft: '0.5rem' }}>Back to Students</span>
+          <span className="studentpayments-backText">Back to Students</span>
         </button>
-        <h1 style={styles.title}>Manage Payments</h1>
+        <h1 className="studentpayments-title">Manage Payments</h1>
       </div>
 
-      <div style={styles.content}>
-        <div style={styles.studentInfo}>
-          <h2 style={styles.studentName}>{student.studentName}</h2>
-          <div style={styles.balanceSection}>
+      <div className="studentpayments-content">
+        <div className="studentpayments-studentInfo">
+          <h2 className="studentpayments-studentName">{student.studentName}</h2>
+          <div className="studentpayments-balanceSection">
             <span>Current Balance:</span>
-            <div style={{
-              ...styles.balanceAmount,
-              color: feesDue > 0 ? '#dc2626' : (advancePaid > 0 ? '#059669' : '#6b7280')  // Red if due, green if advance, gray if zero
-            }}>
-              {feesDue > 0 ? 
-                `Due: ${formatCurrency(feesDue)}` : 
+            <div className={`studentpayments-balanceAmount ${feesDue > 0 ? 'text-red' : (advancePaid > 0 ? 'text-green' : 'text-muted')}`}>
+              {feesDue > 0 ?
+                `Due: ${formatCurrency(feesDue)}` :
                 (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                style={styles.infoButton}
+                className="studentpayments-infoButton"
                 title="View Payment History"
               >
                 <Info size={18} />
@@ -262,28 +260,28 @@ const StudentPayments = () => {
           </div>
         </div>
 
-        <div style={styles.formSection}>
-          <h3 style={styles.formTitle}>Add New Payment</h3>
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Amount</label>
+        <div className="studentpayments-formSection">
+          <h3 className="studentpayments-formTitle">Add New Payment</h3>
+          <form onSubmit={handleSubmit} className="studentpayments-form">
+            <div className="studentpayments-formGroup">
+              <label className="studentpayments-label">Amount</label>
               <input
                 type="number"
                 value={newPayment.amount}
                 onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
-                style={styles.input}
+                className="studentpayments-input"
                 required
                 min="0"
               />
             </div>
 
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Payment Mode</label>
+            <div className="studentpayments-formGroup">
+              <label className="studentpayments-label">Payment Mode</label>
               <select
                 value={newPayment.paymentMode}
                 onChange={(e) => setNewPayment(prev => ({ ...prev, paymentMode: e.target.value }))}
-                style={styles.select}
+                className="studentpayments-select"
               >
                 <option value="cash">Cash</option>
                 <option value="upi">UPI</option>
@@ -292,50 +290,46 @@ const StudentPayments = () => {
               </select>
             </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Remarks</label>
+            <div className="studentpayments-formGroup">
+              <label className="studentpayments-label">Remarks</label>
               <textarea
                 value={newPayment.remarks}
                 onChange={(e) => setNewPayment(prev => ({ ...prev, remarks: e.target.value }))}
-                style={{ ...styles.input, minHeight: '80px' }}
+                className="studentpayments-textarea"
                 placeholder="Add any additional notes here..."
               />
             </div>
 
-            <button type="submit" style={styles.submitButton}>Add Payment</button>
+            <button type="submit" className="studentpayments-submitButton">Add Payment</button>
           </form>
         </div>
 
         {showHistory && (
-          <div style={styles.historyModal}>
-            <div style={styles.historyContent}>
-              <div style={styles.historyHeader}>
+          <div className="studentpayments-historyModal">
+            <div className="studentpayments-historyContent">
+              <div className="studentpayments-historyHeader">
                 <h3>Payment History</h3>
-                <button onClick={() => setShowHistory(false)} style={styles.closeButton}>×</button>
+                <button onClick={() => setShowHistory(false)} className="studentpayments-closeButton">×</button>
               </div>
               {/* Summary */}
-              <div style={styles.historySummary}>
-                <div style={styles.summaryItem}>
-                  <div style={styles.summaryLabel}>Hostel Fee (Debit)</div>
-                  <div style={{ ...styles.summaryValue, color: '#dc2626' }}>{formatCurrency(usedFee)}</div>
+              <div className="studentpayments-historySummary">
+                <div className="studentpayments-summaryItem">
+                  <div className="studentpayments-summaryLabel">Hostel Fee (Debit)</div>
+                  <div className="studentpayments-summaryValue text-red">{formatCurrency(usedFee)}</div>
                 </div>
                 {hasCustomFee && monthlyFee > 0 && (
-                  <div style={styles.summaryItem}>
-                    <div style={{ ...styles.summaryLabel, fontSize: '0.9em', color: '#6b7280' }}>Standard Fee</div>
-                    <div style={{ ...styles.summaryValue, fontSize: '0.9em', color: '#6b7280' }}>{formatCurrency(monthlyFee)}</div>
+                  <div className="studentpayments-summaryItem">
+                    <div className="studentpayments-summaryLabel font-small text-muted">Standard Fee</div>
+                    <div className="studentpayments-summaryValue font-small text-muted">{formatCurrency(monthlyFee)}</div>
                   </div>
                 )}
-                <div style={styles.summaryItem}>
-                  <div style={styles.summaryLabel}>Total Received</div>
-                  <div style={{ ...styles.summaryValue, color: '#059669' }}>{formatCurrency(totalCredit)}</div>
+                <div className="studentpayments-summaryItem">
+                  <div className="studentpayments-summaryLabel">Total Received</div>
+                  <div className="studentpayments-summaryValue text-green">{formatCurrency(totalCredit)}</div>
                 </div>
-                      <div style={{ ...styles.summaryItem, borderTop: '1px solid #e5e7eb', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
-                        <div style={{ ...styles.summaryLabel, fontWeight: '600' }}>Current Balance</div>
-                        <div style={{ 
-                          ...styles.summaryValue, 
-                          color: feesDue > 0 ? '#b91c1c' : (advancePaid > 0 ? '#059669' : '#6b7280'),
-                          fontWeight: '600'
-                        }}>
+                      <div className="studentpayments-summaryItem summary-divider">
+                        <div className="studentpayments-summaryLabel font-semibold">Current Balance</div>
+                        <div className={`studentpayments-summaryValue font-semibold ${feesDue > 0 ? 'text-red' : (advancePaid > 0 ? 'text-green' : 'text-muted')}`}>
                           {feesDue > 0 
                             ? `Due: ${formatCurrency(feesDue)}` 
                             : (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
@@ -343,19 +337,19 @@ const StudentPayments = () => {
                       </div>
               </div>
 
-              <div style={styles.historyList}>
+              <div className="studentpayments-historyList">
                 {payments.length === 0 ? (
-                  <div style={styles.noHistory}>No payment records found</div>
+                  <div className="studentpayments-noHistory">No payment records found</div>
                 ) : (
-                  <div style={styles.historyTableWrapper}>
-                    <table style={styles.historyTable}>
+                  <div className="studentpayments-historyTableWrapper">
+                    <table className="studentpayments-historyTable">
                       <thead>
                         <tr>
-                          <th style={styles.th}>Date</th>
-                          <th style={styles.th}>Mode</th>
-                          <th style={styles.th}>Remarks</th>
-                          <th style={{ ...styles.th, textAlign: 'right' }}>Debit</th>
-                          <th style={{ ...styles.th, textAlign: 'right' }}>Credit</th>
+                          <th className="studentpayments-th">Date</th>
+                          <th className="studentpayments-th">Mode</th>
+                          <th className="studentpayments-th">Remarks</th>
+                          <th className="studentpayments-th text-right">Debit</th>
+                          <th className="studentpayments-th text-right">Credit</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -366,36 +360,36 @@ const StudentPayments = () => {
                             {hasCustomFee ? (
                               <div>
                                 <div>Applied Monthly Fee</div>
-                                <div style={{ fontSize: '0.8em', color: '#6b7280' }}>
+                                <div className="font-small text-muted">
                                   (Standard: {formatCurrency(monthlyFee)})
                                 </div>
                               </div>
                             ) : 'Monthly Fee'}
                           </td>
-                          <td style={{ textAlign: 'right', color: '#dc2626' }}>
+                          <td className="text-right text-red">
                             {formatCurrency(usedFee)}
                           </td>
-                          <td style={{ textAlign: 'right' }}>—</td>
+                          <td className="text-right">—</td>
                         </tr>
                         {payments.map((payment, i) => (
                           <tr key={i}>
                             <td>{formatDate(payment.timestamp)}</td>
-                            <td>{payment.paymentMode}</td>
-                            <td>{payment.remarks || '—'}</td>
-                            <td style={{ textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
+                            <td className="paymentMode">{payment.paymentMode}</td>
+                            <td className="remarks">{payment.remarks || '—'}</td>
+                            <td className={`text-right ${payment.type === 'debit' ? 'text-red' : ''}`}>
                               {payment.type === 'debit' ? formatCurrency(payment.amount) : ''}
                             </td>
-                            <td style={{ textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
+                            <td className={`text-right ${payment.type === 'credit' ? 'text-green' : ''}`}>
                               {payment.type === 'credit' ? formatCurrency(payment.amount) : ''}
                             </td>
                           </tr>
                         ))}
                         <tr>
-                          <td colSpan={3} style={{ textAlign: 'right', fontWeight: '600' }}>Balance</td>
-                          <td style={{ textAlign: 'right', color: feesDue > 0 ? '#b91c1c' : '#6b7280', fontWeight: 600 }}>
+                          <td colSpan={3} className="text-right font-semibold">Balance</td>
+                          <td className={`text-right ${feesDue > 0 ? 'text-red' : 'text-muted'} font-semibold`}>
                             {feesDue > 0 ? formatCurrency(feesDue) : '—'}
                           </td>
-                          <td style={{ textAlign: 'right', color: advancePaid > 0 ? '#059669' : '#6b7280', fontWeight: 600 }}>
+                          <td className={`text-right ${advancePaid > 0 ? 'text-green' : 'text-muted'} font-semibold`}>
                             {advancePaid > 0 ? formatCurrency(advancePaid) : '—'}
                           </td>
                         </tr>
@@ -411,288 +405,6 @@ const StudentPayments = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    padding: '2rem',
-    maxWidth: '1200px',
-    margin: '0 auto',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: '2rem',
-    gap: '1rem',
-  },
-  backButton: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0.5rem 1rem',
-    border: '1px solid #e5e7eb',
-    borderRadius: '0.375rem',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    color: '#374151',
-    transition: 'all 0.2s',
-    '&:hover': {
-      backgroundColor: '#f3f4f6',
-    },
-  },
-  title: {
-    fontSize: '1.5rem',
-    fontWeight: '600',
-    color: '#111827',
-    margin: 0,
-  },
-  content: {
-    backgroundColor: 'white',
-    borderRadius: '0.5rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    padding: '1.5rem',
-  },
-  studentInfo: {
-    marginBottom: '2rem',
-    padding: '1rem',
-    backgroundColor: '#f9fafb',
-    borderRadius: '0.375rem',
-  },
-  studentName: {
-    fontSize: '1.25rem',
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: '0.5rem',
-  },
-  balanceSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    color: '#4b5563',
-  },
-  balanceAmount: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    fontSize: '1.125rem',
-    fontWeight: '600',
-    color: '#111827',
-  },
-  infoButton: {
-    background: 'none',
-    border: 'none',
-    padding: '0.25rem',
-    cursor: 'pointer',
-    color: '#6b7280',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'color 0.2s',
-    '&:hover': {
-      color: '#374151',
-    },
-  },
-  formSection: {
-    maxWidth: '600px',
-    margin: '0 auto',
-  },
-  formTitle: {
-    fontSize: '1.125rem',
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: '1rem',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem',
-  },
-  formGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  label: {
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    color: '#374151',
-  },
-  input: {
-    padding: '0.5rem',
-    borderRadius: '0.375rem',
-    border: '1px solid #e5e7eb',
-    fontSize: '0.875rem',
-    '&:focus': {
-      outline: 'none',
-      borderColor: '#8b5cf6',
-      boxShadow: '0 0 0 1px #8b5cf6',
-    },
-  },
-  select: {
-    padding: '0.5rem',
-    borderRadius: '0.375rem',
-    border: '1px solid #e5e7eb',
-    fontSize: '0.875rem',
-    backgroundColor: 'white',
-    '&:focus': {
-      outline: 'none',
-      borderColor: '#8b5cf6',
-      boxShadow: '0 0 0 1px #8b5cf6',
-    },
-  },
-  submitButton: {
-    padding: '0.75rem',
-    backgroundColor: '#8b5cf6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.375rem',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    '&:hover': {
-      backgroundColor: '#7c3aed',
-    },
-  },
-  historyModal: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 50,
-  },
-  historyContent: {
-    backgroundColor: 'white',
-    borderRadius: '0.5rem',
-    width: '90%',
-    maxWidth: '600px',
-    maxHeight: '80vh',
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  historyHeader: {
-    padding: '1rem',
-    borderBottom: '1px solid #e5e7eb',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  historySummary: {
-    display: 'flex',
-    gap: '1rem',
-    padding: '1rem',
-    borderBottom: '1px solid #eef2ff',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    flexWrap: 'wrap'
-  },
-  summaryItem: {
-    minWidth: '140px',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  summaryLabel: {
-    fontSize: '0.75rem',
-    color: '#6b7280',
-  },
-  summaryValue: {
-    fontSize: '1rem',
-    fontWeight: 700,
-    color: '#111827'
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    fontSize: '1.5rem',
-    color: '#6b7280',
-    cursor: 'pointer',
-    padding: '0.25rem',
-    '&:hover': {
-      color: '#374151',
-    },
-  },
-  historyList: {
-    padding: '1rem',
-    overflowY: 'auto',
-  },
-  historyTableWrapper: {
-    overflowX: 'auto',
-  },
-  historyTable: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    minWidth: '640px',
-  },
-  th: {
-    textAlign: 'left',
-    padding: '0.75rem 1rem',
-    fontSize: '0.875rem',
-    color: '#6b7280',
-    borderBottom: '1px solid #e5e7eb',
-  },
-  tr: {
-    backgroundColor: 'white',
-  },
-  td: {
-    padding: '0.75rem 1rem',
-    borderBottom: '1px solid #f3f4f6',
-    fontSize: '0.875rem',
-    color: '#374151',
-    verticalAlign: 'top'
-  },
-  historyItem: {
-    padding: '1rem',
-    borderBottom: '1px solid #e5e7eb',
-    '&:last-child': {
-      borderBottom: 'none',
-    },
-  },
-  historyItemHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '0.5rem',
-  },
-  historyDate: {
-    fontSize: '0.875rem',
-    color: '#6b7280',
-  },
-  historyAmount: {
-    fontWeight: '600',
-  },
-  historyItemDetails: {
-    fontSize: '0.875rem',
-  },
-  paymentMode: {
-    color: '#6b7280',
-    textTransform: 'capitalize',
-  },
-  remarks: {
-    marginTop: '0.25rem',
-    color: '#374151',
-  },
-  noHistory: {
-    textAlign: 'center',
-    color: '#6b7280',
-    padding: '2rem',
-  },
-  loading: {
-    textAlign: 'center',
-    padding: '2rem',
-    color: '#6b7280',
-  },
-  error: {
-    backgroundColor: '#fef2f2',
-    color: '#b91c1c',
-    padding: '1rem',
-    borderRadius: '0.375rem',
-    marginBottom: '1rem',
-  },
 };
 
 export default StudentPayments;
