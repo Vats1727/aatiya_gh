@@ -36,11 +36,7 @@ export default function App() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/" element={
-        <PublicRoute>
-          <StudentForm />
-        </PublicRoute>
-      } />
+      <Route path="/" element={<Navigate to="/admin" replace />} />
 
       <Route path="/admin" element={
         <PublicRoute>
