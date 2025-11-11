@@ -7,6 +7,7 @@ import { db } from './config/firebase.js';
 import hostelsRouter from './routes/hostels.js';
 import createAuthRouter from './routes/auth.js';
 import studentsRouter from './routes/students.js';
+import createSuperAdminRouter from './routes/superadmin.js';
 import { authMiddleware } from './middleware/auth.js';
 
 // Load environment variables
@@ -50,6 +51,10 @@ app.get('/api/health', (req, res) => {
 // auth router is a factory that needs the firestore `db` instance
 const authRouter = createAuthRouter(db);
 app.use('/api/auth', authRouter);
+
+// superadmin router
+const superadminRouter = createSuperAdminRouter(db);
+app.use('/api/superadmin', superadminRouter);
 
 // compatibility endpoint: some frontend code calls /api/users/me
 // return the same profile as GET /api/auth/me for backward-compat

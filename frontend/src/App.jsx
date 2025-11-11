@@ -7,6 +7,7 @@ import AdminRegister from "./components/AdminRegister";
 import StudentsPage from "./components/StudentsPage";
 import StudentPayments from "./components/StudentPayments";
 import SubmissionSuccess from "./components/SubmissionSuccess";
+import SuperAdminPage from "./components/SuperAdminPage";
 
 // Authentication wrapper
 const PrivateRoute = ({ children }) => {
@@ -50,6 +51,8 @@ export default function App() {
         </PublicRoute>
       } />
 
+      {/* Super Admin routes */}
+      <Route path="/superadmin" element={<SuperAdminPage />} />
 
       {/* Protected routes */}
       <Route path="/admin/dashboard" element={
