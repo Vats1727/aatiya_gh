@@ -28,13 +28,13 @@ const loadSanscript = () => {
 const transliterateText = async (text) => {
   if (!text) return '';
   try {
-    // If Sanscript was loaded onto window (CDN) use it first
+    // Try window (CDN) first
     if (typeof window !== 'undefined' && window.Sanscript && window.Sanscript.t) {
       return window.Sanscript.t(String(text), 'itrans', 'devanagari');
     }
-    // Fallback: try loading the CDN script
-    const Sanscript = await loadSanscript();
-    if (Sanscript && Sanscript.t) return Sanscript.t(String(text), 'itrans', 'devanagari');
+    // Then try the CDN loader
+    const SanscriptCdn = await loadSanscript();
+    if (SanscriptCdn && SanscriptCdn.t) return SanscriptCdn.t(String(text), 'itrans', 'devanagari');
 
     // As a last resort, try the (unofficial) Google Input Tools transliteration endpoint.
     // Note: this endpoint is not an official public API and may be rate-limited or blocked by CORS.
