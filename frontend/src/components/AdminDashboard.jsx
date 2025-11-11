@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import HindiKeyboard from './HindiKeyboard';
+import { itransToDevanagari } from '../libs/itransToDevanagari';
 
 // Dynamic loader for Sanscript transliteration library (loads from CDN at runtime)
 const loadSanscript = () => {
@@ -28,7 +29,14 @@ const loadSanscript = () => {
 const transliterateText = async (text) => {
   if (!text) return '';
   try {
-    // Try window (CDN) first
+    // First try local lightweight ITRANS transliterator (fast, offline)
+    try {
+      const local = itransToDevanagari(String(text));
+      if (local) return local;
+    } catch (e) {
+      // ignore and fall back to CDN/proxy
+    }
+    // Try window (CDN) next
     if (typeof window !== 'undefined' && window.Sanscript && window.Sanscript.t) {
       return window.Sanscript.t(String(text), 'itrans', 'devanagari');
     }

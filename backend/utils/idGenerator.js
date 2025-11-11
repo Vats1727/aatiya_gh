@@ -36,7 +36,12 @@ export async function createHostel(db, userId, data = {}) {
     const hostelPayload = {
       hostelId,
       name: data.name || '',
+      name_hi: data.name_hi || null,
       address: data.address || '',
+      address_hi: data.address_hi || null,
+      monthlyFee: (data.monthlyFee != null ? Number(data.monthlyFee) : null),
+      monthlyFeeCurrency: data.monthlyFeeCurrency || null,
+      qrDataUrl: data.qrDataUrl || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       nextStudentSeq: 1,
       meta: data.meta || null
