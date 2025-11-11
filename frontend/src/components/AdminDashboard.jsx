@@ -36,26 +36,21 @@ const transliterateText = async (text) => {
     const SanscriptCdn = await loadSanscript();
     if (SanscriptCdn && SanscriptCdn.t) return SanscriptCdn.t(String(text), 'itrans', 'devanagari');
 
-    // As a last resort, try the (unofficial) Google Input Tools transliteration endpoint.
-    // Note: this endpoint is not an official public API and may be rate-limited or blocked by CORS.
+    // As a last resort, try the (unofficial) Google Input Tools transliteration endpoint via
+    // the backend proxy to avoid CORS issues.
     try {
-      const url = `https://inputtools.google.com/request?text=${encodeURIComponent(String(text))}&itc=hi-t-i0-und&num=1`;
-      const res = await fetch(url);
+      const proxyUrl = `${API_BASE.replace(/\/$/, '')}/api/transliterate`;
+      const res = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: String(text) })
+      });
       if (res.ok) {
-        const json = await res.json();
-        // Quick scan for Devanagari text anywhere in the response
-        const joined = JSON.stringify(json);
-        const match = joined.match(/[\u0900-\u097F\uA8E0-\uA8FF]+/g);
-        if (match && match.length) return match.join(' ');
-
-        // Try to parse the common structure when present
-        if (Array.isArray(json) && json[0] === 'SUCCESS' && json[1] && json[1][0]) {
-          const candidates = json[1][0][1];
-          if (Array.isArray(candidates) && candidates[0] && candidates[0][0]) return candidates[0][0];
-        }
+        const payload = await res.json();
+        if (payload && payload.success && payload.text) return payload.text;
       }
     } catch (e) {
-      // ignore network/CORS errors and fall through to returning original text
+      // ignore network errors and fall through to returning original text
     }
   } catch (err) {
     // ignore and return original text
