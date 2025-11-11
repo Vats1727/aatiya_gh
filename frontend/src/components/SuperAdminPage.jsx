@@ -9,6 +9,7 @@ const SuperAdminPage = () => {
   const [expandedUsers, setExpandedUsers] = useState({});
   const [expandedHostels, setExpandedHostels] = useState({});
   const [expandedStudents, setExpandedStudents] = useState({});
+  const [studentPaymentsMap, setStudentPaymentsMap] = useState({});
   const [dataLoading, setDataLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -103,6 +104,45 @@ const SuperAdminPage = () => {
       ...prev,
       [key]: !prev[key]
     }));
+    // when opening a hostel, fetch payments for its students (lazy)
+    if (!expandedHostels[key]) {
+      fetchPaymentsForHostel(userId, hostelId);
+    }
+  };
+
+  // Fetch payments for all students in a hostel and store in studentPaymentsMap
+  const fetchPaymentsForHostel = async (userId, hostelId) => {
+    try {
+      // find user and hostel objects from allData
+      const user = (allData.users || []).find(u => u.userId === userId);
+      if (!user) return;
+      const hostel = (user.hostels || []).find(h => h.hostelId === hostelId);
+      if (!hostel || !hostel.students || hostel.students.length === 0) return;
+
+      const headers = { 'Authorization': 'Bearer superadmin-token', 'Content-Type': 'application/json' };
+      const promises = hostel.students.map(async (student) => {
+        const key = `${userId}-${hostelId}-${student.studentId}`;
+        try {
+          const res = await fetch(`${API_BASE}/api/users/${userId}/hostels/${hostelId}/students/${student.studentId}/payments`, { headers });
+          if (!res.ok) return { key, payments: student.payments || [] };
+          const payload = await res.json();
+          return { key, payments: payload?.data || payload || [] };
+        } catch (e) {
+          return { key, payments: student.payments || [] };
+        }
+      });
+
+      const results = await Promise.all(promises);
+      setStudentPaymentsMap(prev => {
+        const copy = { ...prev };
+        for (const r of results) {
+          copy[r.key] = r.payments || [];
+        }
+        return copy;
+      });
+    } catch (err) {
+      console.error('fetchPaymentsForHostel error', err);
+    }
   };
 
   const toggleStudentExpand = (userId, hostelId, studentId) => {
@@ -497,27 +537,33 @@ const SuperAdminPage = () => {
                                         <div style={{ fontWeight: 700 }}>{student.studentName}</div>
                                       </div>
                                       <div style={{ minWidth: 240 }}>
-                                        {(student.payments || []).length === 0 ? (
-                                          <div style={{ color: '#9ca3af' }}>No payments</div>
-                                        ) : (
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                            {student.payments.map((payment, idx) => {
-                                              const expected = Number(payment.expectedAmount ?? payment.dueAmount ?? hostel?.monthlyFee ?? payment.monthlyFee ?? 0);
-                                              const paid = Number(payment.amount || 0);
-                                              const diff = (!Number.isNaN(expected) && !Number.isNaN(paid)) ? (expected - paid) : null;
-                                              const dateStr = formatDateValue(payment.date ?? payment.paidAt ?? payment.createdAt ?? payment.timestamp ?? payment.paid_on ?? payment.paymentDate);
-                                              return (
-                                                <div key={payment.paymentId || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                                                  <div style={{ fontWeight: 700 }}>{formatAmount(paid)}</div>
-                                                  <div style={{ color: '#6b7280' }}>{dateStr}</div>
-                                                  <div style={{ minWidth: 120, textAlign: 'right' }}>
-                                                    {diff === null ? <span style={{ color: '#9ca3af' }}>N/A</span> : diff > 0 ? <span style={{ color: '#92400e' }}>{formatAmount(diff)} left</span> : diff < 0 ? <span style={{ color: '#166534' }}>{formatAmount(Math.abs(diff))} advance</span> : <span style={{ color: '#3730a3' }}>Settled</span>}
-                                                  </div>
-                                                </div>
-                                              );
-                                            })}
-                                          </div>
-                                        )}
+                                        {
+                                          (() => {
+                                            const key = `${selectedUser.userId}-${hostel.hostelId}-${student.studentId}`;
+                                            const payments = studentPaymentsMap[key] || (student.payments || []);
+                                            if (!payments || payments.length === 0) return <div style={{ color: '#9ca3af' }}>No payments</div>;
+
+                                            return (
+                                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                {payments.map((payment, idx) => {
+                                                  const expected = Number(payment.expectedAmount ?? payment.dueAmount ?? hostel?.monthlyFee ?? payment.monthlyFee ?? 0);
+                                                  const paid = Number(payment.amount || 0);
+                                                  const diff = (!Number.isNaN(expected) && !Number.isNaN(paid)) ? (expected - paid) : null;
+                                                  const dateStr = formatDateValue(payment.date ?? payment.paidAt ?? payment.createdAt ?? payment.timestamp ?? payment.paid_on ?? payment.paymentDate);
+                                                  return (
+                                                    <div key={payment.paymentId || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                                                      <div style={{ fontWeight: 700 }}>{formatAmount(paid)}</div>
+                                                      <div style={{ color: '#6b7280' }}>{dateStr}</div>
+                                                      <div style={{ minWidth: 120, textAlign: 'right' }}>
+                                                        {diff === null ? <span style={{ color: '#9ca3af' }}>N/A</span> : diff > 0 ? <span style={{ color: '#92400e' }}>{formatAmount(diff)} left</span> : diff < 0 ? <span style={{ color: '#166534' }}>{formatAmount(Math.abs(diff))} advance</span> : <span style={{ color: '#3730a3' }}>Settled</span>}
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            );
+                                          })()
+                                        }
                                       </div>
                                     </div>
                                   ))}
