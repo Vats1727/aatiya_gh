@@ -495,7 +495,6 @@ const SuperAdminPage = () => {
                                     <div key={student.studentId} style={{ padding: 10, borderRadius: 8, background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                       <div>
                                         <div style={{ fontWeight: 700 }}>{student.studentName}</div>
-                                        <div style={{ color: '#6b7280', fontSize: 13 }}>{student.email || '-'}</div>
                                       </div>
                                       <div style={{ minWidth: 240 }}>
                                         {(student.payments || []).length === 0 ? (
