@@ -113,6 +113,27 @@ const SuperAdminPage = () => {
     }));
   };
 
+  // UI state for improved dashboard
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState(null);
+
+  const computeStats = () => {
+    const users = allData.users || [];
+    let totalHostels = 0, totalStudents = 0, totalPayments = 0;
+    for (const u of users) {
+      const hostels = u.hostels || [];
+      totalHostels += hostels.length;
+      for (const h of hostels) {
+        const students = h.students || [];
+        totalStudents += students.length;
+        for (const s of students) {
+          totalPayments += (s.payments || []).length;
+        }
+      }
+    }
+    return { totalUsers: users.length, totalHostels, totalStudents, totalPayments };
+  };
+
   // Helper: format amounts and dates robustly (handles ISO, timestamps, Firestore-like objects)
   const formatAmount = (value) => {
     const num = Number(value || 0);
@@ -391,105 +412,117 @@ const SuperAdminPage = () => {
             <p>No users found</p>
           </div>
         ) : (
-          allData.users?.map((user) => (
-            <div key={user.userId} style={styles.userCard}>
-              <div style={styles.userHeader} onClick={() => toggleUserExpand(user.userId)}>
-                <div style={styles.userInfo}>
-                  <h2 style={styles.userTitle}>
-                    <Users size={18} />
-                    {user.name || user.email || 'Unknown User'}
-                  </h2>
-                  <p style={styles.userEmail}>{user.email}</p>
-                </div>
-                <button style={styles.expandBtn}>
-                  {expandedUsers[user.userId] ? <ChevronUp /> : <ChevronDown />}
-                </button>
-              </div>
-
-              {expandedUsers[user.userId] && (
-                <div style={{ marginTop: '1rem' }}>
-                  {user.hostels?.map((hostel) => (
-                    <div key={hostel.hostelId} style={styles.hostelCard}>
-                      <div style={styles.hostelHeader} onClick={() => toggleHostelExpand(user.userId, hostel.hostelId)}>
-                        <h3 style={styles.hostelTitle}>
-                          <Building2 size={16} />
-                          {hostel.name || 'Unnamed Hostel'}
-                        </h3>
-                        <button style={styles.expandBtn}>
-                          {expandedHostels[`${user.userId}-${hostel.hostelId}`] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </button>
-                      </div>
-                      <p style={{ color: '#6b7280', fontSize: '0.875rem', margin: '0.5rem 0 0 0' }}>
-                        Address: {hostel.address || 'N/A'}
-                      </p>
-
-                      {expandedHostels[`${user.userId}-${hostel.hostelId}`] && (
-                        <div style={{ marginTop: '0.75rem' }}>
-                          {hostel.students?.map((student) => (
-                            <div key={student.studentId} style={styles.studentCard}>
-                              <div style={styles.studentHeader} onClick={() => toggleStudentExpand(user.userId, hostel.hostelId, student.studentId)}>
-                                <h4 style={styles.studentTitle}>
-                                  <Users size={14} />
-                                  {student.studentName || 'Unnamed Student'}
-                                </h4>
-                                <button style={styles.expandBtn}>
-                                  {expandedStudents[`${user.userId}-${hostel.hostelId}-${student.studentId}`] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                </button>
-                              </div>
-
-                              {expandedStudents[`${user.userId}-${hostel.hostelId}-${student.studentId}`] && (
-                                <div style={styles.paymentList}>
-                                  <p style={{ margin: '0 0 0.75rem 0', fontWeight: '600', color: '#1f2937' }}>
-                                    <FileText size={14} style={{ marginRight: '0.5rem', display: 'inline' }} />
-                                    Payments:
-                                  </p>
-                                  {student.payments && student.payments.length > 0 ? (
-                                    student.payments.map((payment, idx) => {
-                                      const expected = Number(payment.expectedAmount ?? payment.dueAmount ?? hostel?.monthlyFee ?? payment.monthlyFee ?? 0);
-                                      const paid = Number(payment.amount || 0);
-                                      const diff = (!Number.isNaN(expected) && !Number.isNaN(paid)) ? (expected - paid) : null;
-                                      const dateStr = formatDateValue(payment.date ?? payment.paidAt ?? payment.createdAt ?? payment.timestamp ?? payment.paid_on ?? payment.paymentDate);
-                                      return (
-                                        <div key={payment.paymentId || idx} style={{ ...styles.paymentItem, padding: '0.75rem', borderRadius: 8, background: '#fff' }}>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                                            <div style={{ fontWeight: 700, color: '#111827' }}>{formatAmount(paid)}</div>
-                                            <div style={{ color: '#6b7280' }}>{dateStr}</div>
-                                          </div>
-                                          <div style={{ minWidth: 140, textAlign: 'right' }}>
-                                            {diff === null ? (
-                                              <span style={{ color: '#9ca3af' }}>N/A</span>
-                                            ) : diff > 0 ? (
-                                              <span style={{ padding: '0.25rem 0.5rem', borderRadius: 6, background: '#fff7ed', color: '#92400e', fontWeight: 600 }}>{formatAmount(diff)} left</span>
-                                            ) : diff < 0 ? (
-                                              <span style={{ padding: '0.25rem 0.5rem', borderRadius: 6, background: '#ecfccb', color: '#166534', fontWeight: 600 }}>{formatAmount(Math.abs(diff))} advance</span>
-                                            ) : (
-                                              <span style={{ padding: '0.25rem 0.5rem', borderRadius: 6, background: '#eef2ff', color: '#3730a3', fontWeight: 600 }}>Settled</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      );
-                                    })
-                                  ) : (
-                                    <p style={{ color: '#9ca3af', fontSize: '0.875rem', margin: 0 }}>No payments</p>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          {!hostel.students || hostel.students.length === 0 && (
-                            <p style={{ color: '#9ca3af', fontSize: '0.875rem', margin: '0.75rem 0 0 1rem' }}>No students</p>
-                          )}
-                        </div>
-                      )}
+          (() => {
+            const stats = computeStats();
+            const users = allData.users || [];
+            const filtered = users.filter(u => {
+              const q = searchTerm.trim().toLowerCase();
+              if (!q) return true;
+              return (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+            });
+            const selectedUser = (allData.users || []).find(u => u.userId === selectedUserId) || filtered[0] || null;
+            return (
+              <div style={{ display: 'flex', gap: 16 }}>
+                {/* Left column: summary + user list */}
+                <div style={{ width: '32%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ background: 'white', borderRadius: 12, padding: 16, boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
+                    <h3 style={{ margin: 0, color: '#6b21a8' }}>Overview</h3>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                      <div style={{ flex: '1 1 45%', background: '#fff7ed', padding: 10, borderRadius: 8, fontWeight: 700 }}>{stats.totalUsers} Users</div>
+                      <div style={{ flex: '1 1 45%', background: '#eef2ff', padding: 10, borderRadius: 8, fontWeight: 700 }}>{stats.totalHostels} Hostels</div>
+                      <div style={{ flex: '1 1 45%', background: '#ecfccb', padding: 10, borderRadius: 8, fontWeight: 700 }}>{stats.totalStudents} Students</div>
+                      <div style={{ flex: '1 1 45%', background: '#fff7ed', padding: 10, borderRadius: 8, fontWeight: 700 }}>{stats.totalPayments} Payments</div>
                     </div>
-                  ))}
-                  {!user.hostels || user.hostels.length === 0 && (
-                    <p style={{ color: '#9ca3af', fontSize: '0.875rem', margin: '0.75rem 0 0 1rem' }}>No hostels</p>
+                  </div>
+
+                  <div style={{ background: 'white', borderRadius: 12, padding: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.06)', flex: 1, overflow: 'auto' }}>
+                    <input
+                      placeholder="Search users by name or email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #e6e6e6' }}
+                    />
+                    <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {filtered.map(u => (
+                        <div key={u.userId} onClick={() => setSelectedUserId(u.userId)} style={{ cursor: 'pointer', padding: 10, borderRadius: 8, background: u.userId === selectedUserId ? 'linear-gradient(90deg,#fbf7ff,#f3e8ff)' : '#fff', border: u.userId === selectedUserId ? '1px solid #e9d5ff' : '1px solid #f3f3f3' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontWeight: 700 }}>{u.name || u.email}</div>
+                              <div style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: 12, color: '#374151' }}>{(u.hostels || []).length} hostels</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {filtered.length === 0 && <div style={{ color: '#9ca3af' }}>No users match</div>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right column: selected user details */}
+                <div style={{ width: '68%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {!selectedUser ? (
+                    <div style={{ ...styles.emptyState, padding: 24 }}>Select a user from the left to view hostels, students and payments</div>
+                  ) : (
+                    <div style={{ background: 'white', borderRadius: 12, padding: 16, boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
+                      <h2 style={{ margin: 0, color: '#111827' }}>{selectedUser.name || selectedUser.email}</h2>
+                      <p style={{ marginTop: 6, color: '#6b7280' }}>{selectedUser.email}</p>
+
+                      <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {(selectedUser.hostels || []).map(hostel => (
+                          <div key={hostel.hostelId} style={{ border: '1px solid #f3f3f3', borderRadius: 10, padding: 12, background: '#ffffff' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                <h4 style={{ margin: 0 }}>{hostel.name}</h4>
+                                <div style={{ color: '#6b7280', fontSize: 13 }}>Address: {hostel.address || 'N/A'}</div>
+                              </div>
+                              <div style={{ color: '#6b7280', fontSize: 13 }}>{(hostel.students || []).length} students</div>
+                            </div>
+
+                            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                              {(hostel.students || []).map(student => (
+                                <div key={student.studentId} style={{ padding: 10, borderRadius: 8, background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div>
+                                    <div style={{ fontWeight: 700 }}>{student.studentName}</div>
+                                    <div style={{ color: '#6b7280', fontSize: 13 }}>{student.email || '-'}</div>
+                                  </div>
+                                  <div style={{ minWidth: 240 }}>
+                                    {(student.payments || []).length === 0 ? (
+                                      <div style={{ color: '#9ca3af' }}>No payments</div>
+                                    ) : (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                        {student.payments.map((payment, idx) => {
+                                          const expected = Number(payment.expectedAmount ?? payment.dueAmount ?? hostel?.monthlyFee ?? payment.monthlyFee ?? 0);
+                                          const paid = Number(payment.amount || 0);
+                                          const diff = (!Number.isNaN(expected) && !Number.isNaN(paid)) ? (expected - paid) : null;
+                                          const dateStr = formatDateValue(payment.date ?? payment.paidAt ?? payment.createdAt ?? payment.timestamp ?? payment.paid_on ?? payment.paymentDate);
+                                          return (
+                                            <div key={payment.paymentId || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                                              <div style={{ fontWeight: 700 }}>{formatAmount(paid)}</div>
+                                              <div style={{ color: '#6b7280' }}>{dateStr}</div>
+                                              <div style={{ minWidth: 120, textAlign: 'right' }}>
+                                                {diff === null ? <span style={{ color: '#9ca3af' }}>N/A</span> : diff > 0 ? <span style={{ color: '#92400e' }}>{formatAmount(diff)} left</span> : diff < 0 ? <span style={{ color: '#166534' }}>{formatAmount(Math.abs(diff))} advance</span> : <span style={{ color: '#3730a3' }}>Settled</span>}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          ))
+              </div>
+            );
+          })()
         )}
       </div>
     </div>
