@@ -1183,23 +1183,16 @@ const fetchHostels = async () => {
                 name="name"
                 className="input"
                 value={newHostel.name}
-                onChange={(e) => {
+                  onChange={(e) => {
                   const val = e.target.value || '';
                   setNewHostel(prev => ({ ...prev, name: val }));
-                  // debounce transliteration
+                  // debounce transliteration using transliterateText helper
                   if (translitTimers.current.name) clearTimeout(translitTimers.current.name);
                   translitTimers.current.name = setTimeout(() => {
-                    loadSanscript().then((Sanscript) => {
-                      try {
-                        if (Sanscript && Sanscript.t) {
-                          const hi = Sanscript.t(val, 'itrans', 'devanagari');
-                          setNewHostel(prev => ({ ...prev, name_hi: hi }));
-                        }
-                      } catch (err) {
-                        // fallback: do nothing
-                      }
-                    }).catch(() => {/* ignore load errors */});
-                  }, 350);
+                    transliterateText(val).then((hi) => {
+                      if (hi) setNewHostel(prev => ({ ...prev, name_hi: hi }));
+                    }).catch(() => {/* ignore */});
+                  }, 300);
                 }}
                 placeholder="Hostel name (English)"
                 style={applyResponsiveStyles(styles.input)}
@@ -1239,17 +1232,10 @@ const fetchHostels = async () => {
                   setNewHostel(prev => ({ ...prev, address: val }));
                   if (translitTimers.current.address) clearTimeout(translitTimers.current.address);
                   translitTimers.current.address = setTimeout(() => {
-                    loadSanscript().then((Sanscript) => {
-                      try {
-                        if (Sanscript && Sanscript.t) {
-                          const hi = Sanscript.t(val, 'itrans', 'devanagari');
-                          setNewHostel(prev => ({ ...prev, address_hi: hi }));
-                        }
-                      } catch (err) {
-                        // ignore
-                      }
+                    transliterateText(val).then((hi) => {
+                      if (hi) setNewHostel(prev => ({ ...prev, address_hi: hi }));
                     }).catch(() => {/* ignore */});
-                  }, 350);
+                  }, 300);
                 }}
                 placeholder="Address (English)"
                 style={applyResponsiveStyles(styles.input)}
