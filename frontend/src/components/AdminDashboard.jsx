@@ -66,8 +66,7 @@ const transliterateText = async (text) => {
   }
   return text;
 };
-import '../Styles/styles.css';
-import '../Styles/AdminDashboard.css';
+import '../styles.css';
 
 // Use production URL if environment variable is not set
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onrender.com';
@@ -1081,8 +1080,8 @@ const fetchHostels = async () => {
   };
 
   return (
-    <div className="admin-container">
-      <div className="admin-content">
+    <div className="container" style={applyResponsiveStyles(styles.container)}>
+      <div className="content" style={applyResponsiveStyles(styles.content)}>
         {/* User Profile Section */}
         <div className="card" style={{
           background: 'white',
@@ -1154,10 +1153,10 @@ const fetchHostels = async () => {
                 width: '100%',
               }}
             >
-              <button onClick={() => navigate('/admin/dashboard')} className="btn btn-primary admin-submitButton" style={{ minWidth: '120px', background: '#06b6d4' }} title="Hostel List">
+              <button onClick={() => navigate('/admin/dashboard')} className="btn btn-primary" style={{...applyResponsiveStyles(styles.addButton), minWidth: '120px', background: '#06b6d4'}} title="Hostel List">
                 <Users size={16} style={{ marginRight: '6px' }} /> Hostel List
               </button>
-              <button onClick={handleLogout} className="btn btn-secondary admin-cancelButton" style={{ minWidth: '100px' }} title="Logout">
+              <button onClick={handleLogout} className="btn btn-secondary" style={{...applyResponsiveStyles(styles.logoutButton), minWidth: '100px'}} title="Logout">
                 <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
               </button>
             </div>
@@ -1180,12 +1179,12 @@ const fetchHostels = async () => {
 
         {/* Inline Add Hostel form shown on this page */}
         {showAddHostel && (
-          <div className="admin-card">
+          <div className="card" style={applyResponsiveStyles(styles.card)}>
             <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>{newHostel.id ? 'Edit Hostel' : 'Add New Hostel'}</h3>
-            <form onSubmit={handleAddHostel} className="admin-form">
+            <form onSubmit={handleAddHostel} className="form" style={applyResponsiveStyles(styles.form)}>
               <input
                 name="name"
-                className="admin-input"
+                className="input"
                 value={newHostel.name}
                   onChange={(e) => {
                   const val = e.target.value || '';
@@ -1199,12 +1198,13 @@ const fetchHostels = async () => {
                   }, 300);
                 }}
                 placeholder="Hostel name (English)"
+                style={applyResponsiveStyles(styles.input)}
                 required
               />
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input
                   name="name_hi"
-                  className="admin-input admin-input--hindi"
+                  className="input"
                   value={newHostel.name_hi}
                   onChange={(e) => {
                     const val = e.target.value || '';
@@ -1222,12 +1222,13 @@ const fetchHostels = async () => {
                     }
                   }}
                   placeholder="Hostel name (Hindi)"
+                  style={{ ...applyResponsiveStyles(styles.input), color: '#000' }}
                 />
                 <button type="button" onClick={() => { setKeyboardTarget('name_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
               </div>
               <input
                 name="address"
-                className="admin-input"
+                className="input"
                 value={newHostel.address}
                 onChange={(e) => {
                   const val = e.target.value || '';
@@ -1240,12 +1241,13 @@ const fetchHostels = async () => {
                   }, 300);
                 }}
                 placeholder="Address (English)"
+                style={applyResponsiveStyles(styles.input)}
                 required
               />
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input
                   name="address_hi"
-                  className="admin-input admin-input--hindi"
+                  className="input"
                   value={newHostel.address_hi}
                   onChange={(e) => {
                     const val = e.target.value || '';
@@ -1262,31 +1264,33 @@ const fetchHostels = async () => {
                     }
                   }}
                   placeholder="Address (Hindi)"
+                  style={{ ...applyResponsiveStyles(styles.input), color: '#000' }}
                 />
                 <button type="button" onClick={() => { setKeyboardTarget('address_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
                 <input
                   name="monthlyFee"
-                  className="admin-input"
+                  className="input"
                   type="number"
                   min="0"
                   step="0.01"
                   value={newHostel.monthlyFee}
                   onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFee: e.target.value }))}
                   placeholder="Monthly fee per student"
-                  style={{ maxWidth: 220 }}
+                  style={{ ...applyResponsiveStyles(styles.input), maxWidth: 220 }}
                 />
                 <select value={newHostel.monthlyFeeCurrency} onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFeeCurrency: e.target.value }))} style={{ padding: '0.75rem 1rem', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>
                   <option value="INR">INR</option>
                 </select>
               </div>
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button type="submit" className="btn btn-primary admin-submitButton">{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
+                <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
                 <button
                   type="button"
-                  className="btn btn-secondary admin-cancelButton"
+                  className="btn btn-secondary"
                   onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setError(''); }}
+                  style={applyResponsiveStyles(styles.cancelButton)}
                 >
                   Cancel
                 </button>
@@ -1316,14 +1320,18 @@ const fetchHostels = async () => {
           onClose={() => { setShowHindiKeyboard(false); setKeyboardTarget(null); }}
         />
 
-        <div className="admin-header">
+        <div style={applyResponsiveStyles(styles.header)}>
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%'}}>
-            <h1 className="admin-title">Hostel Management</h1>
+            <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
             <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
               <button
                 onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setShowAddHostel(true); }}
-                className="btn btn-primary admin-submitButton"
-                style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', minWidth: '120px' }}
+                className="btn btn-primary"
+                style={{
+                  ...applyResponsiveStyles(styles.addButton),
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                  minWidth: '120px',
+                }}
                 type="button"
               >
                 <Home size={18} className="mr-2" />
@@ -1333,23 +1341,22 @@ const fetchHostels = async () => {
           </div>
         </div>
 
-        <div className="admin-tableContainer">
+        <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem' }}>
             <input
               type="search"
               placeholder="Search hostels by name..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="admin-searchInput"
-              style={{ maxWidth: 420 }}
+              style={{ ...applyResponsiveStyles(styles.searchInput), maxWidth: 420 }}
             />
             <div style={{ color: '#6b7280' }}>{filteredHostels.length} hostels</div>
           </div>
 
           {isMobile ? (
-            <div className="admin-hostelGrid">
+            <div style={applyResponsiveStyles(styles.hostelGrid)}>
               {paginatedHostels.map((hostel) => (
-                <div key={hostel.id} className="admin-hostelCard">
+                <div key={hostel.id} style={applyResponsiveStyles(styles.hostelCard)}>
                   <h4 style={{ margin: 0, fontSize: '1rem', color: '#111827' }}>{hostel.name}</h4>
                   <div style={{ color: '#6b7280', marginTop: 6 }}>{hostel.address || ''}</div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
@@ -1364,6 +1371,7 @@ const fetchHostels = async () => {
             </div>
           ) : (
             <table style={{
+              ...applyResponsiveStyles(styles.table),
               width: '100%',
               borderCollapse: 'collapse'
             }}>
@@ -1443,8 +1451,9 @@ const fetchHostels = async () => {
         </div>
 
         {selectedHostel && (
-          <div className="admin-tableContainer">
+          <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
             <table style={{
+              ...applyResponsiveStyles(styles.table),
               width: '100%',
               borderCollapse: 'collapse'
             }}>
