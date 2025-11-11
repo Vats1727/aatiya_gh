@@ -407,9 +407,6 @@ const SuperAdminPage = () => {
                                   {expandedStudents[`${user.userId}-${hostel.hostelId}-${student.studentId}`] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                 </button>
                               </div>
-                              <p style={{ color: '#6b7280', fontSize: '0.8rem', margin: '0.25rem 0 0 0' }}>
-                                Email: {student.email || 'N/A'}
-                              </p>
 
                               {expandedStudents[`${user.userId}-${hostel.hostelId}-${student.studentId}`] && (
                                 <div style={styles.paymentList}>
@@ -430,10 +427,20 @@ const SuperAdminPage = () => {
                                           borderRadius: '0.25rem',
                                           fontSize: '0.75rem',
                                           fontWeight: '600',
-                                          background: payment.status === 'Paid' ? '#dcfce7' : '#fef3c7',
-                                          color: payment.status === 'Paid' ? '#166534' : '#92400e'
+                                          background: '#f3f4f6',
+                                          color: '#374151'
                                         }}>
-                                          {payment.status || 'Pending'}
+                                          {(() => {
+                                            // Determine expected amount: check payment fields first, then hostel monthlyFee
+                                            const expected = Number(payment.expectedAmount ?? payment.dueAmount ?? hostel?.monthlyFee ?? payment.monthlyFee ?? 0);
+                                            const paid = Number(payment.amount || 0);
+                                            if (Number.isNaN(expected) || Number.isNaN(paid)) return 'N/A';
+                                            const diff = expected - paid;
+                                            const fmt = (v) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(v);
+                                            if (diff > 0) return `${fmt(diff)} left`;
+                                            if (diff < 0) return `${fmt(Math.abs(diff))} advance`;
+                                            return 'Settled';
+                                          })()}
                                         </span>
                                       </div>
                                     ))
