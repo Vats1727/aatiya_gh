@@ -113,6 +113,35 @@ const SuperAdminPage = () => {
     }));
   };
 
+  // Helper: format amounts and dates robustly (handles ISO, timestamps, Firestore-like objects)
+  const formatAmount = (value) => {
+    const num = Number(value || 0);
+    if (Number.isNaN(num)) return 'N/A';
+    // show with rupee symbol and grouping
+    return `₹ ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(num)}`;
+  };
+
+  const formatDateValue = (v) => {
+    if (!v && v !== 0) return 'N/A';
+    try {
+      let d = null;
+      if (typeof v === 'string' || typeof v === 'number') {
+        d = new Date(v);
+      } else if (v instanceof Date) {
+        d = v;
+      } else if (v && typeof v === 'object') {
+        // Firestore timestamp-like: { seconds, nanoseconds }
+        if (typeof v.seconds === 'number') d = new Date(v.seconds * 1000);
+        else if (typeof v._seconds === 'number') d = new Date(v._seconds * 1000);
+        else if (typeof v.toDate === 'function') d = v.toDate();
+      }
+      if (!d || Number.isNaN(d.getTime())) return 'N/A';
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch (e) {
+      return 'N/A';
+    }
+  };
+
   const styles = {
     container: {
       minHeight: '100vh',
@@ -415,35 +444,31 @@ const SuperAdminPage = () => {
                                     Payments:
                                   </p>
                                   {student.payments && student.payments.length > 0 ? (
-                                    student.payments.map((payment, idx) => (
-                                      <div key={payment.paymentId || idx} style={styles.paymentItem}>
-                                        <span>
-                                          <IndianRupee size={12} style={{ marginRight: '0.25rem', display: 'inline' }} />
-                                          {payment.amount || 0}
-                                        </span>
-                                        <span>{payment.date || 'N/A'}</span>
-                                        <span style={{
-                                          padding: '0.2rem 0.5rem',
-                                          borderRadius: '0.25rem',
-                                          fontSize: '0.75rem',
-                                          fontWeight: '600',
-                                          background: '#f3f4f6',
-                                          color: '#374151'
-                                        }}>
-                                          {(() => {
-                                            // Determine expected amount: check payment fields first, then hostel monthlyFee
-                                            const expected = Number(payment.expectedAmount ?? payment.dueAmount ?? hostel?.monthlyFee ?? payment.monthlyFee ?? 0);
-                                            const paid = Number(payment.amount || 0);
-                                            if (Number.isNaN(expected) || Number.isNaN(paid)) return 'N/A';
-                                            const diff = expected - paid;
-                                            const fmt = (v) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(v);
-                                            if (diff > 0) return `${fmt(diff)} left`;
-                                            if (diff < 0) return `${fmt(Math.abs(diff))} advance`;
-                                            return 'Settled';
-                                          })()}
-                                        </span>
-                                      </div>
-                                    ))
+                                    student.payments.map((payment, idx) => {
+                                      const expected = Number(payment.expectedAmount ?? payment.dueAmount ?? hostel?.monthlyFee ?? payment.monthlyFee ?? 0);
+                                      const paid = Number(payment.amount || 0);
+                                      const diff = (!Number.isNaN(expected) && !Number.isNaN(paid)) ? (expected - paid) : null;
+                                      const dateStr = formatDateValue(payment.date ?? payment.paidAt ?? payment.createdAt ?? payment.timestamp ?? payment.paid_on ?? payment.paymentDate);
+                                      return (
+                                        <div key={payment.paymentId || idx} style={{ ...styles.paymentItem, padding: '0.75rem', borderRadius: 8, background: '#fff' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                                            <div style={{ fontWeight: 700, color: '#111827' }}>{formatAmount(paid)}</div>
+                                            <div style={{ color: '#6b7280' }}>{dateStr}</div>
+                                          </div>
+                                          <div style={{ minWidth: 140, textAlign: 'right' }}>
+                                            {diff === null ? (
+                                              <span style={{ color: '#9ca3af' }}>N/A</span>
+                                            ) : diff > 0 ? (
+                                              <span style={{ padding: '0.25rem 0.5rem', borderRadius: 6, background: '#fff7ed', color: '#92400e', fontWeight: 600 }}>{formatAmount(diff)} left</span>
+                                            ) : diff < 0 ? (
+                                              <span style={{ padding: '0.25rem 0.5rem', borderRadius: 6, background: '#ecfccb', color: '#166534', fontWeight: 600 }}>{formatAmount(Math.abs(diff))} advance</span>
+                                            ) : (
+                                              <span style={{ padding: '0.25rem 0.5rem', borderRadius: 6, background: '#eef2ff', color: '#3730a3', fontWeight: 600 }}>Settled</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })
                                   ) : (
                                     <p style={{ color: '#9ca3af', fontSize: '0.875rem', margin: 0 }}>No payments</p>
                                   )}
