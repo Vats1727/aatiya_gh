@@ -1,8 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Info, Menu, X } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
+// Add responsive CSS styles
+const responsiveStyles = `
+  @media (min-width: 768px) {
+    .desktop-table {
+      display: block !important;
+    }
+    .mobile-cards {
+      display: none !important;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .desktop-table {
+      display: none !important;
+    }
+    .mobile-cards {
+      display: flex !important;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .history-controls {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .ledger-button {
+      width: 100%;
+    }
+
+    .payment-form {
+      padding: 0.75rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .card-actions-mobile {
+      flex-direction: column;
+    }
+
+    .action-button-mobile {
+      width: 100%;
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleTag = document.createElement('style');
+  styleTag.textContent = responsiveStyles;
+  if (!document.head.querySelector('style[data-component="StudentPayments"]')) {
+    styleTag.setAttribute('data-component', 'StudentPayments');
+    document.head.appendChild(styleTag);
+  }
+}
 
 const StudentPayments = () => {
   const { hostelId, studentId } = useParams();
@@ -18,22 +78,12 @@ const StudentPayments = () => {
   const [ledgerVisible, setLedgerVisible] = useState(false);
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [applicationNo, setApplicationNo] = useState('');
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [newPayment, setNewPayment] = useState({
     amount: '',
     paymentMode: 'cash',
     remarks: '',
     type: 'credit' // credit for payment received, debit for refund/adjustment
   });
-
-  // Handle responsive layout on resize
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -185,354 +235,6 @@ const StudentPayments = () => {
       console.error('Failed to add payment:', err);
       alert('Failed to add payment');
     }
-  };
-
-  // Define styles with access to isMobile state (must be before early returns)
-  const styles = {
-    container: {
-      padding: isMobile ? '1rem' : '2rem',
-      maxWidth: '1200px',
-      margin: '0 auto',
-    },
-    header: {
-      display: 'flex',
-      alignItems: 'center',
-      marginBottom: '2rem',
-      gap: '1rem',
-      flexWrap: isMobile ? 'wrap' : 'nowrap',
-    },
-    backButton: {
-      display: 'flex',
-      alignItems: 'center',
-      padding: '0.5rem 1rem',
-      border: '1px solid #e5e7eb',
-      borderRadius: '0.375rem',
-      backgroundColor: 'white',
-      cursor: 'pointer',
-      color: '#374151',
-      transition: 'all 0.2s',
-      fontSize: isMobile ? '0.875rem' : '1rem',
-      '&:hover': {
-        backgroundColor: '#f3f4f6',
-      },
-    },
-    title: {
-      fontSize: isMobile ? '1.25rem' : '1.5rem',
-      fontWeight: '600',
-      color: '#111827',
-      margin: 0,
-      flex: 1,
-    },
-    content: {
-      backgroundColor: 'white',
-      borderRadius: '0.5rem',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      padding: isMobile ? '1rem' : '1.5rem',
-    },
-    studentInfo: {
-      marginBottom: '2rem',
-      padding: isMobile ? '0.75rem' : '1rem',
-      backgroundColor: '#f9fafb',
-      borderRadius: '0.375rem',
-    },
-    studentName: {
-      fontSize: isMobile ? '1rem' : '1.25rem',
-      fontWeight: '600',
-      color: '#111827',
-      marginBottom: '0.5rem',
-    },
-    balanceSection: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      color: '#4b5563',
-      flexWrap: 'wrap',
-    },
-    balanceAmount: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      fontSize: isMobile ? '1rem' : '1.125rem',
-      fontWeight: '600',
-      color: '#111827',
-    },
-    infoButton: {
-      background: 'none',
-      border: 'none',
-      padding: '0.25rem',
-      cursor: 'pointer',
-      color: '#6b7280',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'color 0.2s',
-      '&:hover': {
-        color: '#374151',
-      },
-    },
-    formSection: {
-      maxWidth: '600px',
-      margin: '0 auto',
-    },
-    formTitle: {
-      fontSize: isMobile ? '1rem' : '1.125rem',
-      fontWeight: '600',
-      color: '#111827',
-      marginBottom: '1rem',
-    },
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1rem',
-    },
-    formGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.5rem',
-    },
-    label: {
-      fontSize: isMobile ? '0.8125rem' : '0.875rem',
-      fontWeight: '500',
-      color: '#374151',
-    },
-    input: {
-      padding: isMobile ? '0.625rem' : '0.5rem',
-      borderRadius: '0.375rem',
-      border: '1px solid #e5e7eb',
-      fontSize: isMobile ? '0.8125rem' : '0.875rem',
-      '&:focus': {
-        outline: 'none',
-        borderColor: '#8b5cf6',
-        boxShadow: '0 0 0 1px #8b5cf6',
-      },
-    },
-    select: {
-      padding: isMobile ? '0.625rem' : '0.5rem',
-      borderRadius: '0.375rem',
-      border: '1px solid #e5e7eb',
-      fontSize: isMobile ? '0.8125rem' : '0.875rem',
-      backgroundColor: 'white',
-      '&:focus': {
-        outline: 'none',
-        borderColor: '#8b5cf6',
-        boxShadow: '0 0 0 1px #8b5cf6',
-      },
-    },
-    submitButton: {
-      padding: '0.75rem',
-      backgroundColor: '#8b5cf6',
-      color: 'white',
-      border: 'none',
-      borderRadius: '0.375rem',
-      fontWeight: '500',
-      cursor: 'pointer',
-      fontSize: isMobile ? '0.9375rem' : '1rem',
-      transition: 'background-color 0.2s',
-      '&:hover': {
-        backgroundColor: '#7c3aed',
-      },
-    },
-    historyModal: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 50,
-      padding: isMobile ? '1rem' : '0',
-    },
-    historyContent: {
-      backgroundColor: 'white',
-      borderRadius: '0.5rem',
-      width: isMobile ? '100%' : '90%',
-      maxWidth: '600px',
-      maxHeight: isMobile ? '90vh' : '80vh',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    historyHeader: {
-      padding: isMobile ? '0.75rem' : '1rem',
-      borderBottom: '1px solid #e5e7eb',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    historySummary: {
-      display: 'flex',
-      gap: '1rem',
-      padding: isMobile ? '0.75rem' : '1rem',
-      borderBottom: '1px solid #eef2ff',
-      backgroundColor: '#fff',
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      flexWrap: 'wrap',
-      overflowX: 'auto',
-    },
-    summaryItem: {
-      minWidth: isMobile ? '120px' : '140px',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    summaryLabel: {
-      fontSize: isMobile ? '0.7rem' : '0.75rem',
-      color: '#6b7280',
-    },
-    summaryValue: {
-      fontSize: isMobile ? '0.875rem' : '1rem',
-      fontWeight: 700,
-      color: '#111827'
-    },
-    closeButton: {
-      background: 'none',
-      border: 'none',
-      fontSize: '1.5rem',
-      color: '#6b7280',
-      cursor: 'pointer',
-      padding: '0.25rem',
-      '&:hover': {
-        color: '#374151',
-      },
-    },
-    historyList: {
-      padding: isMobile ? '0.75rem' : '1rem',
-      overflowY: 'auto',
-    },
-    historyTableWrapper: {
-      overflowX: 'auto',
-    },
-    historyTable: {
-      width: '100%',
-      borderCollapse: 'collapse',
-      minWidth: '640px',
-    },
-    th: {
-      textAlign: 'left',
-      padding: '0.75rem 1rem',
-      fontSize: '0.875rem',
-      color: '#6b7280',
-      borderBottom: '1px solid #e5e7eb',
-    },
-    tr: {
-      backgroundColor: 'white',
-    },
-    td: {
-      padding: '0.75rem 1rem',
-      borderBottom: '1px solid #f3f4f6',
-      fontSize: '0.875rem',
-      color: '#374151',
-      verticalAlign: 'top'
-    },
-    // Mobile card styles
-    mobileCardContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.75rem',
-    },
-    mobileCard: {
-      backgroundColor: 'white',
-      border: '1px solid #e5e7eb',
-      borderRadius: '0.5rem',
-      padding: '1rem',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-    },
-    mobileCardHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: '0.75rem',
-      paddingBottom: '0.75rem',
-      borderBottom: '1px solid #f3f4f6',
-    },
-    mobileCardTitle: {
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      color: '#111827',
-      flex: 1,
-    },
-    mobileCardValue: {
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      color: '#059669',
-      textAlign: 'right',
-      marginLeft: '0.5rem',
-    },
-    mobileCardContent: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.5rem',
-    },
-    mobileCardRow: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      gap: '0.5rem',
-      fontSize: '0.8125rem',
-    },
-    mobileLabel: {
-      fontWeight: '500',
-      color: '#6b7280',
-      minWidth: '80px',
-    },
-    mobileValue: {
-      color: '#374151',
-      textAlign: 'right',
-      flex: 1,
-    },
-    historyItem: {
-      padding: '1rem',
-      borderBottom: '1px solid #e5e7eb',
-      '&:last-child': {
-        borderBottom: 'none',
-      },
-    },
-    historyItemHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '0.5rem',
-    },
-    historyDate: {
-      fontSize: '0.875rem',
-      color: '#6b7280',
-    },
-    historyAmount: {
-      fontWeight: '600',
-    },
-    historyItemDetails: {
-      fontSize: '0.875rem',
-    },
-    paymentMode: {
-      color: '#6b7280',
-      textTransform: 'capitalize',
-    },
-    remarks: {
-      marginTop: '0.25rem',
-      color: '#374151',
-    },
-    noHistory: {
-      textAlign: 'center',
-      color: '#6b7280',
-      padding: '2rem',
-      fontSize: isMobile ? '0.875rem' : '1rem',
-    },
-    loading: {
-      textAlign: 'center',
-      padding: '2rem',
-      color: '#6b7280',
-    },
-    error: {
-      backgroundColor: '#fef2f2',
-      color: '#b91c1c',
-      padding: isMobile ? '0.75rem' : '1rem',
-      borderRadius: '0.375rem',
-      marginBottom: '1rem',
-      fontSize: isMobile ? '0.875rem' : '1rem',
-    },
   };
 
   if (loading) {
@@ -793,7 +495,7 @@ const StudentPayments = () => {
 
       <div style={styles.content}>
         <div style={styles.studentInfo}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'clamp(0.5rem, 3vw, 1rem)', flexDirection: 'column' }} className="student-info-wrapper">
             <div>
               <h2 style={styles.studentName}>{student.studentName}</h2>
               {/* <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Application No: <strong style={{ color: '#111827' }}>{student.applicationNumber || student.applicationNo || student.application_id || student.appNo || '—'}</strong></div> */}
@@ -817,18 +519,16 @@ const StudentPayments = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>From</label>
-                <input type="date" value={ledgerStart} onChange={(e) => setLedgerStart(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+            <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 0.75rem)', alignItems: 'flex-end', flexWrap: 'wrap', width: '100%', minWidth: 0 }} className="history-controls">
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 'clamp(100px, 30vw, 150px)' }}>
+                <label style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', color: '#374151', marginBottom: 4 }}>From</label>
+                <input type="date" value={ledgerStart} onChange={(e) => setLedgerStart(e.target.value)} style={{ padding: 'clamp(0.4rem, 1.5vw, 0.5rem)', borderRadius: 6, border: '1px solid #e5e7eb', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', boxSizing: 'border-box' }} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>To</label>
-                <input type="date" value={ledgerEnd} onChange={(e) => setLedgerEnd(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 'clamp(100px, 30vw, 150px)' }}>
+                <label style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', color: '#374151', marginBottom: 4 }}>To</label>
+                <input type="date" value={ledgerEnd} onChange={(e) => setLedgerEnd(e.target.value)} style={{ padding: 'clamp(0.4rem, 1.5vw, 0.5rem)', borderRadius: 6, border: '1px solid #e5e7eb', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', boxSizing: 'border-box' }} />
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} style={{ padding: '8px 10px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
-              </div>
+              <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} style={{ padding: 'clamp(0.5rem, 1.5vw, 0.8rem) clamp(0.6rem, 2vw, 1rem)', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', fontWeight: '500', whiteSpace: 'nowrap', minWidth: 'clamp(80px, 25vw, 130px)' }} className="ledger-button">{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
             </div>
           </div>
         </div>
@@ -918,134 +618,137 @@ const StudentPayments = () => {
                 {payments.length === 0 ? (
                   <div style={styles.noHistory}>No payment records found</div>
                 ) : (
-                  <>
-                    {/* Responsive table/card view */}
-                    {!isMobile ? (
-                      // Desktop: Table View
-                      <div style={styles.historyTableWrapper}>
-                        <table style={styles.historyTable}>
-                          <thead>
-                            <tr>
-                              <th style={styles.th}>Date</th>
-                              <th style={styles.th}>Mode</th>
-                              <th style={styles.th}>Remarks</th>
-                              <th style={{ ...styles.th, textAlign: 'right' }}>Debit</th>
-                              <th style={{ ...styles.th, textAlign: 'right' }}>Credit</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td style={styles.td}>{formatDate(student.createdAt || new Date().toISOString())}</td>
-                              <td style={styles.td}>—</td>
-                              <td style={styles.td}>
-                                {hasCustomFee ? (
-                                  <div>
-                                    <div>Applied Monthly Fee</div>
-                                    <div style={{ fontSize: '0.8em', color: '#6b7280' }}>
-                                      (Standard: {formatCurrency(monthlyFee)})
-                                    </div>
+                  <div style={styles.historyTableWrapper}>
+                    {/* Desktop Table View */}
+                    <div style={{ display: 'none' }} className="desktop-table">
+                      <table style={styles.historyTable}>
+                        <thead>
+                          <tr>
+                            <th style={styles.th}>Date</th>
+                            <th style={styles.th}>Mode</th>
+                            <th style={styles.th}>Remarks</th>
+                            <th style={{ ...styles.th, textAlign: 'right' }}>Debit</th>
+                            <th style={{ ...styles.th, textAlign: 'right' }}>Credit</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>{formatDate(student.createdAt || new Date().toISOString())}</td>
+                            <td>—</td>
+                            <td>
+                              {hasCustomFee ? (
+                                <div>
+                                  <div>Applied Monthly Fee</div>
+                                  <div style={{ fontSize: '0.8em', color: '#6b7280' }}>
+                                    (Standard: {formatCurrency(monthlyFee)})
                                   </div>
-                                ) : 'Monthly Fee'}
-                              </td>
-                              <td style={{ ...styles.td, textAlign: 'right', color: '#dc2626' }}>
-                                {formatCurrency(usedFee)}
-                              </td>
-                              <td style={{ ...styles.td, textAlign: 'right' }}>—</td>
-                            </tr>
-                            {payments.map((payment, i) => (
-                              <tr key={i}>
-                                <td style={styles.td}>{formatDate(payment.timestamp)}</td>
-                                <td style={styles.td}>{payment.paymentMode}</td>
-                                <td style={styles.td}>{payment.remarks || '—'}</td>
-                                <td style={{ ...styles.td, textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
-                                  {payment.type === 'debit' ? formatCurrency(payment.amount) : ''}
-                                </td>
-                                <td style={{ ...styles.td, textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
-                                  {payment.type === 'credit' ? formatCurrency(payment.amount) : ''}
-                                </td>
-                              </tr>
-                            ))}
-                            <tr style={{ backgroundColor: '#f9fafb' }}>
-                              <td colSpan={3} style={{ ...styles.td, textAlign: 'right', fontWeight: '600' }}>Balance</td>
-                              <td style={{ ...styles.td, textAlign: 'right', color: feesDue > 0 ? '#b91c1c' : '#6b7280', fontWeight: 600 }}>
-                                {feesDue > 0 ? formatCurrency(feesDue) : '—'}
-                              </td>
-                              <td style={{ ...styles.td, textAlign: 'right', color: advancePaid > 0 ? '#059669' : '#6b7280', fontWeight: 600 }}>
-                                {advancePaid > 0 ? formatCurrency(advancePaid) : '—'}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      // Mobile: Card View
-                      <div style={styles.mobileCardContainer}>
-                        {/* Opening balance card */}
-                        <div style={styles.mobileCard}>
-                          <div style={styles.mobileCardHeader}>
-                            <div style={styles.mobileCardTitle}>Opening Balance</div>
-                            <div style={{ ...styles.mobileCardValue, color: '#6b7280' }}>
-                              {formatDate(student.createdAt || new Date().toISOString())}
-                            </div>
-                          </div>
-                          <div style={styles.mobileCardContent}>
-                            <div style={styles.mobileCardRow}>
-                              <span style={styles.mobileLabel}>Description:</span>
-                              <span style={styles.mobileValue}>Monthly Fee</span>
-                            </div>
-                            <div style={styles.mobileCardRow}>
-                              <span style={styles.mobileLabel}>Amount:</span>
-                              <span style={{ ...styles.mobileValue, color: '#dc2626', fontWeight: 600 }}>
-                                Debit: {formatCurrency(usedFee)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Payment history cards */}
-                        {payments.map((payment, i) => (
-                          <div key={i} style={styles.mobileCard}>
-                            <div style={styles.mobileCardHeader}>
-                              <div style={styles.mobileCardTitle}>{formatDate(payment.timestamp)}</div>
-                              <div style={{ ...styles.mobileCardValue, color: payment.type === 'credit' ? '#059669' : '#dc2626' }}>
-                                {payment.type === 'credit' ? '+' : ''}{formatCurrency(payment.amount)}
-                              </div>
-                            </div>
-                            <div style={styles.mobileCardContent}>
-                              <div style={styles.mobileCardRow}>
-                                <span style={styles.mobileLabel}>Mode:</span>
-                                <span style={styles.mobileValue}>{payment.paymentMode || '—'}</span>
-                              </div>
-                              <div style={styles.mobileCardRow}>
-                                <span style={styles.mobileLabel}>Type:</span>
-                                <span style={{ ...styles.mobileValue, color: payment.type === 'credit' ? '#059669' : '#dc2626' }}>
-                                  {payment.type === 'credit' ? 'Payment Received' : 'Adjustment/Refund'}
-                                </span>
-                              </div>
-                              {payment.remarks && (
-                                <div style={styles.mobileCardRow}>
-                                  <span style={styles.mobileLabel}>Remarks:</span>
-                                  <span style={styles.mobileValue}>{payment.remarks}</span>
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                              ) : 'Monthly Fee'}
+                            </td>
+                            <td style={{ textAlign: 'right', color: '#dc2626' }}>
+                              {formatCurrency(usedFee)}
+                            </td>
+                            <td style={{ textAlign: 'right' }}>—</td>
+                          </tr>
+                          {payments.map((payment, i) => (
+                            <tr key={i}>
+                              <td>{formatDate(payment.timestamp)}</td>
+                              <td>{payment.paymentMode}</td>
+                              <td>{payment.remarks || '—'}</td>
+                              <td style={{ textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
+                                {payment.type === 'debit' ? formatCurrency(payment.amount) : ''}
+                              </td>
+                              <td style={{ textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
+                                {payment.type === 'credit' ? formatCurrency(payment.amount) : ''}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr>
+                            <td colSpan={3} style={{ textAlign: 'right', fontWeight: '600' }}>Balance</td>
+                            <td style={{ textAlign: 'right', color: feesDue > 0 ? '#b91c1c' : '#6b7280', fontWeight: 600 }}>
+                              {feesDue > 0 ? formatCurrency(feesDue) : '—'}
+                            </td>
+                            <td style={{ textAlign: 'right', color: advancePaid > 0 ? '#059669' : '#6b7280', fontWeight: 600 }}>
+                              {advancePaid > 0 ? formatCurrency(advancePaid) : '—'}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
 
-                        {/* Closing balance card */}
-                        <div style={{ ...styles.mobileCard, backgroundColor: '#f9fafb', borderLeft: `4px solid ${feesDue > 0 ? '#b91c1c' : (advancePaid > 0 ? '#059669' : '#6b7280')}` }}>
-                          <div style={styles.mobileCardHeader}>
-                            <div style={styles.mobileCardTitle}>Current Balance</div>
-                            <div style={{ ...styles.mobileCardValue, color: feesDue > 0 ? '#b91c1c' : (advancePaid > 0 ? '#059669' : '#6b7280'), fontWeight: 700 }}>
-                              {feesDue > 0 
-                                ? `Due: ${formatCurrency(feesDue)}` 
-                                : (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
-                            </div>
+                    {/* Mobile Card View */}
+                    <div style={styles.paymentCardContainer} className="mobile-cards">
+                      {/* Opening Fee Card */}
+                      <div style={styles.paymentCard}>
+                        <div style={styles.cardRow}>
+                          <div style={styles.cardLabel}>Date</div>
+                          <div style={styles.cardValue}>{formatDate(student.createdAt || new Date().toISOString())}</div>
+                        </div>
+                        <div style={styles.cardRow}>
+                          <div style={styles.cardLabel}>Type</div>
+                          <div style={styles.cardValue}>
+                            {hasCustomFee ? 'Applied Monthly Fee' : 'Monthly Fee'}
+                          </div>
+                        </div>
+                        {hasCustomFee && monthlyFee > 0 && (
+                          <div style={styles.cardRow}>
+                            <div style={styles.cardLabel}>Standard</div>
+                            <div style={styles.cardValue}>{formatCurrency(monthlyFee)}</div>
+                          </div>
+                        )}
+                        <div style={styles.cardRow}>
+                          <div style={styles.cardLabel}>Debit</div>
+                          <div style={{ ...styles.cardValue, color: '#dc2626', fontWeight: '600' }}>
+                            {formatCurrency(usedFee)}
                           </div>
                         </div>
                       </div>
-                    )}
-                  </>
+
+                      {/* Payment History Cards */}
+                      {payments.map((payment, i) => (
+                        <div key={i} style={styles.paymentCard}>
+                          <div style={styles.cardRow}>
+                            <div style={styles.cardLabel}>Date</div>
+                            <div style={styles.cardValue}>{formatDate(payment.timestamp)}</div>
+                          </div>
+                          <div style={styles.cardRow}>
+                            <div style={styles.cardLabel}>Mode</div>
+                            <div style={styles.cardValue}>{payment.paymentMode || '—'}</div>
+                          </div>
+                          {payment.remarks && (
+                            <div style={styles.cardRow}>
+                              <div style={styles.cardLabel}>Remarks</div>
+                              <div style={styles.cardValue}>{payment.remarks}</div>
+                            </div>
+                          )}
+                          <div style={styles.cardRow}>
+                            <div style={styles.cardLabel}>Amount</div>
+                            <div style={{
+                              ...styles.cardValue,
+                              color: payment.type === 'debit' ? '#dc2626' : '#059669',
+                              fontWeight: '600'
+                            }}>
+                              {payment.type === 'debit' ? `Debit: ${formatCurrency(payment.amount)}` : `Credit: ${formatCurrency(payment.amount)}`}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Balance Card */}
+                      <div style={{ ...styles.paymentCard, backgroundColor: '#f9fafb', borderLeft: '4px solid #8b5cf6' }}>
+                        <div style={{ ...styles.cardRow, fontWeight: '600' }}>
+                          <div style={styles.cardLabel}>Balance</div>
+                          <div style={{
+                            ...styles.cardValue,
+                            color: feesDue > 0 ? '#b91c1c' : (advancePaid > 0 ? '#059669' : '#6b7280'),
+                            fontWeight: '600'
+                          }}>
+                            {feesDue > 0 ? `Due: ${formatCurrency(feesDue)}` : (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -1054,23 +757,23 @@ const StudentPayments = () => {
 
         {ledgerVisible && (
           <div style={{ marginTop: 16, background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #eef2ff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>Ledger Report</h3>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button onClick={downloadLedgerCsv} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Download Excel (CSV)</button>
-                <button onClick={downloadLedgerPdf} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #8b5cf6', background: '#8b5cf6', color: 'white', cursor: 'pointer', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Download PDF</button>
-                <button onClick={() => { setLedgerVisible(false); }} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Close</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={downloadLedgerCsv} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer' }}>Download Excel (CSV)</button>
+                <button onClick={downloadLedgerPdf} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #8b5cf6', background: '#8b5cf6', color: 'white', cursor: 'pointer' }}>Download PDF</button>
+                <button onClick={() => { setLedgerVisible(false); }} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer' }}>Close</button>
               </div>
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <div style={{ fontSize: isMobile ? 12 : 13, color: '#374151', marginBottom: 8 }}>Opening Balance: {formatCurrency(ledgerOpeningBalance)}</div>
+              <div style={{ fontSize: 13, color: '#374151', marginBottom: 8 }}>Opening Balance: {formatCurrency(ledgerOpeningBalance)}</div>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '100%' : 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Date</th>
-                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Description</th>
+                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Payment Mode</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Debit</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Credit</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Running</th>
@@ -1078,12 +781,12 @@ const StudentPayments = () => {
                   </thead>
                   <tbody>
                     {ledgerRows.length === 0 ? (
-                      <tr><td colSpan={5} style={{ padding: 12, color: '#6b7280', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>No transactions in the selected period</td></tr>
+                      <tr><td colSpan={5} style={{ padding: 12, color: '#6b7280' }}>No transactions in the selected period</td></tr>
                     ) : (
                       ledgerRows.map((r, i) => (
                         <tr key={i}>
-                          <td style={{ padding: 8 }}>{new Date(r.date).toLocaleString('en-IN')}</td>
-                          <td style={{ padding: 8 }}>{r.desc}</td>
+                          <td style={{ padding: 8 }}>{new Date(r.date).toLocaleDateString('en-IN')}</td>
+                          <td style={{ padding: 8 }}>{r.paymentMode}</td>
                           <td style={{ padding: 8, textAlign: 'right', color: r.debit ? '#dc2626' : undefined }}>{r.debit || ''}</td>
                           <td style={{ padding: 8, textAlign: 'right', color: r.credit ? '#059669' : undefined }}>{r.credit || ''}</td>
                           <td style={{ padding: 8, textAlign: 'right' }}>{formatCurrency(r.running)}</td>
@@ -1091,8 +794,8 @@ const StudentPayments = () => {
                       ))
                     )}
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'right', padding: isMobile ? 6 : 8, fontWeight: 700, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Closing Balance</td>
-                      <td style={{ textAlign: 'right', padding: isMobile ? 6 : 8, fontWeight: 700, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{formatCurrency(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance)}</td>
+                      <td colSpan={4} style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>Closing Balance</td>
+                      <td style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>{formatCurrency(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1103,6 +806,319 @@ const StudentPayments = () => {
       </div>
     </div>
   );
+};
+
+// Helper: Get responsive styles based on screen size
+const getResponsiveStyles = () => {
+  const isMobile = window?.innerWidth < 768;
+  return { isMobile };
+};
+
+const styles = {
+  container: {
+    padding: 'clamp(1rem, 5vw, 2rem)',
+    maxWidth: '1200px',
+    margin: '0 auto',
+    boxSizing: 'border-box',
+  },
+  header: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 'clamp(1rem, 5vw, 2rem)',
+    gap: '0.5rem',
+    flexWrap: 'wrap',
+  },
+  backButton: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: 'clamp(0.4rem, 2vw, 0.5rem) clamp(0.6rem, 2vw, 1rem)',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0.375rem',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+    color: '#374151',
+    transition: 'all 0.2s',
+    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+  },
+  title: {
+    fontSize: 'clamp(1.25rem, 4vw, 1.5rem)',
+    fontWeight: '600',
+    color: '#111827',
+    margin: 0,
+  },
+  content: {
+    backgroundColor: 'white',
+    borderRadius: '0.5rem',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    padding: 'clamp(1rem, 3vw, 1.5rem)',
+    overflowX: 'auto',
+  },
+  studentInfo: {
+    marginBottom: 'clamp(1.5rem, 5vw, 2rem)',
+    padding: 'clamp(0.75rem, 3vw, 1rem)',
+    backgroundColor: '#f9fafb',
+    borderRadius: '0.375rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'clamp(0.5rem, 3vw, 1rem)',
+  },
+  studentName: {
+    fontSize: 'clamp(1rem, 4vw, 1.25rem)',
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: '0.25rem',
+  },
+  balanceSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    color: '#4b5563',
+    fontSize: 'clamp(0.875rem, 2vw, 1rem)',
+    flexWrap: 'wrap',
+  },
+  balanceAmount: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    fontSize: 'clamp(1rem, 3vw, 1.125rem)',
+    fontWeight: '600',
+    color: '#111827',
+  },
+  infoButton: {
+    background: 'none',
+    border: 'none',
+    padding: '0.25rem',
+    cursor: 'pointer',
+    color: '#6b7280',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'color 0.2s',
+  },
+  formSection: {
+    maxWidth: '600px',
+    margin: '0 auto',
+  },
+  formTitle: {
+    fontSize: 'clamp(1rem, 3vw, 1.125rem)',
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 'clamp(0.75rem, 3vw, 1rem)',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'clamp(0.75rem, 3vw, 1rem)',
+  },
+  formGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+  },
+  label: {
+    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+    fontWeight: '500',
+    color: '#374151',
+  },
+  input: {
+    padding: 'clamp(0.4rem, 2vw, 0.5rem)',
+    borderRadius: '0.375rem',
+    border: '1px solid #e5e7eb',
+    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+    boxSizing: 'border-box',
+    width: '100%',
+  },
+  select: {
+    padding: 'clamp(0.4rem, 2vw, 0.5rem)',
+    borderRadius: '0.375rem',
+    border: '1px solid #e5e7eb',
+    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+    backgroundColor: 'white',
+    boxSizing: 'border-box',
+    width: '100%',
+  },
+  submitButton: {
+    padding: 'clamp(0.6rem, 2vw, 0.75rem)',
+    backgroundColor: '#8b5cf6',
+    color: 'white',
+    border: 'none',
+    borderRadius: '0.375rem',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+  },
+  historyModal: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 50,
+    padding: '1rem',
+    boxSizing: 'border-box',
+  },
+  historyContent: {
+    backgroundColor: 'white',
+    borderRadius: '0.5rem',
+    width: '100%',
+    maxWidth: 'clamp(300px, 90vw, 600px)',
+    maxHeight: '80vh',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  historyHeader: {
+    padding: 'clamp(0.75rem, 2vw, 1rem)',
+    borderBottom: '1px solid #e5e7eb',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.5rem',
+  },
+  historySummary: {
+    display: 'flex',
+    gap: 'clamp(0.5rem, 2vw, 1rem)',
+    padding: 'clamp(0.75rem, 2vw, 1rem)',
+    borderBottom: '1px solid #eef2ff',
+    backgroundColor: '#fff',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
+  },
+  summaryItem: {
+    minWidth: 'clamp(100px, 40vw, 140px)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.25rem',
+  },
+  summaryLabel: {
+    fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)',
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  summaryValue: {
+    fontSize: 'clamp(0.875rem, 2vw, 1rem)',
+    fontWeight: 700,
+    color: '#111827'
+  },
+  closeButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '1.5rem',
+    color: '#6b7280',
+    cursor: 'pointer',
+    padding: '0.25rem',
+  },
+  historyList: {
+    padding: 'clamp(0.75rem, 2vw, 1rem)',
+    overflowY: 'auto',
+    flex: 1,
+  },
+  historyTableWrapper: {
+    overflowX: 'auto',
+    width: '100%',
+  },
+  historyTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    minWidth: '640px',
+    fontSize: 'clamp(0.7rem, 1.5vw, 0.875rem)',
+  },
+  th: {
+    textAlign: 'left',
+    padding: 'clamp(0.5rem, 2vw, 0.75rem)',
+    fontSize: 'clamp(0.7rem, 1.5vw, 0.875rem)',
+    color: '#6b7280',
+    borderBottom: '1px solid #e5e7eb',
+    fontWeight: '600',
+  },
+  tr: {
+    backgroundColor: 'white',
+  },
+  td: {
+    padding: 'clamp(0.5rem, 2vw, 0.75rem)',
+    borderBottom: '1px solid #f3f4f6',
+    fontSize: 'clamp(0.7rem, 1.5vw, 0.875rem)',
+    color: '#374151',
+    verticalAlign: 'top'
+  },
+  noHistory: {
+    textAlign: 'center',
+    color: '#6b7280',
+    padding: 'clamp(1rem, 5vw, 2rem)',
+    fontSize: 'clamp(0.875rem, 2vw, 1rem)',
+  },
+  loading: {
+    textAlign: 'center',
+    padding: 'clamp(1rem, 5vw, 2rem)',
+    color: '#6b7280',
+  },
+  error: {
+    backgroundColor: '#fef2f2',
+    color: '#b91c1c',
+    padding: 'clamp(0.75rem, 2vw, 1rem)',
+    borderRadius: '0.375rem',
+    marginBottom: '1rem',
+    fontSize: 'clamp(0.875rem, 2vw, 1rem)',
+  },
+  // Mobile-specific card styles
+  paymentCardContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'clamp(0.75rem, 3vw, 1rem)',
+  },
+  paymentCard: {
+    backgroundColor: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0.5rem',
+    padding: 'clamp(1rem, 3vw, 1.25rem)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+  },
+  cardRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: '0.5rem',
+    alignItems: 'flex-start',
+  },
+  cardLabel: {
+    minWidth: 'clamp(80px, 30vw, 120px)',
+    fontSize: 'clamp(0.65rem, 1.5vw, 0.875rem)',
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  cardValue: {
+    flex: 1,
+    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+    color: '#111827',
+    wordBreak: 'break-word',
+  },
+  cardActions: {
+    display: 'flex',
+    gap: 'clamp(0.4rem, 2vw, 0.5rem)',
+    marginTop: '0.75rem',
+    flexWrap: 'wrap',
+  },
+  actionButton: {
+    padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.6rem, 2vw, 0.75rem)',
+    fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0.375rem',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    flex: '1 1 auto',
+    minWidth: 'clamp(60px, 20vw, 80px)',
+    whiteSpace: 'nowrap',
+  },
 };
 
 export default StudentPayments;
