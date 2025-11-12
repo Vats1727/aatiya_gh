@@ -294,23 +294,26 @@ const StudentPayments = () => {
       // build simple HTML for the ledger with improved styling
       // Ensure hostel name shows (try multiple possible fields on student)
       const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
+      const applicationNo = student?.applicationNumber || student?.applicationNo || student?.application_id || student?.appNo || '';
       const periodStart = ledgerStart ? formatDateDDMMYYYY(ledgerStart) : 'start';
       const periodEnd = ledgerEnd ? formatDateDDMMYYYY(ledgerEnd) : 'end';
       const headerHtml = `
-        <div style="font-family: Arial, Helvetica, sans-serif; padding: 18px; border:1px solid #e6e6e6; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); background:#fff;">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-            <div>
-              <h2 style="margin:0; color:#111827;">Ledger Report</h2>
-              <div style="margin-top:6px; color:#374151;">Student: <strong style="color:#0f172a;">${(student.studentName || '')}</strong></div>
-              <div style="margin-top:4px; color:#374151;">Hostel: <strong style="color:#0f172a;">${hostelName || '—'}</strong></div>
+        <div style="font-family: Arial, Helvetica, sans-serif; padding: 8px;">
+          <div style="text-align:center; margin-bottom:8px;"><h2 style="margin:0; color:#111827;">Ledger Report</h2></div>
+          <div style="padding: 18px; border:1px solid #e6e6e6; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+              <div>
+                <div style="margin-top:6px; color:#374151;">Student: <strong style="color:#0f172a;">${(student.studentName || '')}</strong></div>
+                <div style="margin-top:4px; color:#374151;">Application No: <strong style="color:#0f172a;">${applicationNo || '—'}</strong></div>
+                <div style="margin-top:4px; color:#374151;">Hostel: <strong style="color:#0f172a;">${hostelName || '—'}</strong></div>
+              </div>
+              <div style="text-align:right; color:#374151;">
+                <div style="font-size:12px; color:#6b7280">Period</div>
+                <div style="font-weight:600;">${periodStart} – ${periodEnd}</div>
+              </div>
             </div>
-            <div style="text-align:right; color:#374151;">
-              <div style="font-size:12px; color:#6b7280">Period</div>
-              <div style="font-weight:600;">${periodStart} – ${periodEnd}</div>
-            </div>
-          </div>
-          <div style="height:14px"></div>
-          <table style="width:100%; border-collapse: collapse; border:1px solid #e6e6e6;">
+            <div style="height:14px"></div>
+            <table style="width:100%; border-collapse: collapse; border:1px solid #e6e6e6;">
             <thead>
               <tr style="background:#f8fafc;">
                 <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Date</th>
@@ -414,34 +417,47 @@ const StudentPayments = () => {
           <span style={{ marginLeft: '0.5rem' }}>Back to Students</span>
         </button>
         <h1 style={styles.title}>Manage Payments</h1>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <label style={{ fontSize: 12, color: '#374151' }}>From</label>
-          <input type="date" value={ledgerStart} onChange={(e) => setLedgerStart(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
-          <label style={{ fontSize: 12, color: '#374151' }}>To</label>
-          <input type="date" value={ledgerEnd} onChange={(e) => setLedgerEnd(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
-          <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} style={{ padding: '8px 10px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
-        </div>
+        {/* ledger controls moved into student info section */}
       </div>
 
       <div style={styles.content}>
         <div style={styles.studentInfo}>
-          <h2 style={styles.studentName}>{student.studentName}</h2>
-          <div style={styles.balanceSection}>
-            <span>Current Balance:</span>
-            <div style={{
-              ...styles.balanceAmount,
-              color: feesDue > 0 ? '#dc2626' : (advancePaid > 0 ? '#059669' : '#6b7280')  // Red if due, green if advance, gray if zero
-            }}>
-              {feesDue > 0 ? 
-                `Due: ${formatCurrency(feesDue)}` : 
-                (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                style={styles.infoButton}
-                title="View Payment History"
-              >
-                <Info size={18} />
-              </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <div>
+              <h2 style={styles.studentName}>{student.studentName}</h2>
+              <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Application No: <strong style={{ color: '#111827' }}>{student.applicationNumber || student.applicationNo || student.application_id || student.appNo || '—'}</strong></div>
+              <div style={styles.balanceSection}>
+                <span>Current Balance:</span>
+                <div style={{
+                  ...styles.balanceAmount,
+                  color: feesDue > 0 ? '#dc2626' : (advancePaid > 0 ? '#059669' : '#6b7280')  // Red if due, green if advance, gray if zero
+                }}>
+                  {feesDue > 0 ? 
+                    `Due: ${formatCurrency(feesDue)}` : 
+                    (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
+                  <button
+                    onClick={() => setShowHistory(!showHistory)}
+                    style={styles.infoButton}
+                    title="View Payment History"
+                  >
+                    <Info size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>From</label>
+                <input type="date" value={ledgerStart} onChange={(e) => setLedgerStart(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>To</label>
+                <input type="date" value={ledgerEnd} onChange={(e) => setLedgerEnd(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} style={{ padding: '8px 10px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
+              </div>
             </div>
           </div>
         </div>
