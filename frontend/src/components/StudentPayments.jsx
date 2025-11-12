@@ -361,7 +361,7 @@ const StudentPayments = () => {
             </tbody>
           </table>
           <div style="height:12px"></div>
-          <div style="font-weight:600">Closing Balance: ₹ ${formatCurrency(closing)}</div>
+          <div style="font-weight:600">Closing Balance:  ${formatCurrency(closing)}</div>
         </div>
       `;
 
