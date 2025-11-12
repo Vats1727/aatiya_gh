@@ -17,7 +17,7 @@ const StudentPayments = () => {
   const [ledgerOpeningBalance, setLedgerOpeningBalance] = useState(0);
   const [ledgerVisible, setLedgerVisible] = useState(false);
   const [ledgerLoading, setLedgerLoading] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [applicationNo, setApplicationNo] = useState('');
   const [newPayment, setNewPayment] = useState({
     amount: '',
     paymentMode: 'cash',
@@ -73,7 +73,8 @@ const StudentPayments = () => {
                 studentObj = {
                   ...studentObj,
                   monthlyFee: mf,
-                  monthlyFeeCurrency: found.monthlyFeeCurrency || found.monthlyfeeCurrency || studentObj.monthlyFeeCurrency || 'INR'
+                  monthlyFeeCurrency: found.monthlyFeeCurrency || found.monthlyfeeCurrency || studentObj.monthlyFeeCurrency || 'INR',
+                  hostelName: found.name || found.hostelName || found.title || studentObj.hostelName || ''
                 };
               }
             }
@@ -83,7 +84,19 @@ const StudentPayments = () => {
           console.warn('Failed to enrich student with hostel data:', e);
         }
 
-        setStudent(studentObj);
+  setStudent(studentObj);
+  // capture application number into dedicated state for reliable usage in exports
+  let app = '';
+  if (studentObj?.combinedId) {
+    // combinedId format like "05/0001" -> convert to digits only: "050001"
+    try { app = String(studentObj.combinedId).replace(/\D/g, ''); } catch (e) { app = '' }
+  }
+  if (!app) {
+    app = studentObj?.applicationNumber || studentObj?.applicationNo || studentObj?.application_id || studentObj?.appNo || '';
+    // strip non-digits just in case and preserve leading zeros
+    if (app) app = String(app).replace(/\D/g, '');
+  }
+  setApplicationNo(app);
 
         // Fetch payment history
         const paymentsRes = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
@@ -102,6 +115,7 @@ const StudentPayments = () => {
             ...p,
             amount: Number(p.amount) || 0,
             type: p.type || 'credit',
+            paymentMode: p.paymentMode || p.mode || p.payment_method || '',
             timestamp: p.timestamp || p.createdAt || new Date().toISOString(),
           }))
           .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -198,6 +212,16 @@ const StudentPayments = () => {
     });
   };
 
+  const formatDateDDMMYYYY = (d) => {
+    if (!d) return '';
+    const dateObj = d instanceof Date ? d : new Date(d);
+    if (isNaN(dateObj.getTime())) return '';
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const yyyy = dateObj.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  };
+
   // Build ledger rows between start and end dates. Includes opening balance and running balance.
   const generateLedger = (startIso, endIso) => {
     try {
@@ -232,15 +256,15 @@ const StudentPayments = () => {
 
         // compute effect of this transaction
         const amt = Number(p.amount) || 0;
-        if (p.type === 'credit') {
-          // student paid: reduces due (running = running - amt)
-          running = running - amt;
-          rows.push({ date: p.timestamp, desc: p.remarks || 'Payment', debit: '', credit: amt, running });
-        } else {
-          // debit (refund/adjustment): increases due
-          running = running + amt;
-          rows.push({ date: p.timestamp, desc: p.remarks || 'Adjustment', debit: amt, credit: '', running });
-        }
+          if (p.type === 'credit') {
+            // student paid: reduces due (running = running - amt)
+            running = running - amt;
+            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: '', credit: amt, running });
+          } else {
+            // debit (refund/adjustment): increases due
+            running = running + amt;
+            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: amt, credit: '', running });
+          }
       }
 
       setLedgerOpeningBalance(openingBal);
@@ -262,12 +286,14 @@ const StudentPayments = () => {
     const endLabel = ledgerEnd || 'end';
     const filename = `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${startLabel}_${endLabel}.csv`;
     const lines = [];
-    lines.push(['Date', 'Description', 'Debit (₹)', 'Credit (₹)', 'Running Balance (₹)'].join(','));
+    lines.push(['Date', 'Payment Mode', 'Debit (₹)', 'Credit (₹)', 'Running Balance (₹)'].join(','));
     // Opening balance
     lines.push([`Opening Balance`, '', '', '', `${ledgerOpeningBalance}`].join(','));
     for (const r of ledgerRows) {
-      const dateStr = r.date instanceof Date ? r.date.toISOString() : new Date(r.date).toISOString();
-      lines.push([dateStr, `"${(r.desc||'').replace(/"/g,'""')}"`, r.debit || '', r.credit || '', r.running].join(','));
+      // Use date only (YYYY-MM-DD) for CSV
+      const dateObj = r.date instanceof Date ? r.date : new Date(r.date);
+      const dateStr = dateObj.toISOString().split('T')[0];
+      lines.push([dateStr, `"${(r.paymentMode||'').replace(/"/g,'""')}"`, r.debit || '', r.credit || '', r.running].join(','));
     }
     // Closing balance
     const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
@@ -287,41 +313,55 @@ const StudentPayments = () => {
   // Export ledger to PDF using existing pdf util
   const downloadLedgerPdf = async () => {
     try {
-      // build simple HTML for the ledger
+      // build simple HTML for the ledger with improved styling
+      // Ensure hostel name shows (try multiple possible fields on student)
+  const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
+  const appNoForPdf = applicationNo || '';
+      const periodStart = ledgerStart ? formatDateDDMMYYYY(ledgerStart) : 'start';
+      const periodEnd = ledgerEnd ? formatDateDDMMYYYY(ledgerEnd) : 'end';
       const headerHtml = `
-        <div style="font-family: Arial, Helvetica, sans-serif; padding: 16px;">
-          <h2>Ledger Report</h2>
-          <div>Student: ${(student.studentName || '')}</div>
-          <div>Hostel: ${(student.hostelName || '')}</div>
-          <div>Period: ${ledgerStart || 'start'} – ${ledgerEnd || 'end'}</div>
-          <div style="height:12px"></div>
-          <table style="width:100%; border-collapse: collapse;">
+        <div style="font-family: Arial, Helvetica, sans-serif; padding: 8px;">
+          <div style="text-align:center; margin-bottom:8px;"><h2 style="margin:0; color:#111827;">Ledger Report</h2></div>
+          <div style="padding: 18px; border:1px solid #e6e6e6; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+              <div>
+                <div style="margin-top:6px; color:#374151;">Student: <strong style="color:#0f172a;">${(student.studentName || '')}</strong></div>
+                <div style="margin-top:4px; color:#374151;">Application No: <strong style="color:#0f172a;">${appNoForPdf || '—'}</strong></div>
+                <div style="margin-top:4px; color:#374151;">Hostel: <strong style="color:#0f172a;">${hostelName || '—'}</strong></div>
+              </div>
+              <div style="text-align:right; color:#374151;">
+                <div style="font-size:12px; color:#6b7280">Period</div>
+                <div style="font-weight:600;">${periodStart} – ${periodEnd}</div>
+              </div>
+            </div>
+            <div style="height:14px"></div>
+            <table style="width:100%; border-collapse: collapse; border:1px solid #e6e6e6;">
             <thead>
-              <tr>
-                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px">Date</th>
-                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px">Description</th>
-                <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Debit (₹)</th>
-                <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Credit (₹)</th>
-                <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Running Balance (₹)</th>
+              <tr style="background:#f8fafc;">
+                <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Date</th>
+                <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Payment Mode</th>
+                <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Debit (₹)</th>
+                <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Credit (₹)</th>
+                <th style="text-align:right; padding:8px; border-bottom:1px solid #e6e6e6">Running Balance (₹)</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style="padding:6px">Opening</td>
-                <td style="padding:6px"></td>
-                <td style="text-align:right; padding:6px"></td>
-                <td style="text-align:right; padding:6px"></td>
-                <td style="text-align:right; padding:6px">${ledgerOpeningBalance}</td>
+                <td style="padding:8px; border-right:1px solid #e6e6e6">Opening</td>
+                <td style="padding:8px; border-right:1px solid #e6e6e6"></td>
+                <td style="text-align:right; padding:8px; border-right:1px solid #e6e6e6"></td>
+                <td style="text-align:right; padding:8px; border-right:1px solid #e6e6e6"></td>
+                <td style="text-align:right; padding:8px">${ledgerOpeningBalance}</td>
               </tr>
       `;
 
-      const rowsHtml = ledgerRows.map(r => `
-        <tr>
-          <td style="padding:6px">${new Date(r.date).toLocaleString('en-IN')}</td>
-          <td style="padding:6px">${(r.desc||'')}</td>
-          <td style="text-align:right; padding:6px">${r.debit || ''}</td>
-          <td style="text-align:right; padding:6px">${r.credit || ''}</td>
-          <td style="text-align:right; padding:6px">${r.running}</td>
+      const rowsHtml = ledgerRows.map((r, idx) => `
+        <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#fbfbfd'};">
+          <td style="padding:8px; border-right:1px solid #eef2f6">${formatDateDDMMYYYY(r.date)}</td>
+          <td style="padding:8px; border-right:1px solid #eef2f6">${(r.paymentMode||'')}</td>
+          <td style="text-align:right; padding:8px; border-right:1px solid #eef2f6">${r.debit || ''}</td>
+          <td style="text-align:right; padding:8px; border-right:1px solid #eef2f6">${r.credit || ''}</td>
+          <td style="text-align:right; padding:8px">${formatCurrency(r.running)}</td>
         </tr>
       `).join('');
 
@@ -330,13 +370,14 @@ const StudentPayments = () => {
             </tbody>
           </table>
           <div style="height:12px"></div>
-          <div style="font-weight:600">Closing Balance: ₹ ${closing}</div>
+          <div style="font-weight:600">Closing Balance:  ${formatCurrency(closing)}</div>
         </div>
       `;
 
-      const html = headerHtml + rowsHtml + footerHtml;
-      const { generatePdfFromHtmlString } = await import('../utils/pdf');
-      await generatePdfFromHtmlString(html, `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${ledgerStart||'start'}_${ledgerEnd||'end'}.pdf`);
+  const html = headerHtml + rowsHtml + footerHtml;
+  const { generatePdfFromHtmlString } = await import('../utils/pdf');
+  const safeName = (student.studentName||'student').replace(/\s+/g,'_');
+  await generatePdfFromHtmlString(html, `${safeName}_ledger_${periodStart}_${periodEnd}.pdf`);
     } catch (err) {
       console.error('downloadLedgerPdf error', err);
       alert('Failed to generate PDF');
@@ -398,34 +439,47 @@ const StudentPayments = () => {
           <span style={{ marginLeft: '0.5rem' }}>Back to Students</span>
         </button>
         <h1 style={styles.title}>Manage Payments</h1>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <label style={{ fontSize: 12, color: '#374151' }}>From</label>
-          <input type="date" value={ledgerStart} onChange={(e) => setLedgerStart(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
-          <label style={{ fontSize: 12, color: '#374151' }}>To</label>
-          <input type="date" value={ledgerEnd} onChange={(e) => setLedgerEnd(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
-          <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} style={{ padding: '8px 10px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
-        </div>
+        {/* ledger controls moved into student info section */}
       </div>
 
       <div style={styles.content}>
         <div style={styles.studentInfo}>
-          <h2 style={styles.studentName}>{student.studentName}</h2>
-          <div style={styles.balanceSection}>
-            <span>Current Balance:</span>
-            <div style={{
-              ...styles.balanceAmount,
-              color: feesDue > 0 ? '#dc2626' : (advancePaid > 0 ? '#059669' : '#6b7280')  // Red if due, green if advance, gray if zero
-            }}>
-              {feesDue > 0 ? 
-                `Due: ${formatCurrency(feesDue)}` : 
-                (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                style={styles.infoButton}
-                title="View Payment History"
-              >
-                <Info size={18} />
-              </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <div>
+              <h2 style={styles.studentName}>{student.studentName}</h2>
+              {/* <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Application No: <strong style={{ color: '#111827' }}>{student.applicationNumber || student.applicationNo || student.application_id || student.appNo || '—'}</strong></div> */}
+              <div style={styles.balanceSection}>
+                <span>Current Balance:</span>
+                <div style={{
+                  ...styles.balanceAmount,
+                  color: feesDue > 0 ? '#dc2626' : (advancePaid > 0 ? '#059669' : '#6b7280')  // Red if due, green if advance, gray if zero
+                }}>
+                  {feesDue > 0 ? 
+                    `Due: ${formatCurrency(feesDue)}` : 
+                    (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
+                  <button
+                    onClick={() => setShowHistory(!showHistory)}
+                    style={styles.infoButton}
+                    title="View Payment History"
+                  >
+                    <Info size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>From</label>
+                <input type="date" value={ledgerStart} onChange={(e) => setLedgerStart(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>To</label>
+                <input type="date" value={ledgerEnd} onChange={(e) => setLedgerEnd(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} style={{ padding: '8px 10px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
+              </div>
             </div>
           </div>
         </div>
@@ -666,11 +720,11 @@ const StudentPayments = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '100%' : 'auto' }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'left', padding: isMobile ? 6 : 8, borderBottom: '1px solid #eee', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Date</th>
-                      <th style={{ textAlign: 'left', padding: isMobile ? 6 : 8, borderBottom: '1px solid #eee', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Description</th>
-                      <th style={{ textAlign: 'right', padding: isMobile ? 6 : 8, borderBottom: '1px solid #eee', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Debit</th>
-                      <th style={{ textAlign: 'right', padding: isMobile ? 6 : 8, borderBottom: '1px solid #eee', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Credit</th>
-                      <th style={{ textAlign: 'right', padding: isMobile ? 6 : 8, borderBottom: '1px solid #eee', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Running</th>
+                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Date</th>
+                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Description</th>
+                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Debit</th>
+                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Credit</th>
+                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Running</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -679,11 +733,11 @@ const StudentPayments = () => {
                     ) : (
                       ledgerRows.map((r, i) => (
                         <tr key={i}>
-                          <td style={{ padding: isMobile ? 6 : 8, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{new Date(r.date).toLocaleString('en-IN')}</td>
-                          <td style={{ padding: isMobile ? 6 : 8, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{r.desc}</td>
-                          <td style={{ padding: isMobile ? 6 : 8, textAlign: 'right', color: r.debit ? '#dc2626' : undefined, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{r.debit || ''}</td>
-                          <td style={{ padding: isMobile ? 6 : 8, textAlign: 'right', color: r.credit ? '#059669' : undefined, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{r.credit || ''}</td>
-                          <td style={{ padding: isMobile ? 6 : 8, textAlign: 'right', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{formatCurrency(r.running)}</td>
+                          <td style={{ padding: 8 }}>{new Date(r.date).toLocaleString('en-IN')}</td>
+                          <td style={{ padding: 8 }}>{r.desc}</td>
+                          <td style={{ padding: 8, textAlign: 'right', color: r.debit ? '#dc2626' : undefined }}>{r.debit || ''}</td>
+                          <td style={{ padding: 8, textAlign: 'right', color: r.credit ? '#059669' : undefined }}>{r.credit || ''}</td>
+                          <td style={{ padding: 8, textAlign: 'right' }}>{formatCurrency(r.running)}</td>
                         </tr>
                       ))
                     )}
