@@ -528,7 +528,7 @@ const StudentPayments = () => {
                 <label style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', color: '#374151', marginBottom: 4 }}>To</label>
                 <input type="date" value={ledgerEnd} onChange={(e) => setLedgerEnd(e.target.value)} style={{ padding: 'clamp(0.4rem, 1.5vw, 0.5rem)', borderRadius: 6, border: '1px solid #e5e7eb', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', boxSizing: 'border-box' }} />
               </div>
-              <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} style={{ padding: 'clamp(0.5rem, 1.5vw, 0.8rem) clamp(0.6rem, 2vw, 1rem)', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', fontWeight: '500', whiteSpace: 'nowrap', minWidth: 'clamp(80px, 25vw, 130px)' }} className="ledger-button">{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
+              <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} style={{ padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.6rem, 2vw, 0.9rem)', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', fontWeight: '500', whiteSpace: 'nowrap', minWidth: 'clamp(70px, 20vw, 130px)' }} className="ledger-button">{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
             </div>
           </div>
         </div>
@@ -760,9 +760,9 @@ const StudentPayments = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>Ledger Report</h3>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={downloadLedgerCsv} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer' }}>Download Excel (CSV)</button>
-                <button onClick={downloadLedgerPdf} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #8b5cf6', background: '#8b5cf6', color: 'white', cursor: 'pointer' }}>Download PDF</button>
-                <button onClick={() => { setLedgerVisible(false); }} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer' }}>Close</button>
+                <button onClick={downloadLedgerCsv} style={{ padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.5rem, 1.5vw, 0.75rem)', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', fontWeight: '500', whiteSpace: 'nowrap' }}>Download Excel (CSV)</button>
+                <button onClick={downloadLedgerPdf} style={{ padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.5rem, 1.5vw, 0.75rem)', borderRadius: 6, border: '1px solid #8b5cf6', background: '#8b5cf6', color: 'white', cursor: 'pointer', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', fontWeight: '500', whiteSpace: 'nowrap' }}>Download PDF</button>
+                <button onClick={() => { setLedgerVisible(false); }} style={{ padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.5rem, 1.5vw, 0.75rem)', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', fontWeight: '500', whiteSpace: 'nowrap' }}>Close</button>
               </div>
             </div>
 
@@ -878,14 +878,14 @@ const styles = {
   backButton: {
     display: 'flex',
     alignItems: 'center',
-    padding: 'clamp(0.4rem, 2vw, 0.5rem) clamp(0.6rem, 2vw, 1rem)',
+    padding: 'clamp(0.35rem, 1.5vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem)',
     border: '1px solid #e5e7eb',
     borderRadius: '0.375rem',
     backgroundColor: 'white',
     cursor: 'pointer',
     color: '#374151',
     transition: 'all 0.2s',
-    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+    fontSize: 'clamp(0.65rem, 1.5vw, 0.875rem)',
   },
   title: {
     fontSize: 'clamp(1.25rem, 4vw, 1.5rem)',
@@ -985,7 +985,7 @@ const styles = {
     width: '100%',
   },
   submitButton: {
-    padding: 'clamp(0.6rem, 2vw, 0.75rem)',
+    padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.75rem, 2vw, 1rem)',
     backgroundColor: '#8b5cf6',
     color: 'white',
     border: 'none',
@@ -993,7 +993,7 @@ const styles = {
     fontWeight: '500',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
-    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+    fontSize: 'clamp(0.7rem, 1.8vw, 0.875rem)',
   },
   historyModal: {
     position: 'fixed',
@@ -1056,10 +1056,10 @@ const styles = {
   closeButton: {
     background: 'none',
     border: 'none',
-    fontSize: '1.5rem',
+    fontSize: 'clamp(1rem, 3vw, 1.5rem)',
     color: '#6b7280',
     cursor: 'pointer',
-    padding: '0.25rem',
+    padding: 'clamp(0.15rem, 1vw, 0.25rem)',
   },
   historyList: {
     padding: 'clamp(0.75rem, 2vw, 1rem)',
@@ -1154,15 +1154,15 @@ const styles = {
     flexWrap: 'wrap',
   },
   actionButton: {
-    padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.6rem, 2vw, 0.75rem)',
-    fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)',
+    padding: 'clamp(0.3rem, 1.2vw, 0.4rem) clamp(0.5rem, 1.5vw, 0.6rem)',
+    fontSize: 'clamp(0.6rem, 1.3vw, 0.7rem)',
     border: '1px solid #e5e7eb',
     borderRadius: '0.375rem',
     backgroundColor: 'white',
     cursor: 'pointer',
     transition: 'all 0.2s',
     flex: '1 1 auto',
-    minWidth: 'clamp(60px, 20vw, 80px)',
+    minWidth: 'clamp(50px, 15vw, 70px)',
     whiteSpace: 'nowrap',
   },
 };

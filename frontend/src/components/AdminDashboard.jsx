@@ -480,137 +480,103 @@ const fetchHostels = async () => {
   const totalPages = Math.max(1, Math.ceil(filteredHostels.length / HOSTELS_PER_PAGE));
   const paginatedHostels = filteredHostels.slice((currentPage - 1) * HOSTELS_PER_PAGE, (currentPage - 1) * HOSTELS_PER_PAGE + HOSTELS_PER_PAGE);
 
+  // Inject responsive CSS media queries at document level
+  React.useEffect(() => {
+    const styleId = 'admin-dashboard-responsive';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @media (min-width: 768px) {
+          .admin-desktop-table { display: table !important; }
+          .admin-mobile-cards { display: none !important; }
+        }
+        @media (max-width: 767px) {
+          .admin-desktop-table { display: none !important; }
+          .admin-mobile-cards { display: flex !important; }
+        }
+        @media (max-width: 640px) {
+          .admin-header-actions { flex-direction: column !important; width: 100% !important; }
+          .admin-action-buttons { flex-direction: column !important; width: 100% !important; }
+        }
+        @media (max-width: 480px) {
+          .admin-action-button { width: 100% !important; }
+          .admin-pagination { flex-direction: column !important; align-items: center !important; }
+          .admin-search-container { flex-direction: column !important; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    return () => {
+      const elem = document.getElementById(styleId);
+      if (elem) elem.remove();
+    };
+  }, []);
+
   const styles = {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-      padding: '0.75rem',
+      padding: 'clamp(0.5rem, 3vw, 1.5rem)',
       boxSizing: 'border-box',
       width: '100%',
       overflowX: 'hidden',
       position: 'relative',
-      '@media (min-width: 481px)': {
-        padding: '1rem',
-      },
-      '@media (min-width: 769px)': {
-        padding: '1.25rem',
-      },
-      '@media (min-width: 1024px)': {
-        padding: '1.5rem',
-      },
     },
     content: {
       maxWidth: '100%',
       margin: '0 auto',
       width: '100%',
       boxSizing: 'border-box',
-      padding: '0 0.25rem',
-      '@media (min-width: 375px)': {
-        padding: '0 0.5rem',
-      },
-      '@media (min-width: 481px)': {
-        maxWidth: '100%',
-        padding: '0 1rem',
-      },
-      '@media (min-width: 769px)': {
-        maxWidth: '1200px',
-        padding: '0 0.5rem',
-      },
-      '@media (min-width: 1025px)': {
-        padding: '0',
-      },
+      padding: 'clamp(0rem, 2vw, 1rem)',
     },
     header: {
       background: 'white',
-      padding: '0.875rem 1rem',
-      borderRadius: '0.75rem',
+      padding: 'clamp(0.75rem, 4vw, 1.25rem)',
+      borderRadius: 'clamp(0.5rem, 2vw, 1rem)',
       boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-      marginBottom: '1rem',
+      marginBottom: 'clamp(0.75rem, 4vw, 1.5rem)',
       display: 'flex',
       flexDirection: 'row',
-      flexWrap: 'nowrap',
+      flexWrap: 'wrap',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: '1rem',
+      gap: 'clamp(0.5rem, 2vw, 1rem)',
       position: 'relative',
       zIndex: 10,
-      overflowX: 'auto',
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none',
-      '&::-webkit-scrollbar': {
-        display: 'none',
-      },
-      '@media (min-width: 481px)': {
-        padding: '1rem',
-        borderRadius: '0.875rem',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.08)',
-        marginBottom: '1.25rem',
-      },
-      '@media (min-width: 769px)': {
-        padding: '0.75rem 1.25rem',
-        borderRadius: '1rem',
-        marginBottom: '1.5rem',
-      },
     },
     title: {
       color: '#db2777',
-      fontSize: '1.125rem',
+      fontSize: 'clamp(1.125rem, 5vw, 1.5rem)',
       fontWeight: '700',
       margin: 0,
       lineHeight: '1.3',
       textAlign: 'left',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
       flexShrink: 1,
-      minWidth: '100px',
-      '@media (min-width: 375px)': {
-        fontSize: '1.25rem',
-      },
-      '@media (min-width: 481px)': {
-        fontSize: '1.375rem',
-      },
-      '@media (min-width: 769px)': {
-        fontSize: '1.5rem',
-        marginRight: '1rem',
-      },
+      minWidth: '120px',
     },
     headerActions: {
       display: 'flex',
       flexDirection: 'row',
-      gap: '0.5rem',
+      gap: 'clamp(0.5rem, 2vw, 0.75rem)',
       flexShrink: 0,
       alignItems: 'center',
-      '& > *': {
-        whiteSpace: 'nowrap',
-      },
-      '@media (min-width: 640px)': {
-        gap: '0.75rem',
-      },
+      flexWrap: 'wrap',
     },
     searchContainer: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '0.5rem',
-      marginBottom: '1rem',
+      gap: 'clamp(0.5rem, 2vw, 0.75rem)',
+      marginBottom: 'clamp(0.75rem, 4vw, 1.5rem)',
       width: '100%',
       position: 'relative',
-      '@media (min-width: 481px)': {
-        flexDirection: 'row',
-        gap: '0.5rem',
-        marginBottom: '1.25rem',
-      },
-      '@media (min-width: 640px)': {
-        gap: '0.75rem',
-        marginBottom: '1.5rem',
-      },
     },
     searchInput: {
       width: '100%',
-      padding: '0.5rem 0.875rem',
+      padding: 'clamp(0.5rem, 3vw, 0.875rem)',
       border: '1px solid #e5e7eb',
       borderRadius: '0.5rem',
-      fontSize: '0.9375rem',
+      fontSize: 'clamp(0.875rem, 3vw, 0.9375rem)',
       boxSizing: 'border-box',
       minHeight: '42px',
       WebkitAppearance: 'none',
@@ -623,47 +589,29 @@ const fetchHostels = async () => {
         color: '#9ca3af',
         opacity: 1,
       },
-      '@media (min-width: 375px)': {
-        padding: '0.5rem 1rem',
-      },
-      '@media (min-width: 481px)': {
-        minWidth: '200px',
-        flex: 1,
-      },
     },
     card: {
       background: 'white',
-      borderRadius: '0.75rem',
-      padding: '1rem',
-      marginBottom: '1rem',
+      borderRadius: 'clamp(0.5rem, 2vw, 1rem)',
+      padding: 'clamp(0.75rem, 4vw, 1.5rem)',
+      marginBottom: 'clamp(0.75rem, 4vw, 1.5rem)',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
       width: '100%',
       boxSizing: 'border-box',
       position: 'relative',
       overflow: 'hidden',
-      '@media (min-width: 481px)': {
-        padding: '1.125rem',
-        marginBottom: '1.25rem',
-      },
-      '@media (min-width: 769px)': {
-        padding: '1.25rem',
-        marginBottom: '1.5rem',
-      },
-      '@media (min-width: 1024px)': {
-        padding: '1.5rem',
-      },
     },
     form: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '1rem',
-      marginTop: '1rem',
+      gap: 'clamp(0.75rem, 3vw, 1rem)',
+      marginTop: 'clamp(0.75rem, 3vw, 1rem)',
     },
     input: {
-      padding: '0.75rem',
+      padding: 'clamp(0.5rem, 2vw, 0.75rem)',
       border: '1px solid #e5e7eb',
       borderRadius: '0.5rem',
-      fontSize: '0.9375rem',
+      fontSize: 'clamp(0.875rem, 3vw, 0.9375rem)',
       '&:focus': {
         outline: 'none',
         borderColor: '#8b5cf6',
@@ -674,11 +622,11 @@ const fetchHostels = async () => {
       background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
       color: 'white',
       border: 'none',
-      padding: '0.75rem',
+      padding: 'clamp(0.5rem, 2vw, 0.75rem)',
       borderRadius: '0.5rem',
       fontWeight: '600',
       cursor: 'pointer',
-      fontSize: '1rem',
+      fontSize: 'clamp(0.875rem, 2vw, 1rem)',
       marginTop: '0.5rem',
       '&:hover': {
         opacity: 0.95,
@@ -688,11 +636,11 @@ const fetchHostels = async () => {
       background: '#6b7280',
       color: 'white',
       border: 'none',
-      padding: '0.75rem',
+      padding: 'clamp(0.5rem, 2vw, 0.75rem)',
       borderRadius: '0.5rem',
       fontWeight: '600',
       cursor: 'pointer',
-      fontSize: '1rem',
+      fontSize: 'clamp(0.875rem, 2vw, 1rem)',
       marginTop: '0.5rem',
       '&:hover': {
         opacity: 0.95,
@@ -701,44 +649,32 @@ const fetchHostels = async () => {
     hostelGrid: {
       display: 'grid',
       gridTemplateColumns: '1fr',
-      gap: '0.875rem',
-      marginTop: '0.75rem',
-      '@media (min-width: 420px)': {
-        gap: '1rem',
-        marginTop: '1rem',
-      },
+      gap: 'clamp(0.75rem, 3vw, 1.5rem)',
+      marginTop: 'clamp(0.75rem, 3vw, 1.5rem)',
       '@media (min-width: 481px)': {
         gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '1rem',
-        marginTop: '1.25rem',
       },
-      '@media (min-width: 640px)': {
-        gap: '1.25rem',
+      '@media (min-width: 769px)': {
+        gridTemplateColumns: 'repeat(3, 1fr)',
       },
       '@media (min-width: 1024px)': {
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '1.5rem',
-        marginTop: '1.5rem',
+        gridTemplateColumns: 'repeat(4, 1fr)',
       },
     },
     hostelCard: {
       background: '#ffffff',
-      padding: '1rem',
-      borderRadius: '0.75rem',
+      padding: 'clamp(0.75rem, 3vw, 1.25rem)',
+      borderRadius: 'clamp(0.5rem, 2vw, 0.75rem)',
       border: '1px solid #e5e7eb',
       boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
       transition: 'all 0.2s ease',
       position: 'relative',
       overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
       '&:hover': {
         transform: 'translateY(-2px)',
         boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-      },
-      '@media (min-width: 481px)': {
-        padding: '1.125rem',
-      },
-      '@media (min-width: 769px)': {
-        padding: '1.25rem',
       },
       '&::before': {
         content: '""',
@@ -755,15 +691,16 @@ const fetchHostels = async () => {
       background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
       color: 'white',
       border: 'none',
-      padding: '0.5rem 1rem',
+      padding: 'clamp(0.5rem, 2vw, 0.75rem)',
       borderRadius: '0.5rem',
       cursor: 'pointer',
-      marginTop: '1rem',
+      marginTop: 'clamp(0.75rem, 3vw, 1rem)',
       width: '100%',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '0.5rem',
+      gap: 'clamp(0.25rem, 2vw, 0.5rem)',
+      fontSize: 'clamp(0.875rem, 2vw, 1rem)',
       '&:hover': {
         opacity: 0.9,
       },
@@ -772,10 +709,10 @@ const fetchHostels = async () => {
       background: '#4b5563',
       color: 'white',
       border: 'none',
-      padding: '0.5rem 1rem',
+      padding: 'clamp(0.5rem, 2vw, 0.75rem)',
       borderRadius: '0.5rem',
       cursor: 'pointer',
-      fontSize: '0.9375rem',
+      fontSize: 'clamp(0.8rem, 2vw, 0.9375rem)',
       fontWeight: '500',
       transition: 'all 0.2s ease',
       whiteSpace: 'nowrap',
@@ -788,16 +725,16 @@ const fetchHostels = async () => {
       background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
       color: 'white',
       border: 'none',
-      padding: '0.625rem 1.25rem',
+      padding: 'clamp(0.5rem, 2vw, 0.75rem)',
       borderRadius: '0.5rem',
       fontWeight: '600',
       cursor: 'pointer',
-      fontSize: '0.9375rem',
+      fontSize: 'clamp(0.8rem, 2vw, 0.9375rem)',
       transition: 'all 0.2s ease',
       whiteSpace: 'nowrap',
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '0.5rem',
+      gap: 'clamp(0.25rem, 2vw, 0.5rem)',
       ':hover': {
         transform: 'translateY(-1px)',
         boxShadow: '0 4px 12px rgba(147, 51, 234, 0.3)',
@@ -808,32 +745,31 @@ const fetchHostels = async () => {
       overflowX: 'auto',
       WebkitOverflowScrolling: 'touch',
       msOverflowStyle: '-ms-autohiding-scrollbar',
-      borderRadius: '1rem',
+      borderRadius: 'clamp(0.5rem, 2vw, 1rem)',
       boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
       background: 'white',
-      marginBottom: '2rem',
+      marginBottom: 'clamp(1rem, 4vw, 2rem)',
     },
     table: {
       width: '100%',
-      // allow table to shrink on smaller viewports; mobile will use card/grid layout
       minWidth: 'auto',
       borderCollapse: 'separate',
       borderSpacing: 0,
     },
     th: {
       background: '#f3e8ff',
-      padding: '0.875rem 1rem',
+      padding: 'clamp(0.5rem, 2vw, 0.875rem)',
       textAlign: 'left',
       color: '#6b21a8',
       fontWeight: '600',
-      fontSize: '0.875rem',
+      fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
       whiteSpace: 'nowrap',
     },
     td: {
-      padding: '0.875rem 1rem',
+      padding: 'clamp(0.5rem, 2vw, 0.875rem)',
       borderTop: '1px solid #e5e7eb',
       verticalAlign: 'middle',
-      fontSize: '0.875rem',
+      fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
       lineHeight: '1.5',
     },
     actionCell: {
@@ -843,8 +779,8 @@ const fetchHostels = async () => {
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: '32px',
-      height: '32px',
+      width: 'clamp(28px, 5vw, 32px)',
+      height: 'clamp(28px, 5vw, 32px)',
       padding: '0',
       margin: '0 2px',
       borderRadius: '4px',
@@ -865,97 +801,30 @@ const fetchHostels = async () => {
         cursor: 'not-allowed',
       },
     },
-    loading: {
-      textAlign: 'center',
-      padding: '2rem',
-      color: '#6b21a8',
-      fontSize: '1.1rem',
-      fontWeight: '500',
-    },
-    toolbar: {
-      display: 'flex',
-      gap: '0.5rem',
-      alignItems: 'center',
-      margin: '0 0 1rem 0',
-      '& input[type="search"]': {
-        padding: '0.5rem 0.75rem',
-        borderRadius: '0.5rem',
-        border: '1px solid #e5e7eb',
-        minWidth: '220px',
-        fontSize: '0.875rem',
-        '&:focus': {
-          outline: 'none',
-          borderColor: '#8b5cf6',
-          boxShadow: '0 0 0 2px rgba(139, 92, 246, 0.2)'
-        }
-      }
-    },
-    filterSelect: {
-      padding: '0.5rem 0.75rem',
-      borderRadius: '0.5rem',
-      border: '1px solid #e5e7eb'
-    },
-    error: {
-      background: '#fee2e2',
-      color: '#b91c1c',
-      padding: '1rem',
-      borderRadius: '0.5rem',
-      marginBottom: '1.5rem',
-      borderLeft: '4px solid #dc2626',
-      fontSize: '0.9375rem',
-      lineHeight: '1.5',
-    },
-    statusBadge: {
-      padding: '0.25rem 0.75rem',
-      borderRadius: '9999px',
-      fontSize: '0.8125rem',
-      fontWeight: '500',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      whiteSpace: 'nowrap',
-    },
-    pendingBadge: {
-      background: '#fef3c7',
-      color: '#92400e',
-    },
-    approvedBadge: {
-      background: '#dcfce7',
-      color: '#166534',
-    },
-    rejectedBadge: {
-      background: '#fee2e2',
-      color: '#991b1b',
-    },
-    emptyState: {
-      textAlign: 'center',
-      padding: '3rem 1rem',
-      color: '#6b7280',
-      fontSize: '1rem',
-      lineHeight: '1.5',
-    },
     pagination: {
       display: 'flex',
       justifyContent: 'flex-end',
-      alignItems: 'flex-end',
-      marginTop: '1.5rem',
-      gap: '0.5rem',
+      alignItems: 'center',
+      marginTop: 'clamp(0.75rem, 3vw, 1.5rem)',
+      gap: 'clamp(0.25rem, 2vw, 0.5rem)',
       flexWrap: 'wrap',
+      padding: 'clamp(0.5rem, 2vw, 0.75rem)',
     },
     pageInfo: {
-      margin: '0 1rem',
+      margin: '0 clamp(0.5rem, 2vw, 1rem)',
       color: '#4b5563',
-      fontSize: '0.875rem',
+      fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
     },
     pageButton: {
-      padding: '0.5rem 0.75rem',
+      padding: 'clamp(0.35rem, 2vw, 0.5rem) clamp(0.5rem, 2vw, 0.75rem)',
       border: '1px solid #e5e7eb',
       borderRadius: '0.375rem',
       background: 'white',
       cursor: 'pointer',
       transition: 'all 0.2s',
-      minWidth: '2.5rem',
+      minWidth: 'clamp(2rem, 5vw, 2.5rem)',
       textAlign: 'center',
+      fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
       '&:hover': {
         background: '#f3f4f6',
       },
@@ -970,118 +839,28 @@ const fetchHostels = async () => {
         background: '#f3f4f6',
       },
     },
-    // Removed sortableHeader style as sorting is disabled
-    '@media (max-width: 1024px)': {
-      container: {
-        padding: '1.25rem 0.75rem',
-      },
-      header: {
-        padding: '1rem',
-        marginBottom: '1.25rem',
-      },
-      title: {
-        fontSize: '1.375rem',
-      },
+    error: {
+      background: '#fee2e2',
+      color: '#b91c1c',
+      padding: 'clamp(0.75rem, 3vw, 1rem)',
+      borderRadius: '0.5rem',
+      marginBottom: 'clamp(0.75rem, 3vw, 1.5rem)',
+      borderLeft: '4px solid #dc2626',
+      fontSize: 'clamp(0.8rem, 2vw, 0.9375rem)',
+      lineHeight: '1.5',
     },
-    '@media (max-width: 768px)': {
-      container: {
-        padding: '1rem 0.5rem',
-      },
-      header: {
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: '0.75rem',
-        padding: '1rem',
-      },
-      title: {
-        fontSize: '1.25rem',
-      },
-      headerActions: {
-        width: '100%',
-        justifyContent: 'space-between',
-      },
-      th: {
-        padding: '0.75rem 0.5rem',
-        fontSize: '0.8125rem',
-      },
-      td: {
-        padding: '0.75rem 0.5rem',
-        fontSize: '0.8125rem',
-      },
+    emptyState: {
+      textAlign: 'center',
+      padding: 'clamp(1.5rem, 5vw, 3rem)',
+      color: '#6b7280',
+      fontSize: 'clamp(0.9rem, 2vw, 1rem)',
+      lineHeight: '1.5',
     },
-    '@media (max-width: 480px)': {
-      container: {
-        padding: '0.75rem 0.25rem',
-      },
-      header: {
-        padding: '0.875rem',
-        borderRadius: '0.75rem',
-        marginBottom: '1rem',
-      },
-      title: {
-        fontSize: '1.25rem',
-      },
-      logoutButton: {
-        padding: '0.5rem 0.75rem',
-        fontSize: '0.875rem',
-      },
-      addButton: {
-        padding: '0.5rem 1rem',
-        fontSize: '0.875rem',
-      },
-      tableContainer: {
-        borderRadius: '0.75rem',
-        marginBottom: '1.5rem',
-      },
-      th: {
-        padding: '0.625rem 0.5rem',
-        fontSize: '0.75rem',
-      },
-      td: {
-        padding: '0.625rem 0.5rem',
-        fontSize: '0.75rem',
-      },
-      actionButton: {
-        padding: '0.35rem 0.5rem',
-        fontSize: '0.75rem',
-        marginRight: '0.25rem',
-        marginBottom: '0.25rem',
-      },
-      statusBadge: {
-        padding: '0.2rem 0.5rem',
-        fontSize: '0.75rem',
-      },
-    },
-  };
-
-  const applyResponsiveStyles = (styleObj) => {
-    const appliedStyles = { ...styleObj };
-
-    // Handle media query styles
-    if (window.innerWidth <= 1024 && styleObj['@media (max-width: 1024px)']) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 1024px)']);
-    }
-    if (window.innerWidth <= 768 && styleObj['@media (max-width: 768px)']) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 768px)']);
-    }
-    if (window.innerWidth <= 480 && styleObj['@media (max-width: 480px)']) {
-      Object.assign(appliedStyles, styleObj['@media (max-width: 480px)']);
-    }
-
-    // Remove media query keys
-    const {
-      '@media (max-width: 1024px)': mq1024,
-      '@media (max-width: 768px)': mq768,
-      '@media (max-width: 480px)': mq480,
-      ...cleanStyles
-    } = appliedStyles;
-
-    return cleanStyles;
   };
 
   return (
-    <div className="container" style={applyResponsiveStyles(styles.container)}>
-      <div className="content" style={applyResponsiveStyles(styles.content)}>
+    <div className="container" style={styles.container}>
+      <div className="content" style={styles.content}>
         {/* User Profile Section */}
         <div className="card" style={{
           background: 'white',
@@ -1153,10 +932,10 @@ const fetchHostels = async () => {
                 width: '100%',
               }}
             >
-              <button onClick={() => navigate('/admin/dashboard')} className="btn btn-primary" style={{...applyResponsiveStyles(styles.addButton), minWidth: '120px', background: '#06b6d4'}} title="Hostel List">
+              <button onClick={() => navigate('/admin/dashboard')} className="btn btn-primary" style={{...styles.addButton, minWidth: '120px', background: '#06b6d4'}} title="Hostel List">
                 <Users size={16} style={{ marginRight: '6px' }} /> Hostel List
               </button>
-              <button onClick={handleLogout} className="btn btn-secondary" style={{...applyResponsiveStyles(styles.logoutButton), minWidth: '100px'}} title="Logout">
+              <button onClick={handleLogout} className="btn btn-secondary" style={{...styles.logoutButton, minWidth: '100px'}} title="Logout">
                 <LogOut size={16} style={{ marginRight: '6px' }} /> Logout
               </button>
             </div>
@@ -1179,9 +958,9 @@ const fetchHostels = async () => {
 
         {/* Inline Add Hostel form shown on this page */}
         {showAddHostel && (
-          <div className="card" style={applyResponsiveStyles(styles.card)}>
+          <div className="card" style={styles.card}>
             <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>{newHostel.id ? 'Edit Hostel' : 'Add New Hostel'}</h3>
-            <form onSubmit={handleAddHostel} className="form" style={applyResponsiveStyles(styles.form)}>
+            <form onSubmit={handleAddHostel} className="form" style={styles.form}>
               <input
                 name="name"
                 className="input"
@@ -1198,7 +977,7 @@ const fetchHostels = async () => {
                   }, 300);
                 }}
                 placeholder="Hostel name (English)"
-                style={applyResponsiveStyles(styles.input)}
+                style={styles.input}
                 required
               />
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1222,7 +1001,7 @@ const fetchHostels = async () => {
                     }
                   }}
                   placeholder="Hostel name (Hindi)"
-                  style={{ ...applyResponsiveStyles(styles.input), color: '#000' }}
+                  style={{ ...styles.input, color: '#000' }}
                 />
                 <button type="button" onClick={() => { setKeyboardTarget('name_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
               </div>
@@ -1241,7 +1020,7 @@ const fetchHostels = async () => {
                   }, 300);
                 }}
                 placeholder="Address (English)"
-                style={applyResponsiveStyles(styles.input)}
+                style={styles.input}
                 required
               />
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1264,7 +1043,7 @@ const fetchHostels = async () => {
                     }
                   }}
                   placeholder="Address (Hindi)"
-                  style={{ ...applyResponsiveStyles(styles.input), color: '#000' }}
+                  style={{ ...styles.input, color: '#000' }}
                 />
                 <button type="button" onClick={() => { setKeyboardTarget('address_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
               </div>
@@ -1278,19 +1057,19 @@ const fetchHostels = async () => {
                   value={newHostel.monthlyFee}
                   onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFee: e.target.value }))}
                   placeholder="Monthly fee per student"
-                  style={{ ...applyResponsiveStyles(styles.input), maxWidth: 220 }}
+                  style={{ ...styles.input, maxWidth: 220 }}
                 />
                 <select value={newHostel.monthlyFeeCurrency} onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFeeCurrency: e.target.value }))} style={{ padding: '0.75rem 1rem', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>
                   <option value="INR">INR</option>
                 </select>
               </div>
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button type="submit" className="btn btn-primary" style={applyResponsiveStyles(styles.submitButton)}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
+                <button type="submit" className="btn btn-primary" style={styles.submitButton}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
                 <button
                   type="button"
                   className="btn btn-secondary"
                   onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setError(''); }}
-                  style={applyResponsiveStyles(styles.cancelButton)}
+                  style={styles.cancelButton}
                 >
                   Cancel
                 </button>
@@ -1328,7 +1107,7 @@ const fetchHostels = async () => {
                 onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setShowAddHostel(true); }}
                 className="btn btn-primary"
                 style={{
-                  ...applyResponsiveStyles(styles.addButton),
+                  ...styles.addButton,
                   background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
                   minWidth: '120px',
                 }}
@@ -1341,22 +1120,22 @@ const fetchHostels = async () => {
           </div>
         </div>
 
-        <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
+        <div className="table-container" style={styles.tableContainer}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem' }}>
             <input
               type="search"
               placeholder="Search hostels by name..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              style={{ ...applyResponsiveStyles(styles.searchInput), maxWidth: 420 }}
+              style={{ ...styles.searchInput, maxWidth: 420 }}
             />
             <div style={{ color: '#6b7280' }}>{filteredHostels.length} hostels</div>
           </div>
 
           {isMobile ? (
-            <div style={applyResponsiveStyles(styles.hostelGrid)}>
+            <div style={styles.hostelGrid}>
               {paginatedHostels.map((hostel) => (
-                <div key={hostel.id} style={applyResponsiveStyles(styles.hostelCard)}>
+                <div key={hostel.id} style={styles.hostelCard}>
                   <h4 style={{ margin: 0, fontSize: '1rem', color: '#111827' }}>{hostel.name}</h4>
                   <div style={{ color: '#6b7280', marginTop: 6 }}>{hostel.address || ''}</div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
@@ -1371,7 +1150,7 @@ const fetchHostels = async () => {
             </div>
           ) : (
             <table style={{
-              ...applyResponsiveStyles(styles.table),
+              ...styles.table,
               width: '100%',
               borderCollapse: 'collapse'
             }}>
@@ -1451,9 +1230,9 @@ const fetchHostels = async () => {
         </div>
 
         {selectedHostel && (
-          <div className="table-container" style={applyResponsiveStyles(styles.tableContainer)}>
+          <div className="table-container" style={styles.tableContainer}>
             <table style={{
-              ...applyResponsiveStyles(styles.table),
+              ...styles.table,
               width: '100%',
               borderCollapse: 'collapse'
             }}>
