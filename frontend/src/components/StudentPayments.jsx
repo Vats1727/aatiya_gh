@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Info, Menu, X } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -17,12 +17,22 @@ const StudentPayments = () => {
   const [ledgerOpeningBalance, setLedgerOpeningBalance] = useState(0);
   const [ledgerVisible, setLedgerVisible] = useState(false);
   const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [newPayment, setNewPayment] = useState({
     amount: '',
     paymentMode: 'cash',
     remarks: '',
     type: 'credit' // credit for payment received, debit for refund/adjustment
   });
+
+  // Handle responsive layout on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -505,62 +515,134 @@ const StudentPayments = () => {
                 {payments.length === 0 ? (
                   <div style={styles.noHistory}>No payment records found</div>
                 ) : (
-                  <div style={styles.historyTableWrapper}>
-                    <table style={styles.historyTable}>
-                      <thead>
-                        <tr>
-                          <th style={styles.th}>Date</th>
-                          <th style={styles.th}>Mode</th>
-                          <th style={styles.th}>Remarks</th>
-                          <th style={{ ...styles.th, textAlign: 'right' }}>Debit</th>
-                          <th style={{ ...styles.th, textAlign: 'right' }}>Credit</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>{formatDate(student.createdAt || new Date().toISOString())}</td>
-                          <td>—</td>
-                          <td>
-                            {hasCustomFee ? (
-                              <div>
-                                <div>Applied Monthly Fee</div>
-                                <div style={{ fontSize: '0.8em', color: '#6b7280' }}>
-                                  (Standard: {formatCurrency(monthlyFee)})
-                                </div>
-                              </div>
-                            ) : 'Monthly Fee'}
-                          </td>
-                          <td style={{ textAlign: 'right', color: '#dc2626' }}>
-                            {formatCurrency(usedFee)}
-                          </td>
-                          <td style={{ textAlign: 'right' }}>—</td>
-                        </tr>
-                        {payments.map((payment, i) => (
-                          <tr key={i}>
-                            <td>{formatDate(payment.timestamp)}</td>
-                            <td>{payment.paymentMode}</td>
-                            <td>{payment.remarks || '—'}</td>
-                            <td style={{ textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
-                              {payment.type === 'debit' ? formatCurrency(payment.amount) : ''}
-                            </td>
-                            <td style={{ textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
-                              {payment.type === 'credit' ? formatCurrency(payment.amount) : ''}
-                            </td>
-                          </tr>
-                        ))}
-                        <tr>
-                          <td colSpan={3} style={{ textAlign: 'right', fontWeight: '600' }}>Balance</td>
-                          <td style={{ textAlign: 'right', color: feesDue > 0 ? '#b91c1c' : '#6b7280', fontWeight: 600 }}>
-                            {feesDue > 0 ? formatCurrency(feesDue) : '—'}
-                          </td>
-                          <td style={{ textAlign: 'right', color: advancePaid > 0 ? '#059669' : '#6b7280', fontWeight: 600 }}>
-                            {advancePaid > 0 ? formatCurrency(advancePaid) : '—'}
-                          </td>
-                        </tr>
-                      </tbody>
+                  <>
+                    {/* Responsive table/card view */}
+                    {!isMobile ? (
+                      // Desktop: Table View
+                      <div style={styles.historyTableWrapper}>
+                        <table style={styles.historyTable}>
+                          <thead>
+                            <tr>
+                              <th style={styles.th}>Date</th>
+                              <th style={styles.th}>Mode</th>
+                              <th style={styles.th}>Remarks</th>
+                              <th style={{ ...styles.th, textAlign: 'right' }}>Debit</th>
+                              <th style={{ ...styles.th, textAlign: 'right' }}>Credit</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td style={styles.td}>{formatDate(student.createdAt || new Date().toISOString())}</td>
+                              <td style={styles.td}>—</td>
+                              <td style={styles.td}>
+                                {hasCustomFee ? (
+                                  <div>
+                                    <div>Applied Monthly Fee</div>
+                                    <div style={{ fontSize: '0.8em', color: '#6b7280' }}>
+                                      (Standard: {formatCurrency(monthlyFee)})
+                                    </div>
+                                  </div>
+                                ) : 'Monthly Fee'}
+                              </td>
+                              <td style={{ ...styles.td, textAlign: 'right', color: '#dc2626' }}>
+                                {formatCurrency(usedFee)}
+                              </td>
+                              <td style={{ ...styles.td, textAlign: 'right' }}>—</td>
+                            </tr>
+                            {payments.map((payment, i) => (
+                              <tr key={i}>
+                                <td style={styles.td}>{formatDate(payment.timestamp)}</td>
+                                <td style={styles.td}>{payment.paymentMode}</td>
+                                <td style={styles.td}>{payment.remarks || '—'}</td>
+                                <td style={{ ...styles.td, textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
+                                  {payment.type === 'debit' ? formatCurrency(payment.amount) : ''}
+                                </td>
+                                <td style={{ ...styles.td, textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
+                                  {payment.type === 'credit' ? formatCurrency(payment.amount) : ''}
+                                </td>
+                              </tr>
+                            ))}
+                            <tr style={{ backgroundColor: '#f9fafb' }}>
+                              <td colSpan={3} style={{ ...styles.td, textAlign: 'right', fontWeight: '600' }}>Balance</td>
+                              <td style={{ ...styles.td, textAlign: 'right', color: feesDue > 0 ? '#b91c1c' : '#6b7280', fontWeight: 600 }}>
+                                {feesDue > 0 ? formatCurrency(feesDue) : '—'}
+                              </td>
+                              <td style={{ ...styles.td, textAlign: 'right', color: advancePaid > 0 ? '#059669' : '#6b7280', fontWeight: 600 }}>
+                                {advancePaid > 0 ? formatCurrency(advancePaid) : '—'}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      // Mobile: Card View
+                      <div style={styles.mobileCardContainer}>
+                        {/* Opening balance card */}
+                        <div style={styles.mobileCard}>
+                          <div style={styles.mobileCardHeader}>
+                            <div style={styles.mobileCardTitle}>Opening Balance</div>
+                            <div style={{ ...styles.mobileCardValue, color: '#6b7280' }}>
+                              {formatDate(student.createdAt || new Date().toISOString())}
+                            </div>
+                          </div>
+                          <div style={styles.mobileCardContent}>
+                            <div style={styles.mobileCardRow}>
+                              <span style={styles.mobileLabel}>Description:</span>
+                              <span style={styles.mobileValue}>Monthly Fee</span>
+                            </div>
+                            <div style={styles.mobileCardRow}>
+                              <span style={styles.mobileLabel}>Amount:</span>
+                              <span style={{ ...styles.mobileValue, color: '#dc2626', fontWeight: 600 }}>
+                                Debit: {formatCurrency(usedFee)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
-                    </table>
-                  </div>
+                        {/* Payment history cards */}
+                        {payments.map((payment, i) => (
+                          <div key={i} style={styles.mobileCard}>
+                            <div style={styles.mobileCardHeader}>
+                              <div style={styles.mobileCardTitle}>{formatDate(payment.timestamp)}</div>
+                              <div style={{ ...styles.mobileCardValue, color: payment.type === 'credit' ? '#059669' : '#dc2626' }}>
+                                {payment.type === 'credit' ? '+' : ''}{formatCurrency(payment.amount)}
+                              </div>
+                            </div>
+                            <div style={styles.mobileCardContent}>
+                              <div style={styles.mobileCardRow}>
+                                <span style={styles.mobileLabel}>Mode:</span>
+                                <span style={styles.mobileValue}>{payment.paymentMode || '—'}</span>
+                              </div>
+                              <div style={styles.mobileCardRow}>
+                                <span style={styles.mobileLabel}>Type:</span>
+                                <span style={{ ...styles.mobileValue, color: payment.type === 'credit' ? '#059669' : '#dc2626' }}>
+                                  {payment.type === 'credit' ? 'Payment Received' : 'Adjustment/Refund'}
+                                </span>
+                              </div>
+                              {payment.remarks && (
+                                <div style={styles.mobileCardRow}>
+                                  <span style={styles.mobileLabel}>Remarks:</span>
+                                  <span style={styles.mobileValue}>{payment.remarks}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Closing balance card */}
+                        <div style={{ ...styles.mobileCard, backgroundColor: '#f9fafb', borderLeft: `4px solid ${feesDue > 0 ? '#b91c1c' : (advancePaid > 0 ? '#059669' : '#6b7280')}` }}>
+                          <div style={styles.mobileCardHeader}>
+                            <div style={styles.mobileCardTitle}>Current Balance</div>
+                            <div style={{ ...styles.mobileCardValue, color: feesDue > 0 ? '#b91c1c' : (advancePaid > 0 ? '#059669' : '#6b7280'), fontWeight: 700 }}>
+                              {feesDue > 0 
+                                ? `Due: ${formatCurrency(feesDue)}` 
+                                : (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -569,45 +651,45 @@ const StudentPayments = () => {
 
         {ledgerVisible && (
           <div style={{ marginTop: 16, background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #eef2ff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <h3 style={{ margin: 0 }}>Ledger Report</h3>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={downloadLedgerCsv} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer' }}>Download Excel (CSV)</button>
-                <button onClick={downloadLedgerPdf} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #8b5cf6', background: '#8b5cf6', color: 'white', cursor: 'pointer' }}>Download PDF</button>
-                <button onClick={() => { setLedgerVisible(false); }} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer' }}>Close</button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button onClick={downloadLedgerCsv} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Download Excel (CSV)</button>
+                <button onClick={downloadLedgerPdf} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #8b5cf6', background: '#8b5cf6', color: 'white', cursor: 'pointer', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Download PDF</button>
+                <button onClick={() => { setLedgerVisible(false); }} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Close</button>
               </div>
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <div style={{ fontSize: 13, color: '#374151', marginBottom: 8 }}>Opening Balance: {formatCurrency(ledgerOpeningBalance)}</div>
+              <div style={{ fontSize: isMobile ? 12 : 13, color: '#374151', marginBottom: 8 }}>Opening Balance: {formatCurrency(ledgerOpeningBalance)}</div>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '100%' : 'auto' }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Date</th>
-                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Description</th>
-                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Debit</th>
-                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Credit</th>
-                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Running</th>
+                      <th style={{ textAlign: 'left', padding: isMobile ? 6 : 8, borderBottom: '1px solid #eee', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Date</th>
+                      <th style={{ textAlign: 'left', padding: isMobile ? 6 : 8, borderBottom: '1px solid #eee', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Description</th>
+                      <th style={{ textAlign: 'right', padding: isMobile ? 6 : 8, borderBottom: '1px solid #eee', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Debit</th>
+                      <th style={{ textAlign: 'right', padding: isMobile ? 6 : 8, borderBottom: '1px solid #eee', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Credit</th>
+                      <th style={{ textAlign: 'right', padding: isMobile ? 6 : 8, borderBottom: '1px solid #eee', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Running</th>
                     </tr>
                   </thead>
                   <tbody>
                     {ledgerRows.length === 0 ? (
-                      <tr><td colSpan={5} style={{ padding: 12, color: '#6b7280' }}>No transactions in the selected period</td></tr>
+                      <tr><td colSpan={5} style={{ padding: 12, color: '#6b7280', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>No transactions in the selected period</td></tr>
                     ) : (
                       ledgerRows.map((r, i) => (
                         <tr key={i}>
-                          <td style={{ padding: 8 }}>{new Date(r.date).toLocaleString('en-IN')}</td>
-                          <td style={{ padding: 8 }}>{r.desc}</td>
-                          <td style={{ padding: 8, textAlign: 'right', color: r.debit ? '#dc2626' : undefined }}>{r.debit || ''}</td>
-                          <td style={{ padding: 8, textAlign: 'right', color: r.credit ? '#059669' : undefined }}>{r.credit || ''}</td>
-                          <td style={{ padding: 8, textAlign: 'right' }}>{formatCurrency(r.running)}</td>
+                          <td style={{ padding: isMobile ? 6 : 8, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{new Date(r.date).toLocaleString('en-IN')}</td>
+                          <td style={{ padding: isMobile ? 6 : 8, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{r.desc}</td>
+                          <td style={{ padding: isMobile ? 6 : 8, textAlign: 'right', color: r.debit ? '#dc2626' : undefined, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{r.debit || ''}</td>
+                          <td style={{ padding: isMobile ? 6 : 8, textAlign: 'right', color: r.credit ? '#059669' : undefined, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{r.credit || ''}</td>
+                          <td style={{ padding: isMobile ? 6 : 8, textAlign: 'right', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{formatCurrency(r.running)}</td>
                         </tr>
                       ))
                     )}
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>Closing Balance</td>
-                      <td style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>{formatCurrency(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance)}</td>
+                      <td colSpan={4} style={{ textAlign: 'right', padding: isMobile ? 6 : 8, fontWeight: 700, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>Closing Balance</td>
+                      <td style={{ textAlign: 'right', padding: isMobile ? 6 : 8, fontWeight: 700, fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{formatCurrency(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -622,7 +704,7 @@ const StudentPayments = () => {
 
 const styles = {
   container: {
-    padding: '2rem',
+    padding: isMobile ? '1rem' : '2rem',
     maxWidth: '1200px',
     margin: '0 auto',
   },
@@ -631,6 +713,7 @@ const styles = {
     alignItems: 'center',
     marginBottom: '2rem',
     gap: '1rem',
+    flexWrap: isMobile ? 'wrap' : 'nowrap',
   },
   backButton: {
     display: 'flex',
@@ -642,30 +725,32 @@ const styles = {
     cursor: 'pointer',
     color: '#374151',
     transition: 'all 0.2s',
+    fontSize: isMobile ? '0.875rem' : '1rem',
     '&:hover': {
       backgroundColor: '#f3f4f6',
     },
   },
   title: {
-    fontSize: '1.5rem',
+    fontSize: isMobile ? '1.25rem' : '1.5rem',
     fontWeight: '600',
     color: '#111827',
     margin: 0,
+    flex: 1,
   },
   content: {
     backgroundColor: 'white',
     borderRadius: '0.5rem',
     boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    padding: '1.5rem',
+    padding: isMobile ? '1rem' : '1.5rem',
   },
   studentInfo: {
     marginBottom: '2rem',
-    padding: '1rem',
+    padding: isMobile ? '0.75rem' : '1rem',
     backgroundColor: '#f9fafb',
     borderRadius: '0.375rem',
   },
   studentName: {
-    fontSize: '1.25rem',
+    fontSize: isMobile ? '1rem' : '1.25rem',
     fontWeight: '600',
     color: '#111827',
     marginBottom: '0.5rem',
@@ -675,12 +760,13 @@ const styles = {
     alignItems: 'center',
     gap: '1rem',
     color: '#4b5563',
+    flexWrap: 'wrap',
   },
   balanceAmount: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
-    fontSize: '1.125rem',
+    fontSize: isMobile ? '1rem' : '1.125rem',
     fontWeight: '600',
     color: '#111827',
   },
@@ -703,7 +789,7 @@ const styles = {
     margin: '0 auto',
   },
   formTitle: {
-    fontSize: '1.125rem',
+    fontSize: isMobile ? '1rem' : '1.125rem',
     fontWeight: '600',
     color: '#111827',
     marginBottom: '1rem',
@@ -719,15 +805,15 @@ const styles = {
     gap: '0.5rem',
   },
   label: {
-    fontSize: '0.875rem',
+    fontSize: isMobile ? '0.8125rem' : '0.875rem',
     fontWeight: '500',
     color: '#374151',
   },
   input: {
-    padding: '0.5rem',
+    padding: isMobile ? '0.625rem' : '0.5rem',
     borderRadius: '0.375rem',
     border: '1px solid #e5e7eb',
-    fontSize: '0.875rem',
+    fontSize: isMobile ? '0.8125rem' : '0.875rem',
     '&:focus': {
       outline: 'none',
       borderColor: '#8b5cf6',
@@ -735,10 +821,10 @@ const styles = {
     },
   },
   select: {
-    padding: '0.5rem',
+    padding: isMobile ? '0.625rem' : '0.5rem',
     borderRadius: '0.375rem',
     border: '1px solid #e5e7eb',
-    fontSize: '0.875rem',
+    fontSize: isMobile ? '0.8125rem' : '0.875rem',
     backgroundColor: 'white',
     '&:focus': {
       outline: 'none',
@@ -754,6 +840,7 @@ const styles = {
     borderRadius: '0.375rem',
     fontWeight: '500',
     cursor: 'pointer',
+    fontSize: isMobile ? '0.9375rem' : '1rem',
     transition: 'background-color 0.2s',
     '&:hover': {
       backgroundColor: '#7c3aed',
@@ -770,19 +857,20 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 50,
+    padding: isMobile ? '1rem' : '0',
   },
   historyContent: {
     backgroundColor: 'white',
     borderRadius: '0.5rem',
-    width: '90%',
+    width: isMobile ? '100%' : '90%',
     maxWidth: '600px',
-    maxHeight: '80vh',
+    maxHeight: isMobile ? '90vh' : '80vh',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
   },
   historyHeader: {
-    padding: '1rem',
+    padding: isMobile ? '0.75rem' : '1rem',
     borderBottom: '1px solid #e5e7eb',
     display: 'flex',
     alignItems: 'center',
@@ -791,24 +879,25 @@ const styles = {
   historySummary: {
     display: 'flex',
     gap: '1rem',
-    padding: '1rem',
+    padding: isMobile ? '0.75rem' : '1rem',
     borderBottom: '1px solid #eef2ff',
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    flexWrap: 'wrap'
+    flexWrap: 'wrap',
+    overflowX: 'auto',
   },
   summaryItem: {
-    minWidth: '140px',
+    minWidth: isMobile ? '120px' : '140px',
     display: 'flex',
     flexDirection: 'column',
   },
   summaryLabel: {
-    fontSize: '0.75rem',
+    fontSize: isMobile ? '0.7rem' : '0.75rem',
     color: '#6b7280',
   },
   summaryValue: {
-    fontSize: '1rem',
+    fontSize: isMobile ? '0.875rem' : '1rem',
     fontWeight: 700,
     color: '#111827'
   },
@@ -824,7 +913,7 @@ const styles = {
     },
   },
   historyList: {
-    padding: '1rem',
+    padding: isMobile ? '0.75rem' : '1rem',
     overflowY: 'auto',
   },
   historyTableWrapper: {
@@ -851,6 +940,62 @@ const styles = {
     fontSize: '0.875rem',
     color: '#374151',
     verticalAlign: 'top'
+  },
+  // Mobile card styles
+  mobileCardContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+  },
+  mobileCard: {
+    backgroundColor: 'white',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0.5rem',
+    padding: '1rem',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+  },
+  mobileCardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '0.75rem',
+    paddingBottom: '0.75rem',
+    borderBottom: '1px solid #f3f4f6',
+  },
+  mobileCardTitle: {
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    color: '#111827',
+    flex: 1,
+  },
+  mobileCardValue: {
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    color: '#059669',
+    textAlign: 'right',
+    marginLeft: '0.5rem',
+  },
+  mobileCardContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+  },
+  mobileCardRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '0.5rem',
+    fontSize: '0.8125rem',
+  },
+  mobileLabel: {
+    fontWeight: '500',
+    color: '#6b7280',
+    minWidth: '80px',
+  },
+  mobileValue: {
+    color: '#374151',
+    textAlign: 'right',
+    flex: 1,
   },
   historyItem: {
     padding: '1rem',
@@ -887,6 +1032,7 @@ const styles = {
     textAlign: 'center',
     color: '#6b7280',
     padding: '2rem',
+    fontSize: isMobile ? '0.875rem' : '1rem',
   },
   loading: {
     textAlign: 'center',
@@ -896,9 +1042,10 @@ const styles = {
   error: {
     backgroundColor: '#fef2f2',
     color: '#b91c1c',
-    padding: '1rem',
+    padding: isMobile ? '0.75rem' : '1rem',
     borderRadius: '0.375rem',
     marginBottom: '1rem',
+    fontSize: isMobile ? '0.875rem' : '1rem',
   },
 };
 
