@@ -110,8 +110,8 @@ app.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Firebase project: ${process.env.GOOGLE_CLOUD_PROJECT || 'Not set'}`);
   try {
-    // Schedule monthly debit job. By default uses UTC and runs at 00:05 on 1st of month.
-    scheduleMonthlyDebits(db, { timezone: process.env.SCHEDULER_TZ || 'UTC', runOnStartup: process.env.RUN_MONTHLY_ON_STARTUP === 'true' });
+    // Schedule monthly debit job. By default uses Asia/Kolkata timezone and runs at 00:05 on 1st of month.
+    scheduleMonthlyDebits(db, { timezone: process.env.SCHEDULER_TZ || 'Asia/Kolkata', runOnStartup: process.env.RUN_MONTHLY_ON_STARTUP === 'true' });
     console.log('Monthly debit scheduler initialized');
   } catch (err) {
     console.error('Failed to initialize monthly debit scheduler:', err);

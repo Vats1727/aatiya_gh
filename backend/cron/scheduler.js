@@ -7,7 +7,7 @@ import admin from 'firebase-admin';
 function billingMonthKey(date = new Date()) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
-  return `${y}-${m}`;
+  return `${m}-${y}`;
 }
 
 /**
@@ -38,6 +38,12 @@ export async function runMonthlyDebitsOnce(db, opts = {}) {
       for (const studentDoc of studentsSnap.docs) {
         const studentRef = studentDoc.ref;
         const studentData = studentDoc.data() || {};
+
+        // Only bill active students
+        if (studentData.status !== 'active') {
+          summary.skipped += 1;
+          continue;
+        }
 
         // Determine billing amount: prefer student.monthlyFee then hostel.monthlyFee then appliedFee
         const amount = Number(studentData.monthlyFee ?? hostelData.monthlyFee ?? studentData.appliedFee ?? 0);
