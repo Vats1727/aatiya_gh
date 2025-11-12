@@ -17,6 +17,7 @@ const StudentPayments = () => {
   const [ledgerOpeningBalance, setLedgerOpeningBalance] = useState(0);
   const [ledgerVisible, setLedgerVisible] = useState(false);
   const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [applicationNo, setApplicationNo] = useState('');
   const [newPayment, setNewPayment] = useState({
     amount: '',
     paymentMode: 'cash',
@@ -74,7 +75,10 @@ const StudentPayments = () => {
           console.warn('Failed to enrich student with hostel data:', e);
         }
 
-        setStudent(studentObj);
+  setStudent(studentObj);
+  // capture application number into dedicated state for reliable usage in exports
+  const app = studentObj?.applicationNumber || studentObj?.applicationNo || studentObj?.application_id || studentObj?.appNo || '';
+  setApplicationNo(app);
 
         // Fetch payment history
         const paymentsRes = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
@@ -293,8 +297,8 @@ const StudentPayments = () => {
     try {
       // build simple HTML for the ledger with improved styling
       // Ensure hostel name shows (try multiple possible fields on student)
-      const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
-      const applicationNo = student?.applicationNumber || student?.applicationNo || student?.application_id || student?.appNo || '';
+  const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
+  const appNoForPdf = applicationNo || '';
       const periodStart = ledgerStart ? formatDateDDMMYYYY(ledgerStart) : 'start';
       const periodEnd = ledgerEnd ? formatDateDDMMYYYY(ledgerEnd) : 'end';
       const headerHtml = `
@@ -304,7 +308,7 @@ const StudentPayments = () => {
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
               <div>
                 <div style="margin-top:6px; color:#374151;">Student: <strong style="color:#0f172a;">${(student.studentName || '')}</strong></div>
-                <div style="margin-top:4px; color:#374151;">Application No: <strong style="color:#0f172a;">${applicationNo || '—'}</strong></div>
+                <div style="margin-top:4px; color:#374151;">Application No: <strong style="color:#0f172a;">${appNoForPdf || '—'}</strong></div>
                 <div style="margin-top:4px; color:#374151;">Hostel: <strong style="color:#0f172a;">${hostelName || '—'}</strong></div>
               </div>
               <div style="text-align:right; color:#374151;">
