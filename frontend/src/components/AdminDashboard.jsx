@@ -1099,9 +1099,9 @@ const fetchHostels = async () => {
           onClose={() => { setShowHindiKeyboard(false); setKeyboardTarget(null); }}
         />
 
-        <div style={applyResponsiveStyles(styles.header)}>
+        <div style={styles.header}>
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', width: '100%'}}>
-            <h1 style={applyResponsiveStyles(styles.title)}>Hostel Management</h1>
+            <h1 style={styles.title}>Hostel Management</h1>
             <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
               <button
                 onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setShowAddHostel(true); }}
