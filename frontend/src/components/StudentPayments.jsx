@@ -11,6 +11,12 @@ const StudentPayments = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
+  const [ledgerStart, setLedgerStart] = useState('');
+  const [ledgerEnd, setLedgerEnd] = useState('');
+  const [ledgerRows, setLedgerRows] = useState([]);
+  const [ledgerOpeningBalance, setLedgerOpeningBalance] = useState(0);
+  const [ledgerVisible, setLedgerVisible] = useState(false);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
   const [newPayment, setNewPayment] = useState({
     amount: '',
     paymentMode: 'cash',
@@ -182,6 +188,151 @@ const StudentPayments = () => {
     });
   };
 
+  // Build ledger rows between start and end dates. Includes opening balance and running balance.
+  const generateLedger = (startIso, endIso) => {
+    try {
+      setLedgerLoading(true);
+      const start = startIso ? new Date(startIso) : null;
+      const end = endIso ? new Date(endIso) : null;
+
+      // Sort payments ascending by timestamp for ledger calculations
+      const allPayments = (payments || []).slice().map(p => ({ ...p, timestamp: new Date(p.timestamp) }));
+      allPayments.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Sum payments before start to compute opening balance
+      let creditBefore = 0;
+      let debitBefore = 0;
+      for (const p of allPayments) {
+        if (start && p.timestamp < start) {
+          if (p.type === 'credit') creditBefore += Number(p.amount) || 0;
+          else debitBefore += Number(p.amount) || 0;
+        }
+      }
+
+      const usedFee = Number(student?.appliedFee) || Number(student?.monthlyFee) || 0;
+      const openingBal = usedFee - (creditBefore - debitBefore); // positive = due, negative = advance
+
+      // Prepare rows for payments within [start, end]
+      const rows = [];
+      let running = openingBal;
+
+      for (const p of allPayments) {
+        if (start && p.timestamp < start) continue;
+        if (end && p.timestamp > end) continue;
+
+        // compute effect of this transaction
+        const amt = Number(p.amount) || 0;
+        if (p.type === 'credit') {
+          // student paid: reduces due (running = running - amt)
+          running = running - amt;
+          rows.push({ date: p.timestamp, desc: p.remarks || 'Payment', debit: '', credit: amt, running });
+        } else {
+          // debit (refund/adjustment): increases due
+          running = running + amt;
+          rows.push({ date: p.timestamp, desc: p.remarks || 'Adjustment', debit: amt, credit: '', running });
+        }
+      }
+
+      setLedgerOpeningBalance(openingBal);
+      setLedgerRows(rows);
+      setLedgerVisible(true);
+    } catch (err) {
+      console.error('generateLedger error', err);
+      setLedgerRows([]);
+      setLedgerOpeningBalance(0);
+      setLedgerVisible(true);
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
+
+  // Export ledger to CSV (Excel-friendly)
+  const downloadLedgerCsv = () => {
+    const startLabel = ledgerStart || 'start';
+    const endLabel = ledgerEnd || 'end';
+    const filename = `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${startLabel}_${endLabel}.csv`;
+    const lines = [];
+    lines.push(['Date', 'Description', 'Debit (₹)', 'Credit (₹)', 'Running Balance (₹)'].join(','));
+    // Opening balance
+    lines.push([`Opening Balance`, '', '', '', `${ledgerOpeningBalance}`].join(','));
+    for (const r of ledgerRows) {
+      const dateStr = r.date instanceof Date ? r.date.toISOString() : new Date(r.date).toISOString();
+      lines.push([dateStr, `"${(r.desc||'').replace(/"/g,'""')}"`, r.debit || '', r.credit || '', r.running].join(','));
+    }
+    // Closing balance
+    const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
+    lines.push(['Closing Balance', '', '', '', `${closing}`].join(','));
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  // Export ledger to PDF using existing pdf util
+  const downloadLedgerPdf = async () => {
+    try {
+      // build simple HTML for the ledger
+      const headerHtml = `
+        <div style="font-family: Arial, Helvetica, sans-serif; padding: 16px;">
+          <h2>Ledger Report</h2>
+          <div>Student: ${(student.studentName || '')}</div>
+          <div>Hostel: ${(student.hostelName || '')}</div>
+          <div>Period: ${ledgerStart || 'start'} – ${ledgerEnd || 'end'}</div>
+          <div style="height:12px"></div>
+          <table style="width:100%; border-collapse: collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px">Date</th>
+                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px">Description</th>
+                <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Debit (₹)</th>
+                <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Credit (₹)</th>
+                <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Running Balance (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:6px">Opening</td>
+                <td style="padding:6px"></td>
+                <td style="text-align:right; padding:6px"></td>
+                <td style="text-align:right; padding:6px"></td>
+                <td style="text-align:right; padding:6px">${ledgerOpeningBalance}</td>
+              </tr>
+      `;
+
+      const rowsHtml = ledgerRows.map(r => `
+        <tr>
+          <td style="padding:6px">${new Date(r.date).toLocaleString('en-IN')}</td>
+          <td style="padding:6px">${(r.desc||'')}</td>
+          <td style="text-align:right; padding:6px">${r.debit || ''}</td>
+          <td style="text-align:right; padding:6px">${r.credit || ''}</td>
+          <td style="text-align:right; padding:6px">${r.running}</td>
+        </tr>
+      `).join('');
+
+      const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
+      const footerHtml = `
+            </tbody>
+          </table>
+          <div style="height:12px"></div>
+          <div style="font-weight:600">Closing Balance: ₹ ${closing}</div>
+        </div>
+      `;
+
+      const html = headerHtml + rowsHtml + footerHtml;
+      const { generatePdfFromHtmlString } = await import('../utils/pdf');
+      await generatePdfFromHtmlString(html, `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${ledgerStart||'start'}_${ledgerEnd||'end'}.pdf`);
+    } catch (err) {
+      console.error('downloadLedgerPdf error', err);
+      alert('Failed to generate PDF');
+    }
+  };
+
   const formatCurrency = (v) => {
     const num = Number(v || 0);
     const abs = Math.abs(num).toLocaleString('en-IN');
@@ -237,6 +388,13 @@ const StudentPayments = () => {
           <span style={{ marginLeft: '0.5rem' }}>Back to Students</span>
         </button>
         <h1 style={styles.title}>Manage Payments</h1>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <label style={{ fontSize: 12, color: '#374151' }}>From</label>
+          <input type="date" value={ledgerStart} onChange={(e) => setLedgerStart(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+          <label style={{ fontSize: 12, color: '#374151' }}>To</label>
+          <input type="date" value={ledgerEnd} onChange={(e) => setLedgerEnd(e.target.value)} style={{ padding: '6px', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+          <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} style={{ padding: '8px 10px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
+        </div>
       </div>
 
       <div style={styles.content}>
@@ -404,6 +562,55 @@ const StudentPayments = () => {
                     </table>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {ledgerVisible && (
+          <div style={{ marginTop: 16, background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #eef2ff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>Ledger Report</h3>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={downloadLedgerCsv} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer' }}>Download Excel (CSV)</button>
+                <button onClick={downloadLedgerPdf} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #8b5cf6', background: '#8b5cf6', color: 'white', cursor: 'pointer' }}>Download PDF</button>
+                <button onClick={() => { setLedgerVisible(false); }} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer' }}>Close</button>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 13, color: '#374151', marginBottom: 8 }}>Opening Balance: {formatCurrency(ledgerOpeningBalance)}</div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Date</th>
+                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Description</th>
+                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Debit</th>
+                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Credit</th>
+                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Running</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ledgerRows.length === 0 ? (
+                      <tr><td colSpan={5} style={{ padding: 12, color: '#6b7280' }}>No transactions in the selected period</td></tr>
+                    ) : (
+                      ledgerRows.map((r, i) => (
+                        <tr key={i}>
+                          <td style={{ padding: 8 }}>{new Date(r.date).toLocaleString('en-IN')}</td>
+                          <td style={{ padding: 8 }}>{r.desc}</td>
+                          <td style={{ padding: 8, textAlign: 'right', color: r.debit ? '#dc2626' : undefined }}>{r.debit || ''}</td>
+                          <td style={{ padding: 8, textAlign: 'right', color: r.credit ? '#059669' : undefined }}>{r.credit || ''}</td>
+                          <td style={{ padding: 8, textAlign: 'right' }}>{formatCurrency(r.running)}</td>
+                        </tr>
+                      ))
+                    )}
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>Closing Balance</td>
+                      <td style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>{formatCurrency(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance)}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
