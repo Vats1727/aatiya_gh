@@ -18,6 +18,7 @@ const StudentPayments = () => {
   const [ledgerVisible, setLedgerVisible] = useState(false);
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [applicationNo, setApplicationNo] = useState('');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [newPayment, setNewPayment] = useState({
     amount: '',
     paymentMode: 'cash',
