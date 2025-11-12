@@ -187,252 +187,7 @@ const StudentPayments = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.loading}>Loading...</div>
-      </div>
-    );
-  }
-
-  if (!student) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.error}>Student not found</div>
-      </div>
-    );
-  }
-
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatDateDDMMYYYY = (d) => {
-    if (!d) return '';
-    const dateObj = d instanceof Date ? d : new Date(d);
-    if (isNaN(dateObj.getTime())) return '';
-    const dd = String(dateObj.getDate()).padStart(2, '0');
-    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const yyyy = dateObj.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
-  };
-
-  // Build ledger rows between start and end dates. Includes opening balance and running balance.
-  const generateLedger = (startIso, endIso) => {
-    try {
-      setLedgerLoading(true);
-      const start = startIso ? new Date(startIso) : null;
-      const end = endIso ? new Date(endIso) : null;
-
-      // Sort payments ascending by timestamp for ledger calculations
-      const allPayments = (payments || []).slice().map(p => ({ ...p, timestamp: new Date(p.timestamp) }));
-      allPayments.sort((a, b) => a.timestamp - b.timestamp);
-
-      // Sum payments before start to compute opening balance
-      let creditBefore = 0;
-      let debitBefore = 0;
-      for (const p of allPayments) {
-        if (start && p.timestamp < start) {
-          if (p.type === 'credit') creditBefore += Number(p.amount) || 0;
-          else debitBefore += Number(p.amount) || 0;
-        }
-      }
-
-      const usedFee = Number(student?.appliedFee) || Number(student?.monthlyFee) || 0;
-      const openingBal = usedFee - (creditBefore - debitBefore); // positive = due, negative = advance
-
-      // Prepare rows for payments within [start, end]
-      const rows = [];
-      let running = openingBal;
-
-      for (const p of allPayments) {
-        if (start && p.timestamp < start) continue;
-        if (end && p.timestamp > end) continue;
-
-        // compute effect of this transaction
-        const amt = Number(p.amount) || 0;
-          if (p.type === 'credit') {
-            // student paid: reduces due (running = running - amt)
-            running = running - amt;
-            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: '', credit: amt, running });
-          } else {
-            // debit (refund/adjustment): increases due
-            running = running + amt;
-            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: amt, credit: '', running });
-          }
-      }
-
-      setLedgerOpeningBalance(openingBal);
-      setLedgerRows(rows);
-      setLedgerVisible(true);
-    } catch (err) {
-      console.error('generateLedger error', err);
-      setLedgerRows([]);
-      setLedgerOpeningBalance(0);
-      setLedgerVisible(true);
-    } finally {
-      setLedgerLoading(false);
-    }
-  };
-
-  // Export ledger to CSV (Excel-friendly)
-  const downloadLedgerCsv = () => {
-    const startLabel = ledgerStart || 'start';
-    const endLabel = ledgerEnd || 'end';
-    const filename = `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${startLabel}_${endLabel}.csv`;
-    const lines = [];
-    lines.push(['Date', 'Payment Mode', 'Debit (₹)', 'Credit (₹)', 'Running Balance (₹)'].join(','));
-    // Opening balance
-    lines.push([`Opening Balance`, '', '', '', `${ledgerOpeningBalance}`].join(','));
-    for (const r of ledgerRows) {
-      // Use date only (YYYY-MM-DD) for CSV
-      const dateObj = r.date instanceof Date ? r.date : new Date(r.date);
-      const dateStr = dateObj.toISOString().split('T')[0];
-      lines.push([dateStr, `"${(r.paymentMode||'').replace(/"/g,'""')}"`, r.debit || '', r.credit || '', r.running].join(','));
-    }
-    // Closing balance
-    const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
-    lines.push(['Closing Balance', '', '', '', `${closing}`].join(','));
-
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  // Export ledger to PDF using existing pdf util
-  const downloadLedgerPdf = async () => {
-    try {
-      // build simple HTML for the ledger with improved styling
-      // Ensure hostel name shows (try multiple possible fields on student)
-  const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
-  const appNoForPdf = applicationNo || '';
-      const periodStart = ledgerStart ? formatDateDDMMYYYY(ledgerStart) : 'start';
-      const periodEnd = ledgerEnd ? formatDateDDMMYYYY(ledgerEnd) : 'end';
-      const headerHtml = `
-        <div style="font-family: Arial, Helvetica, sans-serif; padding: 8px;">
-          <div style="text-align:center; margin-bottom:8px;"><h2 style="margin:0; color:#111827;">Ledger Report</h2></div>
-          <div style="padding: 18px; border:1px solid #e6e6e6; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); background:#fff;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-              <div>
-                <div style="margin-top:6px; color:#374151;">Student: <strong style="color:#0f172a;">${(student.studentName || '')}</strong></div>
-                <div style="margin-top:4px; color:#374151;">Application No: <strong style="color:#0f172a;">${appNoForPdf || '—'}</strong></div>
-                <div style="margin-top:4px; color:#374151;">Hostel: <strong style="color:#0f172a;">${hostelName || '—'}</strong></div>
-              </div>
-              <div style="text-align:right; color:#374151;">
-                <div style="font-size:12px; color:#6b7280">Period</div>
-                <div style="font-weight:600;">${periodStart} – ${periodEnd}</div>
-              </div>
-            </div>
-            <div style="height:14px"></div>
-            <table style="width:100%; border-collapse: collapse; border:1px solid #e6e6e6;">
-            <thead>
-              <tr style="background:#f8fafc;">
-                <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Date</th>
-                <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Payment Mode</th>
-                <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Debit (₹)</th>
-                <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Credit (₹)</th>
-                <th style="text-align:right; padding:8px; border-bottom:1px solid #e6e6e6">Running Balance (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="padding:8px; border-right:1px solid #e6e6e6">Opening</td>
-                <td style="padding:8px; border-right:1px solid #e6e6e6"></td>
-                <td style="text-align:right; padding:8px; border-right:1px solid #e6e6e6"></td>
-                <td style="text-align:right; padding:8px; border-right:1px solid #e6e6e6"></td>
-                <td style="text-align:right; padding:8px">${ledgerOpeningBalance}</td>
-              </tr>
-      `;
-
-      const rowsHtml = ledgerRows.map((r, idx) => `
-        <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#fbfbfd'};">
-          <td style="padding:8px; border-right:1px solid #eef2f6">${formatDateDDMMYYYY(r.date)}</td>
-          <td style="padding:8px; border-right:1px solid #eef2f6">${(r.paymentMode||'')}</td>
-          <td style="text-align:right; padding:8px; border-right:1px solid #eef2f6">${r.debit || ''}</td>
-          <td style="text-align:right; padding:8px; border-right:1px solid #eef2f6">${r.credit || ''}</td>
-          <td style="text-align:right; padding:8px">${formatCurrency(r.running)}</td>
-        </tr>
-      `).join('');
-
-      const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
-      const footerHtml = `
-            </tbody>
-          </table>
-          <div style="height:12px"></div>
-          <div style="font-weight:600">Closing Balance:  ${formatCurrency(closing)}</div>
-        </div>
-      `;
-
-  const html = headerHtml + rowsHtml + footerHtml;
-  const { generatePdfFromHtmlString } = await import('../utils/pdf');
-  const safeName = (student.studentName||'student').replace(/\s+/g,'_');
-  await generatePdfFromHtmlString(html, `${safeName}_ledger_${periodStart}_${periodEnd}.pdf`);
-    } catch (err) {
-      console.error('downloadLedgerPdf error', err);
-      alert('Failed to generate PDF');
-    }
-  };
-
-  const formatCurrency = (v) => {
-    const num = Number(v || 0);
-    const abs = Math.abs(num).toLocaleString('en-IN');
-    return num < 0 ? `-₹${abs}` : `₹${abs}`;
-  };
-
-  const calculateTotals = (paymentsArr) => {
-    let totalCredit = 0;
-    let totalDebit = 0;
-    (paymentsArr || []).forEach(p => {
-      const amt = Number(p.amount) || 0;
-      if (p.type === 'credit') totalCredit += amt;
-      else totalDebit += amt;
-    });
-    const netPaid = totalCredit - totalDebit;
-    return { totalCredit, totalDebit, netPaid };
-  };
-
-  // Determine the applicable fee (student-specific or default)
-  const appliedFee = Number(student?.appliedFee) || 0;
-  const monthlyFee = Number(student?.monthlyFee) || 0;
-  const usedFee = appliedFee > 0 ? appliedFee : monthlyFee;
-  const hasCustomFee = appliedFee > 0 && appliedFee !== monthlyFee;
-
-  // Calculate totals
-  const totalCredit = payments
-    .filter(p => p.type === 'credit')
-    .reduce((a, b) => a + (Number(b.amount) || 0), 0);
-    
-  const totalDebit = payments
-    .filter(p => p.type === 'debit')
-    .reduce((a, b) => a + (Number(b.amount) || 0), 0);
-    
-  // Initial fee is considered as a debit (money owed by student)
-  const initialFeeDebit = usedFee || 0;
-  const totalDebitIncludingFee = totalDebit + initialFeeDebit;
-  
-  // Net paid is total payments (credit) minus refunds (debit) and initial fee
-  const netPaid = totalCredit - totalDebitIncludingFee;
-  
-  // Current balance (positive = pending, negative = advance)
-  const currentBalance = usedFee - (totalCredit - totalDebit);
-
-  // For UI: separate due vs advance so we can display them in Debit/Credit columns
-  const feesDue = currentBalance > 0 ? currentBalance : 0;
-  const advancePaid = currentBalance < 0 ? Math.abs(currentBalance) : 0;
-
-  // Define styles with access to isMobile state
+  // Define styles with access to isMobile state (must be before early returns)
   const styles = {
     container: {
       padding: isMobile ? '1rem' : '2rem',
@@ -779,6 +534,251 @@ const StudentPayments = () => {
       fontSize: isMobile ? '0.875rem' : '1rem',
     },
   };
+
+  if (loading) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.loading}>Loading...</div>
+      </div>
+    );
+  }
+
+  if (!student) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.error}>Student not found</div>
+      </div>
+    );
+  }
+
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDateDDMMYYYY = (d) => {
+    if (!d) return '';
+    const dateObj = d instanceof Date ? d : new Date(d);
+    if (isNaN(dateObj.getTime())) return '';
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const yyyy = dateObj.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  };
+
+  // Build ledger rows between start and end dates. Includes opening balance and running balance.
+  const generateLedger = (startIso, endIso) => {
+    try {
+      setLedgerLoading(true);
+      const start = startIso ? new Date(startIso) : null;
+      const end = endIso ? new Date(endIso) : null;
+
+      // Sort payments ascending by timestamp for ledger calculations
+      const allPayments = (payments || []).slice().map(p => ({ ...p, timestamp: new Date(p.timestamp) }));
+      allPayments.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Sum payments before start to compute opening balance
+      let creditBefore = 0;
+      let debitBefore = 0;
+      for (const p of allPayments) {
+        if (start && p.timestamp < start) {
+          if (p.type === 'credit') creditBefore += Number(p.amount) || 0;
+          else debitBefore += Number(p.amount) || 0;
+        }
+      }
+
+      const usedFee = Number(student?.appliedFee) || Number(student?.monthlyFee) || 0;
+      const openingBal = usedFee - (creditBefore - debitBefore); // positive = due, negative = advance
+
+      // Prepare rows for payments within [start, end]
+      const rows = [];
+      let running = openingBal;
+
+      for (const p of allPayments) {
+        if (start && p.timestamp < start) continue;
+        if (end && p.timestamp > end) continue;
+
+        // compute effect of this transaction
+        const amt = Number(p.amount) || 0;
+          if (p.type === 'credit') {
+            // student paid: reduces due (running = running - amt)
+            running = running - amt;
+            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: '', credit: amt, running });
+          } else {
+            // debit (refund/adjustment): increases due
+            running = running + amt;
+            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: amt, credit: '', running });
+          }
+      }
+
+      setLedgerOpeningBalance(openingBal);
+      setLedgerRows(rows);
+      setLedgerVisible(true);
+    } catch (err) {
+      console.error('generateLedger error', err);
+      setLedgerRows([]);
+      setLedgerOpeningBalance(0);
+      setLedgerVisible(true);
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
+
+  // Export ledger to CSV (Excel-friendly)
+  const downloadLedgerCsv = () => {
+    const startLabel = ledgerStart || 'start';
+    const endLabel = ledgerEnd || 'end';
+    const filename = `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${startLabel}_${endLabel}.csv`;
+    const lines = [];
+    lines.push(['Date', 'Payment Mode', 'Debit (₹)', 'Credit (₹)', 'Running Balance (₹)'].join(','));
+    // Opening balance
+    lines.push([`Opening Balance`, '', '', '', `${ledgerOpeningBalance}`].join(','));
+    for (const r of ledgerRows) {
+      // Use date only (YYYY-MM-DD) for CSV
+      const dateObj = r.date instanceof Date ? r.date : new Date(r.date);
+      const dateStr = dateObj.toISOString().split('T')[0];
+      lines.push([dateStr, `"${(r.paymentMode||'').replace(/"/g,'""')}"`, r.debit || '', r.credit || '', r.running].join(','));
+    }
+    // Closing balance
+    const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
+    lines.push(['Closing Balance', '', '', '', `${closing}`].join(','));
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  // Export ledger to PDF using existing pdf util
+  const downloadLedgerPdf = async () => {
+    try {
+      // build simple HTML for the ledger with improved styling
+      // Ensure hostel name shows (try multiple possible fields on student)
+  const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
+  const appNoForPdf = applicationNo || '';
+      const periodStart = ledgerStart ? formatDateDDMMYYYY(ledgerStart) : 'start';
+      const periodEnd = ledgerEnd ? formatDateDDMMYYYY(ledgerEnd) : 'end';
+      const headerHtml = `
+        <div style="font-family: Arial, Helvetica, sans-serif; padding: 8px;">
+          <div style="text-align:center; margin-bottom:8px;"><h2 style="margin:0; color:#111827;">Ledger Report</h2></div>
+          <div style="padding: 18px; border:1px solid #e6e6e6; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+              <div>
+                <div style="margin-top:6px; color:#374151;">Student: <strong style="color:#0f172a;">${(student.studentName || '')}</strong></div>
+                <div style="margin-top:4px; color:#374151;">Application No: <strong style="color:#0f172a;">${appNoForPdf || '—'}</strong></div>
+                <div style="margin-top:4px; color:#374151;">Hostel: <strong style="color:#0f172a;">${hostelName || '—'}</strong></div>
+              </div>
+              <div style="text-align:right; color:#374151;">
+                <div style="font-size:12px; color:#6b7280">Period</div>
+                <div style="font-weight:600;">${periodStart} – ${periodEnd}</div>
+              </div>
+            </div>
+            <div style="height:14px"></div>
+            <table style="width:100%; border-collapse: collapse; border:1px solid #e6e6e6;">
+            <thead>
+              <tr style="background:#f8fafc;">
+                <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Date</th>
+                <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Payment Mode</th>
+                <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Debit (₹)</th>
+                <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Credit (₹)</th>
+                <th style="text-align:right; padding:8px; border-bottom:1px solid #e6e6e6">Running Balance (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:8px; border-right:1px solid #e6e6e6">Opening</td>
+                <td style="padding:8px; border-right:1px solid #e6e6e6"></td>
+                <td style="text-align:right; padding:8px; border-right:1px solid #e6e6e6"></td>
+                <td style="text-align:right; padding:8px; border-right:1px solid #e6e6e6"></td>
+                <td style="text-align:right; padding:8px">${ledgerOpeningBalance}</td>
+              </tr>
+      `;
+
+      const rowsHtml = ledgerRows.map((r, idx) => `
+        <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#fbfbfd'};">
+          <td style="padding:8px; border-right:1px solid #eef2f6">${formatDateDDMMYYYY(r.date)}</td>
+          <td style="padding:8px; border-right:1px solid #eef2f6">${(r.paymentMode||'')}</td>
+          <td style="text-align:right; padding:8px; border-right:1px solid #eef2f6">${r.debit || ''}</td>
+          <td style="text-align:right; padding:8px; border-right:1px solid #eef2f6">${r.credit || ''}</td>
+          <td style="text-align:right; padding:8px">${formatCurrency(r.running)}</td>
+        </tr>
+      `).join('');
+
+      const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
+      const footerHtml = `
+            </tbody>
+          </table>
+          <div style="height:12px"></div>
+          <div style="font-weight:600">Closing Balance:  ${formatCurrency(closing)}</div>
+        </div>
+      `;
+
+  const html = headerHtml + rowsHtml + footerHtml;
+  const { generatePdfFromHtmlString } = await import('../utils/pdf');
+  const safeName = (student.studentName||'student').replace(/\s+/g,'_');
+  await generatePdfFromHtmlString(html, `${safeName}_ledger_${periodStart}_${periodEnd}.pdf`);
+    } catch (err) {
+      console.error('downloadLedgerPdf error', err);
+      alert('Failed to generate PDF');
+    }
+  };
+
+  const formatCurrency = (v) => {
+    const num = Number(v || 0);
+    const abs = Math.abs(num).toLocaleString('en-IN');
+    return num < 0 ? `-₹${abs}` : `₹${abs}`;
+  };
+
+  const calculateTotals = (paymentsArr) => {
+    let totalCredit = 0;
+    let totalDebit = 0;
+    (paymentsArr || []).forEach(p => {
+      const amt = Number(p.amount) || 0;
+      if (p.type === 'credit') totalCredit += amt;
+      else totalDebit += amt;
+    });
+    const netPaid = totalCredit - totalDebit;
+    return { totalCredit, totalDebit, netPaid };
+  };
+
+  // Determine the applicable fee (student-specific or default)
+  const appliedFee = Number(student?.appliedFee) || 0;
+  const monthlyFee = Number(student?.monthlyFee) || 0;
+  const usedFee = appliedFee > 0 ? appliedFee : monthlyFee;
+  const hasCustomFee = appliedFee > 0 && appliedFee !== monthlyFee;
+
+  // Calculate totals
+  const totalCredit = payments
+    .filter(p => p.type === 'credit')
+    .reduce((a, b) => a + (Number(b.amount) || 0), 0);
+    
+  const totalDebit = payments
+    .filter(p => p.type === 'debit')
+    .reduce((a, b) => a + (Number(b.amount) || 0), 0);
+    
+  // Initial fee is considered as a debit (money owed by student)
+  const initialFeeDebit = usedFee || 0;
+  const totalDebitIncludingFee = totalDebit + initialFeeDebit;
+  
+  // Net paid is total payments (credit) minus refunds (debit) and initial fee
+  const netPaid = totalCredit - totalDebitIncludingFee;
+  
+  // Current balance (positive = pending, negative = advance)
+  const currentBalance = usedFee - (totalCredit - totalDebit);
+
+  // For UI: separate due vs advance so we can display them in Debit/Credit columns
+  const feesDue = currentBalance > 0 ? currentBalance : 0;
+  const advancePaid = currentBalance < 0 ? Math.abs(currentBalance) : 0;
 
   return (
     <div style={styles.container}>
