@@ -190,6 +190,16 @@ const StudentPayments = () => {
     });
   };
 
+  const formatDateDDMMYYYY = (d) => {
+    if (!d) return '';
+    const dateObj = d instanceof Date ? d : new Date(d);
+    if (isNaN(dateObj.getTime())) return '';
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const yyyy = dateObj.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  };
+
   // Build ledger rows between start and end dates. Includes opening balance and running balance.
   const generateLedger = (startIso, endIso) => {
     try {
@@ -281,43 +291,52 @@ const StudentPayments = () => {
   // Export ledger to PDF using existing pdf util
   const downloadLedgerPdf = async () => {
     try {
-      // build simple HTML for the ledger
+      // build simple HTML for the ledger with improved styling
       // Ensure hostel name shows (try multiple possible fields on student)
       const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
+      const periodStart = ledgerStart ? formatDateDDMMYYYY(ledgerStart) : 'start';
+      const periodEnd = ledgerEnd ? formatDateDDMMYYYY(ledgerEnd) : 'end';
       const headerHtml = `
-        <div style="font-family: Arial, Helvetica, sans-serif; padding: 16px;">
-          <h2>Ledger Report</h2>
-          <div>Student: ${(student.studentName || '')}</div>
-          <div>Hostel: ${hostelName || '—'}</div>
-          <div>Period: ${ledgerStart || 'start'} – ${ledgerEnd || 'end'}</div>
-          <div style="height:12px"></div>
-          <table style="width:100%; border-collapse: collapse;">
+        <div style="font-family: Arial, Helvetica, sans-serif; padding: 18px; border:1px solid #e6e6e6; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); background:#fff;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+            <div>
+              <h2 style="margin:0; color:#111827;">Ledger Report</h2>
+              <div style="margin-top:6px; color:#374151;">Student: <strong style="color:#0f172a;">${(student.studentName || '')}</strong></div>
+              <div style="margin-top:4px; color:#374151;">Hostel: <strong style="color:#0f172a;">${hostelName || '—'}</strong></div>
+            </div>
+            <div style="text-align:right; color:#374151;">
+              <div style="font-size:12px; color:#6b7280">Period</div>
+              <div style="font-weight:600;">${periodStart} – ${periodEnd}</div>
+            </div>
+          </div>
+          <div style="height:14px"></div>
+          <table style="width:100%; border-collapse: collapse; border:1px solid #e6e6e6;">
             <thead>
-              <tr>
-                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px">Date</th>
-                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px">Payment Mode</th>
-                <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Debit (₹)</th>
-                <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Credit (₹)</th>
-                <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Running Balance (₹)</th>
+              <tr style="background:#f8fafc;">
+                <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Date</th>
+                <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Payment Mode</th>
+                <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Debit (₹)</th>
+                <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Credit (₹)</th>
+                <th style="text-align:right; padding:8px; border-bottom:1px solid #e6e6e6">Running Balance (₹)</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style="padding:6px">Opening</td>
-                <td style="padding:6px"></td>
-                <td style="text-align:right; padding:6px"></td>
-                <td style="text-align:right; padding:6px"></td>
-                <td style="text-align:right; padding:6px">${ledgerOpeningBalance}</td>
+                <td style="padding:8px; border-right:1px solid #e6e6e6">Opening</td>
+                <td style="padding:8px; border-right:1px solid #e6e6e6"></td>
+                <td style="text-align:right; padding:8px; border-right:1px solid #e6e6e6"></td>
+                <td style="text-align:right; padding:8px; border-right:1px solid #e6e6e6"></td>
+                <td style="text-align:right; padding:8px">${ledgerOpeningBalance}</td>
               </tr>
       `;
 
-      const rowsHtml = ledgerRows.map(r => `
-        <tr>
-          <td style="padding:6px">${new Date(r.date).toLocaleDateString('en-IN')}</td>
-          <td style="padding:6px">${(r.paymentMode||'')}</td>
-          <td style="text-align:right; padding:6px">${r.debit || ''}</td>
-          <td style="text-align:right; padding:6px">${r.credit || ''}</td>
-          <td style="text-align:right; padding:6px">${r.running}</td>
+      const rowsHtml = ledgerRows.map((r, idx) => `
+        <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#fbfbfd'};">
+          <td style="padding:8px; border-right:1px solid #eef2f6">${formatDateDDMMYYYY(r.date)}</td>
+          <td style="padding:8px; border-right:1px solid #eef2f6">${(r.paymentMode||'')}</td>
+          <td style="text-align:right; padding:8px; border-right:1px solid #eef2f6">${r.debit || ''}</td>
+          <td style="text-align:right; padding:8px; border-right:1px solid #eef2f6">${r.credit || ''}</td>
+          <td style="text-align:right; padding:8px">${formatCurrency(r.running)}</td>
         </tr>
       `).join('');
 
@@ -326,13 +345,14 @@ const StudentPayments = () => {
             </tbody>
           </table>
           <div style="height:12px"></div>
-          <div style="font-weight:600">Closing Balance: ₹ ${closing}</div>
+          <div style="font-weight:600">Closing Balance: ₹ ${formatCurrency(closing)}</div>
         </div>
       `;
 
-      const html = headerHtml + rowsHtml + footerHtml;
-      const { generatePdfFromHtmlString } = await import('../utils/pdf');
-      await generatePdfFromHtmlString(html, `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${ledgerStart||'start'}_${ledgerEnd||'end'}.pdf`);
+  const html = headerHtml + rowsHtml + footerHtml;
+  const { generatePdfFromHtmlString } = await import('../utils/pdf');
+  const safeName = (student.studentName||'student').replace(/\s+/g,'_');
+  await generatePdfFromHtmlString(html, `${safeName}_ledger_${periodStart}_${periodEnd}.pdf`);
     } catch (err) {
       console.error('downloadLedgerPdf error', err);
       alert('Failed to generate PDF');
