@@ -222,15 +222,15 @@ const StudentPayments = () => {
 
         // compute effect of this transaction
         const amt = Number(p.amount) || 0;
-        if (p.type === 'credit') {
-          // student paid: reduces due (running = running - amt)
-          running = running - amt;
-          rows.push({ date: p.timestamp, desc: p.remarks || 'Payment', debit: '', credit: amt, running });
-        } else {
-          // debit (refund/adjustment): increases due
-          running = running + amt;
-          rows.push({ date: p.timestamp, desc: p.remarks || 'Adjustment', debit: amt, credit: '', running });
-        }
+          if (p.type === 'credit') {
+            // student paid: reduces due (running = running - amt)
+            running = running - amt;
+            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: '', credit: amt, running });
+          } else {
+            // debit (refund/adjustment): increases due
+            running = running + amt;
+            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: amt, credit: '', running });
+          }
       }
 
       setLedgerOpeningBalance(openingBal);
@@ -252,12 +252,14 @@ const StudentPayments = () => {
     const endLabel = ledgerEnd || 'end';
     const filename = `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${startLabel}_${endLabel}.csv`;
     const lines = [];
-    lines.push(['Date', 'Description', 'Debit (₹)', 'Credit (₹)', 'Running Balance (₹)'].join(','));
+    lines.push(['Date', 'Payment Mode', 'Debit (₹)', 'Credit (₹)', 'Running Balance (₹)'].join(','));
     // Opening balance
     lines.push([`Opening Balance`, '', '', '', `${ledgerOpeningBalance}`].join(','));
     for (const r of ledgerRows) {
-      const dateStr = r.date instanceof Date ? r.date.toISOString() : new Date(r.date).toISOString();
-      lines.push([dateStr, `"${(r.desc||'').replace(/"/g,'""')}"`, r.debit || '', r.credit || '', r.running].join(','));
+      // Use date only (YYYY-MM-DD) for CSV
+      const dateObj = r.date instanceof Date ? r.date : new Date(r.date);
+      const dateStr = dateObj.toISOString().split('T')[0];
+      lines.push([dateStr, `"${(r.paymentMode||'').replace(/"/g,'""')}"`, r.debit || '', r.credit || '', r.running].join(','));
     }
     // Closing balance
     const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
@@ -278,18 +280,20 @@ const StudentPayments = () => {
   const downloadLedgerPdf = async () => {
     try {
       // build simple HTML for the ledger
+      // Ensure hostel name shows (try multiple possible fields on student)
+      const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
       const headerHtml = `
         <div style="font-family: Arial, Helvetica, sans-serif; padding: 16px;">
           <h2>Ledger Report</h2>
           <div>Student: ${(student.studentName || '')}</div>
-          <div>Hostel: ${(student.hostelName || '')}</div>
+          <div>Hostel: ${hostelName || '—'}</div>
           <div>Period: ${ledgerStart || 'start'} – ${ledgerEnd || 'end'}</div>
           <div style="height:12px"></div>
           <table style="width:100%; border-collapse: collapse;">
             <thead>
               <tr>
                 <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px">Date</th>
-                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px">Description</th>
+                <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px">Payment Mode</th>
                 <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Debit (₹)</th>
                 <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Credit (₹)</th>
                 <th style="text-align:right; border-bottom:1px solid #ddd; padding:6px">Running Balance (₹)</th>
@@ -307,8 +311,8 @@ const StudentPayments = () => {
 
       const rowsHtml = ledgerRows.map(r => `
         <tr>
-          <td style="padding:6px">${new Date(r.date).toLocaleString('en-IN')}</td>
-          <td style="padding:6px">${(r.desc||'')}</td>
+          <td style="padding:6px">${new Date(r.date).toLocaleDateString('en-IN')}</td>
+          <td style="padding:6px">${(r.paymentMode||'')}</td>
           <td style="text-align:right; padding:6px">${r.debit || ''}</td>
           <td style="text-align:right; padding:6px">${r.credit || ''}</td>
           <td style="text-align:right; padding:6px">${r.running}</td>
