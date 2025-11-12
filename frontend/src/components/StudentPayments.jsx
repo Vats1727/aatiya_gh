@@ -63,7 +63,8 @@ const StudentPayments = () => {
                 studentObj = {
                   ...studentObj,
                   monthlyFee: mf,
-                  monthlyFeeCurrency: found.monthlyFeeCurrency || found.monthlyfeeCurrency || studentObj.monthlyFeeCurrency || 'INR'
+                  monthlyFeeCurrency: found.monthlyFeeCurrency || found.monthlyfeeCurrency || studentObj.monthlyFeeCurrency || 'INR',
+                  hostelName: found.name || found.hostelName || found.title || studentObj.hostelName || ''
                 };
               }
             }
@@ -92,6 +93,7 @@ const StudentPayments = () => {
             ...p,
             amount: Number(p.amount) || 0,
             type: p.type || 'credit',
+            paymentMode: p.paymentMode || p.mode || p.payment_method || '',
             timestamp: p.timestamp || p.createdAt || new Date().toISOString(),
           }))
           .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -589,7 +591,7 @@ const StudentPayments = () => {
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Date</th>
-                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Description</th>
+                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Payment Mode</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Debit</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Credit</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Running</th>
@@ -601,8 +603,8 @@ const StudentPayments = () => {
                     ) : (
                       ledgerRows.map((r, i) => (
                         <tr key={i}>
-                          <td style={{ padding: 8 }}>{new Date(r.date).toLocaleString('en-IN')}</td>
-                          <td style={{ padding: 8 }}>{r.desc}</td>
+                          <td style={{ padding: 8 }}>{new Date(r.date).toLocaleDateString('en-IN')}</td>
+                          <td style={{ padding: 8 }}>{r.paymentMode}</td>
                           <td style={{ padding: 8, textAlign: 'right', color: r.debit ? '#dc2626' : undefined }}>{r.debit || ''}</td>
                           <td style={{ padding: 8, textAlign: 'right', color: r.credit ? '#059669' : undefined }}>{r.credit || ''}</td>
                           <td style={{ padding: 8, textAlign: 'right' }}>{formatCurrency(r.running)}</td>
