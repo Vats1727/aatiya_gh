@@ -77,7 +77,16 @@ const StudentPayments = () => {
 
   setStudent(studentObj);
   // capture application number into dedicated state for reliable usage in exports
-  const app = studentObj?.applicationNumber || studentObj?.applicationNo || studentObj?.application_id || studentObj?.appNo || '';
+  let app = '';
+  if (studentObj?.combinedId) {
+    // combinedId format like "05/0001" -> convert to digits only: "050001"
+    try { app = String(studentObj.combinedId).replace(/\D/g, ''); } catch (e) { app = '' }
+  }
+  if (!app) {
+    app = studentObj?.applicationNumber || studentObj?.applicationNo || studentObj?.application_id || studentObj?.appNo || '';
+    // strip non-digits just in case and preserve leading zeros
+    if (app) app = String(app).replace(/\D/g, '');
+  }
   setApplicationNo(app);
 
         // Fetch payment history
