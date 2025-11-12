@@ -274,78 +274,153 @@ const StudentPayments = () => {
   };
 
   // Build ledger rows between start and end dates. Includes opening balance and running balance.
-  const generateLedger = (startIso, endIso) => {
+  // This function performs dynamic imports and therefore must be async so `await` is valid.
+  const generateLedger = async (startIso, endIso) => {
     try {
-      setLedgerLoading(true);
-      const start = startIso ? new Date(startIso) : null;
-      const end = endIso ? new Date(endIso) : null;
+      // Prefer generating a vector/text PDF using jsPDF + autotable for much smaller files
+      const { default: jsPDF } = await import('jspdf');
+      // import autotable plugin which augments jsPDF (no default export)
+      await import('jspdf-autotable');
 
-      // Sort payments ascending by timestamp for ledger calculations
-      const allPayments = (payments || []).slice().map(p => ({ ...p, timestamp: new Date(p.timestamp) }));
-      allPayments.sort((a, b) => a.timestamp - b.timestamp);
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
 
-      // Sum payments before start to compute opening balance
-      let creditBefore = 0;
-      let debitBefore = 0;
-      for (const p of allPayments) {
-        if (start && p.timestamp < start) {
-          if (p.type === 'credit') creditBefore += Number(p.amount) || 0;
-          else debitBefore += Number(p.amount) || 0;
-        }
+      // Header: centered title
+      doc.setFontSize(16);
+      doc.text('Ledger Report', pageWidth / 2, 14, { align: 'center' });
+
+      // Meta info (student, application no, hostel, period)
+      const hostelName = student?.hostelName || student?.hostel?.name || '';
+      const appNoForPdf = applicationNo || '';
+      const periodStart = ledgerStart ? formatDateDDMMYYYY(ledgerStart) : 'start';
+      const periodEnd = ledgerEnd ? formatDateDDMMYYYY(ledgerEnd) : 'end';
+
+      doc.setFontSize(10);
+      doc.text(`Student: ${student.studentName || '—'}`, 14, 22);
+      doc.text(`Application No: ${appNoForPdf || '—'}`, 14, 28);
+      doc.text(`Hostel: ${hostelName || '—'}`, 14, 34);
+      doc.text(`Period: ${periodStart} – ${periodEnd}`, pageWidth - 14, 28, { align: 'right' });
+
+      // Table data
+      const head = [['Date', 'Payment Mode', 'Debit (₹)', 'Credit (₹)', 'Running (₹)']];
+      const body = ledgerRows.map(r => [
+        formatDateDDMMYYYY(r.date),
+        r.paymentMode || '',
+        r.debit ? Number(r.debit).toFixed(2) : '',
+        r.credit ? Number(r.credit).toFixed(2) : '',
+        formatCurrency(r.running)
+      ]);
+
+      // Add opening row at top
+      body.unshift(['Opening', '', '', '', formatCurrency(ledgerOpeningBalance)]);
+
+      // Use autotable to render table with borders and zebra
+      // startY must account for header space
+      const startY = 40;
+      doc.autoTable({
+        head,
+        body,
+        startY,
+        styles: { fontSize: 10, cellPadding: 4 },
+        headStyles: { fillColor: [248, 250, 252], textColor: 30 },
+        alternateRowStyles: { fillColor: [255, 255, 255] },
+        theme: 'grid',
+        margin: { left: 14, right: 14 }
+      });
+
+      // Closing balance below table
+      const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : startY + 10;
+      const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
+      doc.setFontSize(11);
+      doc.text(`Closing Balance: ${formatCurrency(closing)}`, 14, finalY + 10);
+
+      // Add page numbers
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(9);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
       }
 
-      const usedFee = Number(student?.appliedFee) || Number(student?.monthlyFee) || 0;
-      const openingBal = usedFee - (creditBefore - debitBefore); // positive = due, negative = advance
-
-      // Prepare rows for payments within [start, end]
-      const rows = [];
-      let running = openingBal;
-
-      for (const p of allPayments) {
-        if (start && p.timestamp < start) continue;
-        if (end && p.timestamp > end) continue;
-
-        // compute effect of this transaction
-        const amt = Number(p.amount) || 0;
-          if (p.type === 'credit') {
-            // student paid: reduces due (running = running - amt)
-            running = running - amt;
-            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: '', credit: amt, running });
-          } else {
-            // debit (refund/adjustment): increases due
-            running = running + amt;
-            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: amt, credit: '', running });
-          }
-      }
-
-      setLedgerOpeningBalance(openingBal);
-      setLedgerRows(rows);
-      setLedgerVisible(true);
+      const safeName = (student.studentName||'student').replace(/\s+/g,'_');
+      doc.save(`${safeName}_ledger_${periodStart}_${periodEnd}.pdf`);
+      return;
     } catch (err) {
-      console.error('generateLedger error', err);
-      setLedgerRows([]);
-      setLedgerOpeningBalance(0);
-      setLedgerVisible(true);
-    } finally {
-      setLedgerLoading(false);
+      console.warn('jsPDF/autotable not available or failed, falling back to html->canvas PDF generation', err);
     }
-  };
 
-  // Export ledger to CSV (Excel-friendly)
-  const downloadLedgerCsv = () => {
-    const startLabel = ledgerStart || 'start';
-    const endLabel = ledgerEnd || 'end';
-    const filename = `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${startLabel}_${endLabel}.csv`;
-    const lines = [];
-    lines.push(['Date', 'Payment Mode', 'Debit (₹)', 'Credit (₹)', 'Running Balance (₹)'].join(','));
-    // Opening balance
-    lines.push([`Opening Balance`, '', '', '', `${ledgerOpeningBalance}`].join(','));
-    for (const r of ledgerRows) {
-      // Use date only (YYYY-MM-DD) for CSV
-      const dateObj = r.date instanceof Date ? r.date : new Date(r.date);
-      const dateStr = dateObj.toISOString().split('T')[0];
-      lines.push([dateStr, `"${(r.paymentMode||'').replace(/"/g,'""')}"`, r.debit || '', r.credit || '', r.running].join(','));
+    // Fallback: use html2canvas render via existing utility but with lighter styles/quality
+    try {
+      const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
+      const periodStart = ledgerStart ? formatDateDDMMYYYY(ledgerStart) : 'start';
+      const periodEnd = ledgerEnd ? formatDateDDMMYYYY(ledgerEnd) : 'end';
+      const headerHtml = `
+        <div style="font-family: Arial, Helvetica, sans-serif; padding: 8px;">
+          <div style="text-align:center; margin-bottom:8px;"><h2 style="margin:0; color:#111827;">Ledger Report</h2></div>
+          <div style="padding: 8px; background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+              <div>
+                <div style="margin-top:6px; color:#374151;">Student: <strong style="color:#0f172a;">${(student.studentName || '')}</strong></div>
+                <div style="margin-top:4px; color:#374151;">Application No: <strong style="color:#0f172a;">${applicationNo || '—'}</strong></div>
+                <div style="margin-top:4px; color:#374151;">Hostel: <strong style="color:#0f172a;">${hostelName || '—'}</strong></div>
+              </div>
+              <div style="text-align:right; color:#374151;">
+                <div style="font-size:12px; color:#6b7280">Period</div>
+                <div style="font-weight:600;">${periodStart} – ${periodEnd}</div>
+              </div>
+            </div>
+          </div>
+      `;
+
+      const rowsHtml = ledgerRows.map((r, idx) => `
+        <div style="display:flex; padding:6px 0; border-bottom:1px solid #eee; background:${idx % 2 === 0 ? '#fff' : '#fbfbfd'};">
+          <div style="width:18%;">${formatDateDDMMYYYY(r.date)}</div>
+          <div style="width:28%;">${(r.paymentMode||'')}</div>
+          <div style="width:18%; text-align:right;">${r.debit || ''}</div>
+          <div style="width:18%; text-align:right;">${r.credit || ''}</div>
+          <div style="width:18%; text-align:right;">${formatCurrency(r.running)}</div>
+        </div>
+      `).join('');
+
+      const footerHtml = `
+          <div style="height:8px"></div>
+          <div style="font-weight:600">Closing Balance: ₹ ${formatCurrency(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance)}</div>
+        </div>
+      `;
+
+      const html = headerHtml + rowsHtml + footerHtml;
+      const { generatePdfFromHtmlString } = await import('../utils/pdf');
+      // generatePdfFromHtmlString will capture and save
+      await generatePdfFromHtmlString(html, `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${periodStart}_${periodEnd}.pdf`);
+    } catch (err) {
+      console.error('downloadLedgerPdf fallback error', err);
+      alert('Failed to generate PDF');
     }
+    }
+
+  // CSV export: build and download as CSV
+  const downloadLedgerCsv = () => {
+    // Build CSV lines from ledgerRows
+    const filename = `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${ledgerStart ? formatDateDDMMYYYY(ledgerStart) : 'start'}_${ledgerEnd ? formatDateDDMMYYYY(ledgerEnd) : 'end'}.csv`;
+    const lines = [];
+    // header
+    lines.push(['Date', 'Payment Mode', 'Debit (₹)', 'Credit (₹)', 'Running (₹)'].join(','));
+
+    // opening balance row
+    lines.push(['Opening', '', '', '', `${ledgerOpeningBalance}`].join(','));
+
+    // rows
+    (ledgerRows || []).forEach(r => {
+      const row = [
+        formatDateDDMMYYYY(r.date),
+        (r.paymentMode || ''),
+        r.debit != null ? `${Number(r.debit).toFixed(2)}` : '',
+        r.credit != null ? `${Number(r.credit).toFixed(2)}` : '',
+        `${Number(r.running).toFixed(2)}`
+      ];
+      lines.push(row.join(','));
+    });
+
     // Closing balance
     const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
     lines.push(['Closing Balance', '', '', '', `${closing}`].join(','));
