@@ -8,6 +8,7 @@ import hostelsRouter from './routes/hostels.js';
 import createAuthRouter from './routes/auth.js';
 import studentsRouter from './routes/students.js';
 import createSuperAdminRouter from './routes/superadmin.js';
+import transliterateRouter from './routes/transliterate.js';
 import { authMiddleware } from './middleware/auth.js';
 import scheduleMonthlyDebits from './cron/scheduler.js';
 
@@ -56,6 +57,9 @@ app.use('/api/auth', authRouter);
 // superadmin router
 const superadminRouter = createSuperAdminRouter(db);
 app.use('/api/superadmin', superadminRouter);
+
+// Transliteration proxy (avoids CORS issues with Google Input Tools)
+app.use('/api/transliterate', transliterateRouter);
 
 // compatibility endpoint: some frontend code calls /api/users/me
 // return the same profile as GET /api/auth/me for backward-compat

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import HindiKeyboard from './HindiKeyboard';
+import { itransToDevanagari } from '../libs/itransToDevanagari';
 
 // Dynamic loader for Sanscript transliteration library (loads from CDN at runtime)
 const loadSanscript = () => {
@@ -24,6 +25,47 @@ const loadSanscript = () => {
     document.head.appendChild(s);
   });
 };
+// Helper that tries multiple ways to obtain Sanscript and transliterate text.
+const transliterateText = async (text) => {
+  if (!text) return '';
+  try {
+    // First try local lightweight ITRANS transliterator (fast, offline)
+    try {
+      const local = itransToDevanagari(String(text));
+      if (local) return local;
+    } catch (e) {
+      // ignore and fall back to CDN/proxy
+    }
+    // Try window (CDN) next
+    if (typeof window !== 'undefined' && window.Sanscript && window.Sanscript.t) {
+      return window.Sanscript.t(String(text), 'itrans', 'devanagari');
+    }
+    // Then try the CDN loader
+    const SanscriptCdn = await loadSanscript();
+    if (SanscriptCdn && SanscriptCdn.t) return SanscriptCdn.t(String(text), 'itrans', 'devanagari');
+
+    // As a last resort, try the (unofficial) Google Input Tools transliteration endpoint via
+    // the backend proxy to avoid CORS issues.
+    try {
+      const proxyUrl = `${API_BASE.replace(/\/$/, '')}/api/transliterate`;
+      const res = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: String(text) })
+      });
+      if (res.ok) {
+        const payload = await res.json();
+        if (payload && payload.success && payload.text) return payload.text;
+      }
+    } catch (e) {
+      // ignore network errors and fall through to returning original text
+    }
+  } catch (err) {
+    // ignore and return original text
+    // console.debug('transliterateText error', err);
+  }
+  return text;
+};
 import '../styles.css';
 
 // Use production URL if environment variable is not set
@@ -37,7 +79,7 @@ const AdminDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const HOSTELS_PER_PAGE = 8;
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
-  const translitTimers = useRef({ name: null, address: null });
+  const translitTimers = useRef({ name: null, address: null, name_hi: null, address_hi: null });
   const [showHindiKeyboard, setShowHindiKeyboard] = useState(false);
   const [keyboardTarget, setKeyboardTarget] = useState(null); // 'name_hi' or 'address_hi'
 
@@ -1144,23 +1186,16 @@ const fetchHostels = async () => {
                 name="name"
                 className="input"
                 value={newHostel.name}
-                onChange={(e) => {
+                  onChange={(e) => {
                   const val = e.target.value || '';
                   setNewHostel(prev => ({ ...prev, name: val }));
-                  // debounce transliteration
+                  // debounce transliteration using transliterateText helper
                   if (translitTimers.current.name) clearTimeout(translitTimers.current.name);
                   translitTimers.current.name = setTimeout(() => {
-                    loadSanscript().then((Sanscript) => {
-                      try {
-                        if (Sanscript && Sanscript.t) {
-                          const hi = Sanscript.t(val, 'itrans', 'devanagari');
-                          setNewHostel(prev => ({ ...prev, name_hi: hi }));
-                        }
-                      } catch (err) {
-                        // fallback: do nothing
-                      }
-                    }).catch(() => {/* ignore load errors */});
-                  }, 350);
+                    transliterateText(val).then((hi) => {
+                      if (hi) setNewHostel(prev => ({ ...prev, name_hi: hi }));
+                    }).catch(() => {/* ignore */});
+                  }, 300);
                 }}
                 placeholder="Hostel name (English)"
                 style={applyResponsiveStyles(styles.input)}
@@ -1171,9 +1206,23 @@ const fetchHostels = async () => {
                   name="name_hi"
                   className="input"
                   value={newHostel.name_hi}
-                  onChange={(e) => setNewHostel(prev => ({ ...prev, name_hi: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value || '';
+                    // Always set the immediate raw value so typing is visible.
+                    setNewHostel(prev => ({ ...prev, name_hi: val }));
+
+                    // Debounce transliteration only if the input contains Latin letters.
+                    if (translitTimers.current.name_hi) clearTimeout(translitTimers.current.name_hi);
+                    if (/[A-Za-z]/.test(val)) {
+                      translitTimers.current.name_hi = setTimeout(() => {
+                        transliterateText(val).then((hi) => {
+                          if (hi && hi !== val) setNewHostel(prev => ({ ...prev, name_hi: hi }));
+                        }).catch(() => {/* ignore */});
+                      }, 300);
+                    }
+                  }}
                   placeholder="Hostel name (Hindi)"
-                  style={applyResponsiveStyles(styles.input)}
+                  style={{ ...applyResponsiveStyles(styles.input), color: '#000' }}
                 />
                 <button type="button" onClick={() => { setKeyboardTarget('name_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
               </div>
@@ -1186,17 +1235,10 @@ const fetchHostels = async () => {
                   setNewHostel(prev => ({ ...prev, address: val }));
                   if (translitTimers.current.address) clearTimeout(translitTimers.current.address);
                   translitTimers.current.address = setTimeout(() => {
-                    loadSanscript().then((Sanscript) => {
-                      try {
-                        if (Sanscript && Sanscript.t) {
-                          const hi = Sanscript.t(val, 'itrans', 'devanagari');
-                          setNewHostel(prev => ({ ...prev, address_hi: hi }));
-                        }
-                      } catch (err) {
-                        // ignore
-                      }
+                    transliterateText(val).then((hi) => {
+                      if (hi) setNewHostel(prev => ({ ...prev, address_hi: hi }));
                     }).catch(() => {/* ignore */});
-                  }, 350);
+                  }, 300);
                 }}
                 placeholder="Address (English)"
                 style={applyResponsiveStyles(styles.input)}
@@ -1207,9 +1249,22 @@ const fetchHostels = async () => {
                   name="address_hi"
                   className="input"
                   value={newHostel.address_hi}
-                  onChange={(e) => setNewHostel(prev => ({ ...prev, address_hi: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value || '';
+                    // Immediately show typed value
+                    setNewHostel(prev => ({ ...prev, address_hi: val }));
+
+                    if (translitTimers.current.address_hi) clearTimeout(translitTimers.current.address_hi);
+                    if (/[A-Za-z]/.test(val)) {
+                      translitTimers.current.address_hi = setTimeout(() => {
+                        transliterateText(val).then((hi) => {
+                          if (hi && hi !== val) setNewHostel(prev => ({ ...prev, address_hi: hi }));
+                        }).catch(() => {/* ignore */});
+                      }, 300);
+                    }
+                  }}
                   placeholder="Address (Hindi)"
-                  style={applyResponsiveStyles(styles.input)}
+                  style={{ ...applyResponsiveStyles(styles.input), color: '#000' }}
                 />
                 <button type="button" onClick={() => { setKeyboardTarget('address_hi'); setShowHindiKeyboard(true); }} style={{ padding: '0.5rem 0.75rem', borderRadius: 6 }}>हिंदी</button>
               </div>

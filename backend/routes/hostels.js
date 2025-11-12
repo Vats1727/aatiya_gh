@@ -161,7 +161,18 @@ router.post('/users/:userId/hostels', async (req, res) => {
     }
 
     // Create hostel under users/{userId}/hostels using transactional helper
-    const created = await createHostel(db, userId, { name, address });
+    // Pass through additional bilingual and config fields if provided
+    const payload = {
+      name,
+      address,
+      name_hi: req.body.name_hi || null,
+      address_hi: req.body.address_hi || null,
+      monthlyFee: (req.body.monthlyFee != null ? Number(req.body.monthlyFee) : null),
+      monthlyFeeCurrency: req.body.monthlyFeeCurrency || null,
+      qrDataUrl: req.body.qrDataUrl || null,
+      meta: req.body.meta || null
+    };
+    const created = await createHostel(db, userId, payload);
 
     // created: { id: <docId>, hostelId, name, address, createdAt, nextStudentSeq, meta }
     res.status(201).json({ success: true, data: created });
