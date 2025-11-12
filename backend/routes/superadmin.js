@@ -168,5 +168,23 @@ export default function createSuperAdminRouter(db) {
     }
   });
 
+  // Manual trigger for monthly debits (superadmin-only)
+  router.post('/run-monthly-debits', async (req, res) => {
+    if (!db) return res.status(500).json({ error: 'Firestore not initialized' });
+    try {
+      const authHeader = req.headers.authorization || '';
+      if (!authHeader.includes('superadmin-token')) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      // lazy import to avoid cycles
+      const { runMonthlyDebitsOnce } = await import('../cron/scheduler.js');
+      const result = await runMonthlyDebitsOnce(db, { date: req.body && req.body.date });
+      return res.json({ success: true, result });
+    } catch (err) {
+      console.error('POST /api/superadmin/run-monthly-debits error:', err);
+      return res.status(500).json({ success: false, error: 'Failed to run monthly debits', details: err.message });
+    }
+  });
+
   return router;
 }

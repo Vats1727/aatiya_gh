@@ -9,6 +9,7 @@ import createAuthRouter from './routes/auth.js';
 import studentsRouter from './routes/students.js';
 import createSuperAdminRouter from './routes/superadmin.js';
 import { authMiddleware } from './middleware/auth.js';
+import scheduleMonthlyDebits from './cron/scheduler.js';
 
 // Load environment variables
 dotenv.config();
@@ -104,6 +105,13 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Firebase project: ${process.env.GOOGLE_CLOUD_PROJECT || 'Not set'}`);
+  try {
+    // Schedule monthly debit job. By default uses UTC and runs at 00:05 on 1st of month.
+    scheduleMonthlyDebits(db, { timezone: process.env.SCHEDULER_TZ || 'UTC', runOnStartup: process.env.RUN_MONTHLY_ON_STARTUP === 'true' });
+    console.log('Monthly debit scheduler initialized');
+  } catch (err) {
+    console.error('Failed to initialize monthly debit scheduler:', err);
+  }
 });
 
 export default app;
