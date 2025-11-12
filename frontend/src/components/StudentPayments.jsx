@@ -768,7 +768,9 @@ const StudentPayments = () => {
 
             <div style={{ marginTop: 12 }}>
               <div style={{ fontSize: 13, color: '#374151', marginBottom: 8 }}>Opening Balance: {formatCurrency(ledgerOpeningBalance)}</div>
-              <div style={{ overflowX: 'auto' }}>
+              
+              {/* Desktop Table View */}
+              <div className="desktop-table" style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -799,6 +801,50 @@ const StudentPayments = () => {
                     </tr>
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.75rem, 3vw, 1rem)' }}>
+                {ledgerRows.length === 0 ? (
+                  <div style={{ padding: 12, color: '#6b7280', textAlign: 'center' }}>No transactions in the selected period</div>
+                ) : (
+                  ledgerRows.map((r, i) => (
+                    <div key={i} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 'clamp(0.75rem, 3vw, 1rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Date</span>
+                        <span style={{ flex: 1, textAlign: 'right' }}>{new Date(r.date).toLocaleDateString('en-IN')}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Mode</span>
+                        <span style={{ flex: 1, textAlign: 'right' }}>{r.paymentMode}</span>
+                      </div>
+                      {r.debit && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                          <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Debit</span>
+                          <span style={{ flex: 1, textAlign: 'right', color: '#dc2626', fontWeight: 500 }}>{r.debit}</span>
+                        </div>
+                      )}
+                      {r.credit && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                          <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Credit</span>
+                          <span style={{ flex: 1, textAlign: 'right', color: '#059669', fontWeight: 500 }}>{r.credit}</span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, borderTop: '1px solid #d1d5db', paddingTop: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
+                        <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Running</span>
+                        <span style={{ flex: 1, textAlign: 'right', fontWeight: 700 }}>{formatCurrency(r.running)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {ledgerRows.length > 0 && (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: 'clamp(0.75rem, 3vw, 1rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                      <span style={{ fontWeight: 700, color: '#059669', minWidth: 'clamp(80px, 30vw, 120px)' }}>Closing Balance</span>
+                      <span style={{ flex: 1, textAlign: 'right', fontWeight: 700, color: '#059669' }}>{formatCurrency(ledgerRows[ledgerRows.length-1].running)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
