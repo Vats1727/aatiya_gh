@@ -432,6 +432,354 @@ const StudentPayments = () => {
   const feesDue = currentBalance > 0 ? currentBalance : 0;
   const advancePaid = currentBalance < 0 ? Math.abs(currentBalance) : 0;
 
+  // Define styles with access to isMobile state
+  const styles = {
+    container: {
+      padding: isMobile ? '1rem' : '2rem',
+      maxWidth: '1200px',
+      margin: '0 auto',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: '2rem',
+      gap: '1rem',
+      flexWrap: isMobile ? 'wrap' : 'nowrap',
+    },
+    backButton: {
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0.5rem 1rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '0.375rem',
+      backgroundColor: 'white',
+      cursor: 'pointer',
+      color: '#374151',
+      transition: 'all 0.2s',
+      fontSize: isMobile ? '0.875rem' : '1rem',
+      '&:hover': {
+        backgroundColor: '#f3f4f6',
+      },
+    },
+    title: {
+      fontSize: isMobile ? '1.25rem' : '1.5rem',
+      fontWeight: '600',
+      color: '#111827',
+      margin: 0,
+      flex: 1,
+    },
+    content: {
+      backgroundColor: 'white',
+      borderRadius: '0.5rem',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      padding: isMobile ? '1rem' : '1.5rem',
+    },
+    studentInfo: {
+      marginBottom: '2rem',
+      padding: isMobile ? '0.75rem' : '1rem',
+      backgroundColor: '#f9fafb',
+      borderRadius: '0.375rem',
+    },
+    studentName: {
+      fontSize: isMobile ? '1rem' : '1.25rem',
+      fontWeight: '600',
+      color: '#111827',
+      marginBottom: '0.5rem',
+    },
+    balanceSection: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1rem',
+      color: '#4b5563',
+      flexWrap: 'wrap',
+    },
+    balanceAmount: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      fontSize: isMobile ? '1rem' : '1.125rem',
+      fontWeight: '600',
+      color: '#111827',
+    },
+    infoButton: {
+      background: 'none',
+      border: 'none',
+      padding: '0.25rem',
+      cursor: 'pointer',
+      color: '#6b7280',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'color 0.2s',
+      '&:hover': {
+        color: '#374151',
+      },
+    },
+    formSection: {
+      maxWidth: '600px',
+      margin: '0 auto',
+    },
+    formTitle: {
+      fontSize: isMobile ? '1rem' : '1.125rem',
+      fontWeight: '600',
+      color: '#111827',
+      marginBottom: '1rem',
+    },
+    form: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1rem',
+    },
+    formGroup: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.5rem',
+    },
+    label: {
+      fontSize: isMobile ? '0.8125rem' : '0.875rem',
+      fontWeight: '500',
+      color: '#374151',
+    },
+    input: {
+      padding: isMobile ? '0.625rem' : '0.5rem',
+      borderRadius: '0.375rem',
+      border: '1px solid #e5e7eb',
+      fontSize: isMobile ? '0.8125rem' : '0.875rem',
+      '&:focus': {
+        outline: 'none',
+        borderColor: '#8b5cf6',
+        boxShadow: '0 0 0 1px #8b5cf6',
+      },
+    },
+    select: {
+      padding: isMobile ? '0.625rem' : '0.5rem',
+      borderRadius: '0.375rem',
+      border: '1px solid #e5e7eb',
+      fontSize: isMobile ? '0.8125rem' : '0.875rem',
+      backgroundColor: 'white',
+      '&:focus': {
+        outline: 'none',
+        borderColor: '#8b5cf6',
+        boxShadow: '0 0 0 1px #8b5cf6',
+      },
+    },
+    submitButton: {
+      padding: '0.75rem',
+      backgroundColor: '#8b5cf6',
+      color: 'white',
+      border: 'none',
+      borderRadius: '0.375rem',
+      fontWeight: '500',
+      cursor: 'pointer',
+      fontSize: isMobile ? '0.9375rem' : '1rem',
+      transition: 'background-color 0.2s',
+      '&:hover': {
+        backgroundColor: '#7c3aed',
+      },
+    },
+    historyModal: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 50,
+      padding: isMobile ? '1rem' : '0',
+    },
+    historyContent: {
+      backgroundColor: 'white',
+      borderRadius: '0.5rem',
+      width: isMobile ? '100%' : '90%',
+      maxWidth: '600px',
+      maxHeight: isMobile ? '90vh' : '80vh',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+    },
+    historyHeader: {
+      padding: isMobile ? '0.75rem' : '1rem',
+      borderBottom: '1px solid #e5e7eb',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    historySummary: {
+      display: 'flex',
+      gap: '1rem',
+      padding: isMobile ? '0.75rem' : '1rem',
+      borderBottom: '1px solid #eef2ff',
+      backgroundColor: '#fff',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      flexWrap: 'wrap',
+      overflowX: 'auto',
+    },
+    summaryItem: {
+      minWidth: isMobile ? '120px' : '140px',
+      display: 'flex',
+      flexDirection: 'column',
+    },
+    summaryLabel: {
+      fontSize: isMobile ? '0.7rem' : '0.75rem',
+      color: '#6b7280',
+    },
+    summaryValue: {
+      fontSize: isMobile ? '0.875rem' : '1rem',
+      fontWeight: 700,
+      color: '#111827'
+    },
+    closeButton: {
+      background: 'none',
+      border: 'none',
+      fontSize: '1.5rem',
+      color: '#6b7280',
+      cursor: 'pointer',
+      padding: '0.25rem',
+      '&:hover': {
+        color: '#374151',
+      },
+    },
+    historyList: {
+      padding: isMobile ? '0.75rem' : '1rem',
+      overflowY: 'auto',
+    },
+    historyTableWrapper: {
+      overflowX: 'auto',
+    },
+    historyTable: {
+      width: '100%',
+      borderCollapse: 'collapse',
+      minWidth: '640px',
+    },
+    th: {
+      textAlign: 'left',
+      padding: '0.75rem 1rem',
+      fontSize: '0.875rem',
+      color: '#6b7280',
+      borderBottom: '1px solid #e5e7eb',
+    },
+    tr: {
+      backgroundColor: 'white',
+    },
+    td: {
+      padding: '0.75rem 1rem',
+      borderBottom: '1px solid #f3f4f6',
+      fontSize: '0.875rem',
+      color: '#374151',
+      verticalAlign: 'top'
+    },
+    // Mobile card styles
+    mobileCardContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.75rem',
+    },
+    mobileCard: {
+      backgroundColor: 'white',
+      border: '1px solid #e5e7eb',
+      borderRadius: '0.5rem',
+      padding: '1rem',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+    },
+    mobileCardHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: '0.75rem',
+      paddingBottom: '0.75rem',
+      borderBottom: '1px solid #f3f4f6',
+    },
+    mobileCardTitle: {
+      fontSize: '0.875rem',
+      fontWeight: '600',
+      color: '#111827',
+      flex: 1,
+    },
+    mobileCardValue: {
+      fontSize: '0.875rem',
+      fontWeight: '600',
+      color: '#059669',
+      textAlign: 'right',
+      marginLeft: '0.5rem',
+    },
+    mobileCardContent: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.5rem',
+    },
+    mobileCardRow: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: '0.5rem',
+      fontSize: '0.8125rem',
+    },
+    mobileLabel: {
+      fontWeight: '500',
+      color: '#6b7280',
+      minWidth: '80px',
+    },
+    mobileValue: {
+      color: '#374151',
+      textAlign: 'right',
+      flex: 1,
+    },
+    historyItem: {
+      padding: '1rem',
+      borderBottom: '1px solid #e5e7eb',
+      '&:last-child': {
+        borderBottom: 'none',
+      },
+    },
+    historyItemHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '0.5rem',
+    },
+    historyDate: {
+      fontSize: '0.875rem',
+      color: '#6b7280',
+    },
+    historyAmount: {
+      fontWeight: '600',
+    },
+    historyItemDetails: {
+      fontSize: '0.875rem',
+    },
+    paymentMode: {
+      color: '#6b7280',
+      textTransform: 'capitalize',
+    },
+    remarks: {
+      marginTop: '0.25rem',
+      color: '#374151',
+    },
+    noHistory: {
+      textAlign: 'center',
+      color: '#6b7280',
+      padding: '2rem',
+      fontSize: isMobile ? '0.875rem' : '1rem',
+    },
+    loading: {
+      textAlign: 'center',
+      padding: '2rem',
+      color: '#6b7280',
+    },
+    error: {
+      backgroundColor: '#fef2f2',
+      color: '#b91c1c',
+      padding: isMobile ? '0.75rem' : '1rem',
+      borderRadius: '0.375rem',
+      marginBottom: '1rem',
+      fontSize: isMobile ? '0.875rem' : '1rem',
+    },
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -755,353 +1103,6 @@ const StudentPayments = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    padding: isMobile ? '1rem' : '2rem',
-    maxWidth: '1200px',
-    margin: '0 auto',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: '2rem',
-    gap: '1rem',
-    flexWrap: isMobile ? 'wrap' : 'nowrap',
-  },
-  backButton: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0.5rem 1rem',
-    border: '1px solid #e5e7eb',
-    borderRadius: '0.375rem',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    color: '#374151',
-    transition: 'all 0.2s',
-    fontSize: isMobile ? '0.875rem' : '1rem',
-    '&:hover': {
-      backgroundColor: '#f3f4f6',
-    },
-  },
-  title: {
-    fontSize: isMobile ? '1.25rem' : '1.5rem',
-    fontWeight: '600',
-    color: '#111827',
-    margin: 0,
-    flex: 1,
-  },
-  content: {
-    backgroundColor: 'white',
-    borderRadius: '0.5rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    padding: isMobile ? '1rem' : '1.5rem',
-  },
-  studentInfo: {
-    marginBottom: '2rem',
-    padding: isMobile ? '0.75rem' : '1rem',
-    backgroundColor: '#f9fafb',
-    borderRadius: '0.375rem',
-  },
-  studentName: {
-    fontSize: isMobile ? '1rem' : '1.25rem',
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: '0.5rem',
-  },
-  balanceSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    color: '#4b5563',
-    flexWrap: 'wrap',
-  },
-  balanceAmount: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    fontSize: isMobile ? '1rem' : '1.125rem',
-    fontWeight: '600',
-    color: '#111827',
-  },
-  infoButton: {
-    background: 'none',
-    border: 'none',
-    padding: '0.25rem',
-    cursor: 'pointer',
-    color: '#6b7280',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'color 0.2s',
-    '&:hover': {
-      color: '#374151',
-    },
-  },
-  formSection: {
-    maxWidth: '600px',
-    margin: '0 auto',
-  },
-  formTitle: {
-    fontSize: isMobile ? '1rem' : '1.125rem',
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: '1rem',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem',
-  },
-  formGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  label: {
-    fontSize: isMobile ? '0.8125rem' : '0.875rem',
-    fontWeight: '500',
-    color: '#374151',
-  },
-  input: {
-    padding: isMobile ? '0.625rem' : '0.5rem',
-    borderRadius: '0.375rem',
-    border: '1px solid #e5e7eb',
-    fontSize: isMobile ? '0.8125rem' : '0.875rem',
-    '&:focus': {
-      outline: 'none',
-      borderColor: '#8b5cf6',
-      boxShadow: '0 0 0 1px #8b5cf6',
-    },
-  },
-  select: {
-    padding: isMobile ? '0.625rem' : '0.5rem',
-    borderRadius: '0.375rem',
-    border: '1px solid #e5e7eb',
-    fontSize: isMobile ? '0.8125rem' : '0.875rem',
-    backgroundColor: 'white',
-    '&:focus': {
-      outline: 'none',
-      borderColor: '#8b5cf6',
-      boxShadow: '0 0 0 1px #8b5cf6',
-    },
-  },
-  submitButton: {
-    padding: '0.75rem',
-    backgroundColor: '#8b5cf6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.375rem',
-    fontWeight: '500',
-    cursor: 'pointer',
-    fontSize: isMobile ? '0.9375rem' : '1rem',
-    transition: 'background-color 0.2s',
-    '&:hover': {
-      backgroundColor: '#7c3aed',
-    },
-  },
-  historyModal: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 50,
-    padding: isMobile ? '1rem' : '0',
-  },
-  historyContent: {
-    backgroundColor: 'white',
-    borderRadius: '0.5rem',
-    width: isMobile ? '100%' : '90%',
-    maxWidth: '600px',
-    maxHeight: isMobile ? '90vh' : '80vh',
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  historyHeader: {
-    padding: isMobile ? '0.75rem' : '1rem',
-    borderBottom: '1px solid #e5e7eb',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  historySummary: {
-    display: 'flex',
-    gap: '1rem',
-    padding: isMobile ? '0.75rem' : '1rem',
-    borderBottom: '1px solid #eef2ff',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    flexWrap: 'wrap',
-    overflowX: 'auto',
-  },
-  summaryItem: {
-    minWidth: isMobile ? '120px' : '140px',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  summaryLabel: {
-    fontSize: isMobile ? '0.7rem' : '0.75rem',
-    color: '#6b7280',
-  },
-  summaryValue: {
-    fontSize: isMobile ? '0.875rem' : '1rem',
-    fontWeight: 700,
-    color: '#111827'
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    fontSize: '1.5rem',
-    color: '#6b7280',
-    cursor: 'pointer',
-    padding: '0.25rem',
-    '&:hover': {
-      color: '#374151',
-    },
-  },
-  historyList: {
-    padding: isMobile ? '0.75rem' : '1rem',
-    overflowY: 'auto',
-  },
-  historyTableWrapper: {
-    overflowX: 'auto',
-  },
-  historyTable: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    minWidth: '640px',
-  },
-  th: {
-    textAlign: 'left',
-    padding: '0.75rem 1rem',
-    fontSize: '0.875rem',
-    color: '#6b7280',
-    borderBottom: '1px solid #e5e7eb',
-  },
-  tr: {
-    backgroundColor: 'white',
-  },
-  td: {
-    padding: '0.75rem 1rem',
-    borderBottom: '1px solid #f3f4f6',
-    fontSize: '0.875rem',
-    color: '#374151',
-    verticalAlign: 'top'
-  },
-  // Mobile card styles
-  mobileCardContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.75rem',
-  },
-  mobileCard: {
-    backgroundColor: 'white',
-    border: '1px solid #e5e7eb',
-    borderRadius: '0.5rem',
-    padding: '1rem',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-  },
-  mobileCardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '0.75rem',
-    paddingBottom: '0.75rem',
-    borderBottom: '1px solid #f3f4f6',
-  },
-  mobileCardTitle: {
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
-  },
-  mobileCardValue: {
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    color: '#059669',
-    textAlign: 'right',
-    marginLeft: '0.5rem',
-  },
-  mobileCardContent: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  mobileCardRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '0.5rem',
-    fontSize: '0.8125rem',
-  },
-  mobileLabel: {
-    fontWeight: '500',
-    color: '#6b7280',
-    minWidth: '80px',
-  },
-  mobileValue: {
-    color: '#374151',
-    textAlign: 'right',
-    flex: 1,
-  },
-  historyItem: {
-    padding: '1rem',
-    borderBottom: '1px solid #e5e7eb',
-    '&:last-child': {
-      borderBottom: 'none',
-    },
-  },
-  historyItemHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '0.5rem',
-  },
-  historyDate: {
-    fontSize: '0.875rem',
-    color: '#6b7280',
-  },
-  historyAmount: {
-    fontWeight: '600',
-  },
-  historyItemDetails: {
-    fontSize: '0.875rem',
-  },
-  paymentMode: {
-    color: '#6b7280',
-    textTransform: 'capitalize',
-  },
-  remarks: {
-    marginTop: '0.25rem',
-    color: '#374151',
-  },
-  noHistory: {
-    textAlign: 'center',
-    color: '#6b7280',
-    padding: '2rem',
-    fontSize: isMobile ? '0.875rem' : '1rem',
-  },
-  loading: {
-    textAlign: 'center',
-    padding: '2rem',
-    color: '#6b7280',
-  },
-  error: {
-    backgroundColor: '#fef2f2',
-    color: '#b91c1c',
-    padding: isMobile ? '0.75rem' : '1rem',
-    borderRadius: '0.375rem',
-    marginBottom: '1rem',
-    fontSize: isMobile ? '0.875rem' : '1rem',
-  },
 };
 
 export default StudentPayments;
