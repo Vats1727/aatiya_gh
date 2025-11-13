@@ -156,6 +156,7 @@ const SuperAdminPage = () => {
   // UI state for improved dashboard
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
 
   const computeStats = () => {
     const users = allData.users || [];
@@ -460,7 +461,11 @@ const SuperAdminPage = () => {
               if (!q) return true;
               return (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
             });
-            const selectedUser = (allData.users || []).find(u => u.userId === selectedUserId) || filtered[0] || null;
+            const defaultSelected = filtered[0] || null;
+            const selectedUser = (allData.users || []).find(u => u.userId === selectedUserId) || defaultSelected;
+            const effectiveSelectedUserId = selectedUserId || (defaultSelected && defaultSelected.userId) || null;
+            const selectedStudentCount = (selectedUser?.hostels || []).reduce((acc, h) => acc + ((h.students && h.students.length) || 0), 0);
+            const studentQuery = (studentSearchTerm || '').trim().toLowerCase();
             return (
               <div style={{ display: 'flex', gap: 16 }}>
                 {/* Left column: summary + user list */}
@@ -484,7 +489,7 @@ const SuperAdminPage = () => {
                     />
                     <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {filtered.map(u => (
-                        <div key={u.userId} onClick={() => setSelectedUserId(u.userId)} style={{ cursor: 'pointer', padding: 10, borderRadius: 8, background: u.userId === selectedUserId ? 'linear-gradient(90deg,#fbf7ff,#f3e8ff)' : '#fff', border: u.userId === selectedUserId ? '1px solid #e9d5ff' : '1px solid #f3f3f3' }}>
+                        <div key={u.userId} onClick={() => setSelectedUserId(u.userId)} style={{ cursor: 'pointer', padding: 10, borderRadius: 8, background: u.userId === effectiveSelectedUserId ? 'linear-gradient(90deg,#fbf7ff,#f3e8ff)' : '#fff', border: u.userId === effectiveSelectedUserId ? '1px solid #e9d5ff' : '1px solid #f3f3f3' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                               <div style={{ fontWeight: 700 }}>{u.name || u.email}</div>
@@ -507,8 +512,16 @@ const SuperAdminPage = () => {
                     <div style={{ ...styles.emptyState, padding: 24 }}>Select a user from the left to view hostels, students and payments</div>
                   ) : (
                     <div style={{ background: 'white', borderRadius: 12, padding: 16, boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
-                      <h2 style={{ margin: 0, color: '#111827' }}>{selectedUser.name || selectedUser.email}</h2>
-                      <p style={{ marginTop: 6, color: '#6b7280' }}>{selectedUser.email}</p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <h2 style={{ margin: 0, color: '#111827' }}>{selectedUser.name || selectedUser.email}</h2>
+                          <p style={{ marginTop: 6, color: '#6b7280' }}>{selectedUser.email}</p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <input placeholder="Search students..." value={studentSearchTerm} onChange={(e) => setStudentSearchTerm(e.target.value)} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #e6e6e6' }} />
+                          <div style={{ background: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: 8, fontWeight: 700 }}>{selectedStudentCount} students</div>
+                        </div>
+                      </div>
 
                       <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {(selectedUser.hostels || []).map(hostel => {
@@ -531,7 +544,10 @@ const SuperAdminPage = () => {
 
                               {isOpen && (
                                 <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  {(hostel.students || []).map(student => (
+                                  {(hostel.students || []).filter(s => {
+                                    if (!studentQuery) return true;
+                                    return (s.studentName || '').toLowerCase().includes(studentQuery) || ((s.email || '').toLowerCase().includes(studentQuery)) || ((s.studentId || '').toString().toLowerCase().includes(studentQuery));
+                                  }).map(student => (
                                     <div key={student.studentId} style={{ padding: 10, borderRadius: 8, background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                       <div>
                                         <div style={{ fontWeight: 700 }}>{student.studentName}</div>
@@ -567,7 +583,10 @@ const SuperAdminPage = () => {
                                       </div>
                                     </div>
                                   ))}
-                                  {((hostel.students || []).length === 0) && <div style={{ color: '#9ca3af', marginLeft: 6 }}>No students in this hostel</div>}
+                                  {((hostel.students || []).filter(s => {
+                                    if (!studentQuery) return true;
+                                    return (s.studentName || '').toLowerCase().includes(studentQuery) || ((s.email || '').toLowerCase().includes(studentQuery)) || ((s.studentId || '').toString().toLowerCase().includes(studentQuery));
+                                  }).length === 0) && <div style={{ color: '#9ca3af', marginLeft: 6 }}>No students in this hostel</div>}
                                 </div>
                               )}
                             </div>
