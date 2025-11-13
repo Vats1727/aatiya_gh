@@ -564,7 +564,6 @@ const StudentsPage = () => {
               if (hasDevanagari && en) {
                 return (
                   <>
-                    <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8' }}>{hi}</div>
                     <div style={{ fontSize: '0.9rem', color: '#6b21a8' }}>{en} - Student list</div>
                     {(hostel && (hostel.monthlyFee != null && hostel.monthlyFee !== '')) && (
                       <div style={{ fontSize: '0.9rem', color: '#374151', marginTop: 6 }}>

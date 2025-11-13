@@ -496,8 +496,8 @@ const StudentPayments = () => {
 
       <div style={styles.content}>
         <div style={styles.studentInfo}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'clamp(0.5rem, 3vw, 1rem)', flexDirection: 'column' }} className="student-info-wrapper">
-            <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'clamp(0.5rem, 3vw, 1rem)', flexDirection: 'row', flexWrap: 'wrap', width: '100%' }} className="student-info-wrapper">
+            <div style={{ flex: '1 1 auto', minWidth: 'clamp(150px, 40%, 400px)' }}>
               <h2 style={styles.studentName}>{student.studentName}</h2>
               {/* <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Application No: <strong style={{ color: '#111827' }}>{student.applicationNumber || student.applicationNo || student.application_id || student.appNo || '—'}</strong></div> */}
               <div style={styles.balanceSection}>
@@ -520,6 +520,13 @@ const StudentPayments = () => {
               </div>
             </div>
 
+            {/* New Payment button - right aligned at top */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', flexShrink: 0 }}>
+              {!showPaymentForm && (
+                <button type="button" onClick={() => setShowPaymentForm(true)} style={{ ...styles.submitButton, padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.6rem, 2vw, 1rem)' }}>New Payment</button>
+              )}
+            </div>
+
             <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 0.75rem)', alignItems: 'flex-end', flexWrap: 'wrap', width: '100%', minWidth: 0 }} className="history-controls">
               <div style={{ display: 'flex', flexDirection: 'column', minWidth: 'clamp(100px, 30vw, 150px)' }}>
                 <label style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', color: '#374151', marginBottom: 4 }}>From</label>
@@ -535,12 +542,8 @@ const StudentPayments = () => {
         </div>
 
         <div style={styles.formSection}>
-          <h3 style={styles.formTitle}>Payments</h3>
-          {!showPaymentForm ? (
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => setShowPaymentForm(true)} style={{ ...styles.submitButton, padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.6rem, 2vw, 1rem)' }}>New Payment</button>
-            </div>
-          ) : (
+          {/* <h3 style={styles.formTitle}>Payments</h3> */}
+          {showPaymentForm ? (
             <div>
               <form onSubmit={handleSubmit} style={styles.form}>
                 <div style={styles.formGroup}>
@@ -585,7 +588,7 @@ const StudentPayments = () => {
                 </div>
               </form>
             </div>
-          )}
+          ) : null}
         </div>
 
         {showHistory && (
