@@ -174,56 +174,35 @@ const StudentProfile = () => {
           <ArrowLeft size={18} />
           <span>Back to Students</span>
         </button>
-        <h1 style={styles.title}>{student.studentName || student.name || 'Student Profile'}</h1>
-        <button onClick={handleDownload} style={styles.downloadHeaderButton}>
-          <Download size={18} />
-          <span>PDF</span>
-        </button>
-      </div>
 
-      {/* Student Details Card */}
-      <div style={styles.card}>
-        <div style={styles.detailsGrid}>
-          <div>
-            <div style={styles.label}>Student Name</div>
-            <div style={styles.value}>{student.studentName || student.name || '-'}</div>
-          </div>
-          <div>
-            <div style={styles.label}>Mobile Number</div>
-            <div style={styles.value}>{student.mobile1 || '-'}</div>
-          </div>
-          <div>
-            <div style={styles.label}>Father's Name</div>
-            <div style={styles.value}>{student.fatherName || '-'}</div>
-          </div>
-          <div>
-            <div style={styles.label}>Hostel Name</div>
-            <div style={styles.value}>{student.hostelName || student.hostel || '-'}</div>
-          </div>
-          <div>
-            <div style={styles.label}>Monthly Fee</div>
-            <div style={styles.value}>{student.appliedFee || student.monthlyFee ? `${student.appliedFee || student.monthlyFee} ${student.appliedFeeCurrency || student.monthlyFeeCurrency || 'INR'}` : '-'}</div>
-          </div>
-          <div>
-            <div style={styles.label}>Status</div>
-            <div style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusActive : student.status === 'rejected' ? styles.statusRejected : {}) }}>
-              {student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}
-            </div>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 6 }}>
+          <h1 style={styles.title}>{student.studentName || student.name || 'Student Profile'}</h1>
+
+          {/* Inline details moved to header (exclude duplicate student name) */}
+          <div style={styles.headerDetails}>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Mobile</div><div style={styles.valueSmall}>{student.mobile1 || '-'}</div></div>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Father's Name</div><div style={styles.valueSmall}>{student.fatherName || '-'}</div></div>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Hostel</div><div style={styles.valueSmall}>{student.hostelName || student.hostel || '-'}</div></div>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Monthly Fee</div><div style={styles.valueSmall}>{student.appliedFee || student.monthlyFee ? `${student.appliedFee || student.monthlyFee} ${student.appliedFeeCurrency || student.monthlyFeeCurrency || 'INR'}` : '-'}</div></div>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Status</div><div style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusActive : student.status === 'rejected' ? styles.statusRejected : {}) }}>{student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}</div></div>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div style={styles.actionButtons}>
+        <div style={styles.headerActions}>
           {!isActive && (
             <button onClick={handleAccept} style={{ ...styles.button, ...styles.acceptButton }}>
-              Accept & Save
+              Accept
             </button>
           )}
           <button onClick={handleSave} style={{ ...styles.button, ...styles.saveButton }}>
-            {isActive ? 'Save' : 'Save'}
+            Save
           </button>
           <button onClick={close} style={{ ...styles.button, ...styles.closeButton }}>
             Close
+          </button>
+          <button onClick={handleDownload} style={{ ...styles.downloadHeaderButton, marginLeft: 8 }}>
+            <Download size={18} />
+            <span>PDF</span>
           </button>
         </div>
       </div>
@@ -405,6 +384,27 @@ const styles = {
       transform: 'translateY(-1px)',
       boxShadow: '0 4px 12px -2px rgba(139, 92, 246, 0.3)',
     },
+  },
+  headerDetails: {
+    display: 'flex',
+    gap: '1rem',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  headerDetailItem: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  valueSmall: {
+    fontSize: '0.95rem',
+    fontWeight: 600,
+    color: '#111827',
+  },
+  headerActions: {
+    display: 'flex',
+    gap: '0.5rem',
+    alignItems: 'center',
+    flexShrink: 0,
   },
   card: {
     backgroundColor: 'white',
