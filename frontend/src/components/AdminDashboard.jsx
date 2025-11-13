@@ -829,8 +829,9 @@ const fetchHostels = async () => {
 
   const handleGlobalSearch = (query) => {
     setGlobalSearchTerm(query);
-    // show buffering spinner immediately when user types
-    if (query && query.trim()) setIsSearching(true);
+    // Do not show the searching indicator immediately on every keystroke.
+    // The spinner will be enabled when the debounced search actually runs
+    // (see performGlobalSearch which sets isSearching(true) at start).
     // debounce network-heavy global search
     if (globalSearchTimerRef.current) clearTimeout(globalSearchTimerRef.current);
     globalSearchTimerRef.current = setTimeout(() => {
