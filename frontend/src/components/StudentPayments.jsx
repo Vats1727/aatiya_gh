@@ -323,15 +323,14 @@ const StudentPayments = () => {
         // compute effect of this transaction
         const amt = Number(p.amount) || 0;
         const remarks = getTruncatedRemarks(p.remarks);
-        const modeWithRemarks = remarks ? `${p.paymentMode || ''} (${remarks})` : (p.paymentMode || '');
           if (p.type === 'credit') {
             // student paid: reduces due (running = running - amt)
             running = running - amt;
-            rows.push({ date: p.timestamp, paymentMode: modeWithRemarks, debit: '', credit: amt, running });
+            rows.push({ date: p.timestamp, paymentMode: (p.paymentMode || ''), remarks: remarks, debit: '', credit: amt, running });
           } else {
             // debit (refund/adjustment): increases due
             running = running + amt;
-            rows.push({ date: p.timestamp, paymentMode: modeWithRemarks, debit: amt, credit: '', running });
+            rows.push({ date: p.timestamp, paymentMode: (p.paymentMode || ''), remarks: remarks, debit: amt, credit: '', running });
           }
       }
 
@@ -671,7 +670,7 @@ const StudentPayments = () => {
                             <td>
                               {hasCustomFee ? (
                                 <div>
-                                  <div>Applied Monthly Fee</div>
+                                  <div>Rent</div>
                                   <div style={{ fontSize: '0.8em', color: '#6b7280' }}>
                                     (Standard: {formatCurrency(monthlyFee)})
                                   </div>
@@ -819,7 +818,7 @@ const StudentPayments = () => {
                       ledgerRows.map((r, i) => (
                         <tr key={i}>
                           <td style={{ padding: 8 }}>{new Date(r.date).toLocaleDateString('en-IN')}</td>
-                          <td style={{ padding: 8 }}>{r.paymentMode}</td>
+                          <td style={{ padding: 8 }}>{r.paymentMode}{r.remarks ? ` (${r.remarks})` : ''}</td>
                           <td style={{ padding: 8, textAlign: 'right', color: r.debit ? '#dc2626' : undefined }}>{r.debit || ''}</td>
                           <td style={{ padding: 8, textAlign: 'right', color: r.credit ? '#059669' : undefined }}>{r.credit || ''}</td>
                           <td style={{ padding: 8, textAlign: 'right' }}>{formatCurrency(r.running)}</td>
@@ -851,7 +850,7 @@ const StudentPayments = () => {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                         <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Mode</span>
-                        <span style={{ flex: 1, textAlign: 'right' }}>{r.paymentMode}</span>
+                        <span style={{ flex: 1, textAlign: 'right' }}>{r.paymentMode}{r.remarks ? ` (${r.remarks})` : ''}</span>
                       </div>
                       {r.debit && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
