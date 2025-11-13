@@ -38,10 +38,10 @@ const StudentProfile = () => {
         const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
           headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
         });
+
         if (res.ok) {
           const payload = await res.json();
           const s = payload?.data || payload || null;
-          // If the student doc doesn't include hostel display fields, try fetching the public hostel
           if (s) {
             let merged = { ...s };
             try {
@@ -60,11 +60,30 @@ const StudentProfile = () => {
               console.warn('Failed to fetch hostel for profile header', e);
             }
 
+            // If hostelName still missing, try alternate ids present on student
+            if (!(merged?.hostelName || merged?.hostel)) {
+              const altId = merged.ownerHostelDocId || merged.hostelDocId || merged.hostelId || null;
+              if (altId) {
+                try {
+                  const pub2 = await fetch(`${API_BASE}/api/public/hostels/${altId}`);
+                  if (pub2.ok) {
+                    const pj = await pub2.json();
+                    const pd = pj?.data || pj || null;
+                    if (pd) {
+                      merged = { ...merged, hostelName: pd.name || merged.hostelName, hostelAddress: pd.address || merged.hostelAddress, monthlyFee: (pd.monthlyFee != null ? pd.monthlyFee : merged.monthlyFee), monthlyFeeCurrency: pd.monthlyFeeCurrency || merged.monthlyFeeCurrency || 'INR' };
+                    }
+                  }
+                } catch (e) { /* ignore */ }
+              }
+            }
+
             setStudent(merged);
             const opts = (merged?.documents || []).map(d => d.type).filter(Boolean);
             const base = ['NONE', 'AADHAR CARD'];
             setDocOptions(Array.from(new Set([...base, ...opts])));
             setPreviewFee(merged?.appliedFee ?? merged?.monthlyFee ?? '');
+          } else {
+            console.warn('Student not found');
           }
         } else {
           // fallback: navigate back
@@ -202,7 +221,7 @@ const StudentProfile = () => {
           <div style={styles.headerDetails}>
             <div style={styles.headerDetailItem}><div style={styles.label}>Mobile</div><div style={styles.valueSmall}>{student.mobile1 || '-'}</div></div>
             <div style={styles.headerDetailItem}><div style={styles.label}>Father's Name</div><div style={styles.valueSmall}>{student.fatherName || '-'}</div></div>
-            <div style={styles.headerDetailItem}><div style={styles.label}>Hostel</div><div style={styles.valueSmall}>{student.hostelName || student.hostel || '-'}</div></div>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Hostel</div><div style={styles.valueSmall}>{student.hostelName || student.hostel?.name || student.hostel || student.hostelNameEn || student.hostelNameHi || '-'}</div></div>
             <div style={styles.headerDetailItem}><div style={styles.label}>Monthly Fee</div><div style={styles.valueSmall}><input type="number" value={previewFee || ''} onChange={(e) => setPreviewFee(e.target.value)} style={{ width: 120, padding: '6px 8px', borderRadius: 6, border: '1px solid #e5e7eb' }} /></div></div>
             <div style={styles.headerDetailItem}><div style={styles.label}>Status</div><div style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusActive : student.status === 'rejected' ? styles.statusRejected : {}) }}>{student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}</div></div>
           </div>
@@ -338,9 +357,9 @@ const styles = {
   },
   header: {
     background: 'white',
-    padding: '1rem 1.5rem',
-    borderRadius: '0.75rem',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+    padding: '1.25rem 1.5rem',
+    borderRadius: '0.9rem',
+    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
     marginBottom: '1.5rem',
     display: 'flex',
     alignItems: 'center',
@@ -356,8 +375,8 @@ const styles = {
       right: 0,
       height: '4px',
       background: 'linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%)',
-      borderTopLeftRadius: '0.75rem',
-      borderTopRightRadius: '0.75rem',
+      borderTopLeftRadius: '0.9rem',
+      borderTopRightRadius: '0.9rem',
     },
   },
   backButton: {
@@ -366,8 +385,8 @@ const styles = {
     gap: '0.5rem',
     background: '#f8fafc',
     border: '1px solid #e2e8f0',
-    padding: '0.375rem 0.65rem',
-    borderRadius: '0.5rem',
+    padding: '0.5rem 0.9rem',
+    borderRadius: '0.6rem',
     cursor: 'pointer',
     color: '#4b5563',
     fontWeight: '500',
@@ -407,17 +426,20 @@ const styles = {
   },
   headerDetails: {
     display: 'flex',
-    gap: '1rem',
+    gap: '1.25rem',
     alignItems: 'center',
     flexWrap: 'wrap',
+    paddingTop: 6,
   },
   headerDetailItem: {
     display: 'flex',
     flexDirection: 'column',
+    minWidth: 140,
+    marginRight: 8,
   },
   valueSmall: {
-    fontSize: '0.95rem',
-    fontWeight: 600,
+    fontSize: '1rem',
+    fontWeight: 700,
     color: '#111827',
   },
   headerActions: {
