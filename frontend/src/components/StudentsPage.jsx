@@ -841,7 +841,7 @@ const StudentsPage = () => {
                     <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
                     <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Accept"><Check size={16} /></button>
                     <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Reject"><X size={16} /></button>
-                    <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=edit`, { state: { student } })} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
+                    <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile`, { state: { student } })} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
                     <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
                     <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=view`, { state: { student } })} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
                     {student.status === 'approved' && (
@@ -1096,7 +1096,7 @@ const StudentsPage = () => {
                         >
                           <X size={16} />
                         </button>
-                        <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=edit`, { state: { student } })} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
+                        <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile`, { state: { student } })} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
                           <Edit size={16} />
                         </button>
                         <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">

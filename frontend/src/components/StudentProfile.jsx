@@ -59,21 +59,7 @@ const StudentProfile = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostelId, studentId]);
 
-  // If URL has mode=edit, open the edit form directly after student loads
-  useEffect(() => {
-    const mode = new URLSearchParams(location.search).get('mode');
-    if (mode === 'edit' && student) {
-      // small delay to ensure UI mounted
-      setTimeout(() => goEdit(), 150);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [student, location.search]);
-
   const close = () => navigate(`/hostel/${hostelId}/students`);
-
-  const goEdit = () => {
-    navigate(`/hostel/${hostelId}/add-student?editId=${studentId}&hostelDocId=${student?.ownerHostelDocId || hostelId}`);
-  };
 
   const handleSave = async () => {
     try {
@@ -207,12 +193,7 @@ const StudentProfile = () => {
       <div style={{ background: '#fff', padding: 12, borderRadius: 8 }}>
         {activeTab === 'profile' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <div style={{ color: '#6b7280' }}>Profile preview</div>
-              <div>
-                <button onClick={goEdit} style={{ padding: '6px 10px', borderRadius: 6 }}>Edit</button>
-              </div>
-            </div>
+            <div style={{ color: '#6b7280', marginBottom: 8 }}>Profile preview</div>
 
             <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
               <iframe title="Student PDF Preview" style={{ width: '100%', height: 560, border: 'none' }} srcDoc={renderStudentPrintHtml(student)} />
