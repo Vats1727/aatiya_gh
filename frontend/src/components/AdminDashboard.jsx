@@ -1140,7 +1140,7 @@ const fetchHostels = async () => {
                   {globalSearchResults.students.map((student, idx) => (
                     <div
                       key={`${student.hostelId}-${student.id || idx}`}
-                      onClick={() => { navigate(`/hostel/${student.hostelId}/students?highlight=${encodeURIComponent(student.id)}`); setGlobalSearchTerm(''); setGlobalSearchResults(null); }}
+                      onClick={() => { navigate(`/hostel/${student.hostelId}/students/${encodeURIComponent(student.id)}/profile`, { state: { student } }); setGlobalSearchTerm(''); setGlobalSearchResults(null); }}
                       style={{
                         padding: '0.75rem 1rem',
                         borderBottom: '1px solid #e5e7eb',
