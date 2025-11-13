@@ -41,11 +41,31 @@ const StudentProfile = () => {
         if (res.ok) {
           const payload = await res.json();
           const s = payload?.data || payload || null;
-          setStudent(s);
-          const opts = (s?.documents || []).map(d => d.type).filter(Boolean);
-          const base = ['NONE', 'AADHAR CARD'];
-          setDocOptions(Array.from(new Set([...base, ...opts])));
-          setPreviewFee(s?.appliedFee || s?.monthlyFee || '');
+          // If the student doc doesn't include hostel display fields, try fetching the public hostel
+          if (s) {
+            let merged = { ...s };
+            try {
+              if ((!merged.hostelName && !merged.hostel) && hostelId) {
+                const pub = await fetch(`${API_BASE}/api/public/hostels/${hostelId}`);
+                if (pub.ok) {
+                  const pubJson = await pub.json();
+                  const pubData = pubJson?.data || pubJson || null;
+                  if (pubData) {
+                    merged = { ...merged, hostelName: pubData.name || merged.hostelName || merged.hostel, hostelAddress: pubData.address || merged.hostelAddress, monthlyFee: (pubData.monthlyFee != null ? pubData.monthlyFee : merged.monthlyFee), monthlyFeeCurrency: pubData.monthlyFeeCurrency || merged.monthlyFeeCurrency || 'INR' };
+                  }
+                }
+              }
+            } catch (e) {
+              // ignore fetch errors for hostel
+              console.warn('Failed to fetch hostel for profile header', e);
+            }
+
+            setStudent(merged);
+            const opts = (merged?.documents || []).map(d => d.type).filter(Boolean);
+            const base = ['NONE', 'AADHAR CARD'];
+            setDocOptions(Array.from(new Set([...base, ...opts])));
+            setPreviewFee(merged?.appliedFee ?? merged?.monthlyFee ?? '');
+          }
         } else {
           // fallback: navigate back
           console.warn('Student not found');
@@ -183,7 +203,7 @@ const StudentProfile = () => {
             <div style={styles.headerDetailItem}><div style={styles.label}>Mobile</div><div style={styles.valueSmall}>{student.mobile1 || '-'}</div></div>
             <div style={styles.headerDetailItem}><div style={styles.label}>Father's Name</div><div style={styles.valueSmall}>{student.fatherName || '-'}</div></div>
             <div style={styles.headerDetailItem}><div style={styles.label}>Hostel</div><div style={styles.valueSmall}>{student.hostelName || student.hostel || '-'}</div></div>
-            <div style={styles.headerDetailItem}><div style={styles.label}>Monthly Fee</div><div style={styles.valueSmall}>{student.appliedFee || student.monthlyFee ? `${student.appliedFee || student.monthlyFee} ${student.appliedFeeCurrency || student.monthlyFeeCurrency || 'INR'}` : '-'}</div></div>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Monthly Fee</div><div style={styles.valueSmall}><input type="number" value={previewFee || ''} onChange={(e) => setPreviewFee(e.target.value)} style={{ width: 120, padding: '6px 8px', borderRadius: 6, border: '1px solid #e5e7eb' }} /></div></div>
             <div style={styles.headerDetailItem}><div style={styles.label}>Status</div><div style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusActive : student.status === 'rejected' ? styles.statusRejected : {}) }}>{student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}</div></div>
           </div>
         </div>
@@ -346,7 +366,7 @@ const styles = {
     gap: '0.5rem',
     background: '#f8fafc',
     border: '1px solid #e2e8f0',
-    padding: '0.5rem 0.875rem',
+    padding: '0.375rem 0.65rem',
     borderRadius: '0.5rem',
     cursor: 'pointer',
     color: '#4b5563',
