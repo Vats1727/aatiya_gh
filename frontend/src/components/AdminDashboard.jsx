@@ -1347,7 +1347,7 @@ const fetchHostels = async () => {
             <h1 style={styles.title}>Hostel Management</h1>
             <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
               <button
-                onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setShowAddHostel(true); }}
+                onClick={() => { setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: 0, monthlyFeeCurrency: 'INR' }); setShowAddHostel(true); }}
                 className="btn btn-primary"
                 style={{
                   ...styles.addButton,
@@ -1517,7 +1517,12 @@ const fetchHostels = async () => {
         {/* Inline Add Hostel form shown on this page */}
         {showAddHostel && (
           <div className="card" style={styles.card}>
-            <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>{newHostel.id ? 'Edit Hostel' : 'Add New Hostel'}</h3>
+              <h3 style={{ margin: 0, marginBottom: '0.75rem', color: '#6b21a8' }}>{newHostel.id ? 'Edit Hostel' : 'Add New Hostel'}</h3>
+              {error && (
+                <div style={error.startsWith('Successfully') ? styles.successBadge : styles.formError}>
+                  {error}
+                </div>
+              )}
             <form onSubmit={handleAddHostel} className="form" style={styles.form}>
               <input
                 name="name"
@@ -1626,7 +1631,7 @@ const fetchHostels = async () => {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '', name_hi: '', address_hi: '' }); setError(''); }}
+                  onClick={() => { setShowAddHostel(false); setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: 0, monthlyFeeCurrency: 'INR' }); setError(''); }}
                   style={styles.cancelButton}
                 >
                   Cancel
@@ -1673,7 +1678,7 @@ const fetchHostels = async () => {
                       View Students
                     </button>
                     <button onClick={() => generateQrForHostel(hostel)} className="btn" style={{ padding: '0.5rem' }} title="QR"><UserPlus size={16} /></button>
-                    <button onClick={() => { setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '' }); setShowAddHostel(true); }} className="btn" style={{ padding: '0.5rem' }} title="Edit"><Edit size={16} /></button>
+                    <button onClick={() => { setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '', monthlyFee: (hostel.monthlyFee != null ? hostel.monthlyFee : 0), monthlyFeeCurrency: hostel.monthlyFeeCurrency || 'INR' }); setShowAddHostel(true); }} className="btn" style={{ padding: '0.5rem' }} title="Edit"><Edit size={16} /></button>
                   </div>
                 </div>
               ))}
@@ -1715,7 +1720,7 @@ const fetchHostels = async () => {
                         </button>
                         <button
                           onClick={() => {
-                            setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '' });
+                            setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '', monthlyFee: (hostel.monthlyFee != null ? hostel.monthlyFee : 0), monthlyFeeCurrency: hostel.monthlyFeeCurrency || 'INR' });
                             setShowAddHostel(true);
                           }}
                           className="btn btn-icon btn-secondary"
