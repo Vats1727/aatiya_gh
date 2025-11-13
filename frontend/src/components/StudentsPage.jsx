@@ -28,6 +28,10 @@ const StudentsPage = () => {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
   const [translitNameHi, setTranslitNameHi] = useState('');
   const [translitAddressHi, setTranslitAddressHi] = useState('');
+  const [docSelections, setDocSelections] = useState({});
+  const [docOptions, setDocOptions] = useState({});
+  const [docOtherValue, setDocOtherValue] = useState({});
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640);
@@ -147,6 +151,21 @@ const StudentsPage = () => {
     fetchStudents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostelId]);
+  
+  // Initialize per-student document options when students list changes
+  useEffect(() => {
+    const opts = {};
+    students.forEach(s => {
+      // start with NONE and AADHAR CARD
+      opts[s.id] = (s.documents && Array.isArray(s.documents) && s.documents.map(d => d.type).filter(Boolean)) || ['NONE','AADHAR CARD'];
+      // ensure default options present
+      if (!opts[s.id].includes('NONE')) opts[s.id].unshift('NONE');
+      if (!opts[s.id].includes('AADHAR CARD')) opts[s.id].push('AADHAR CARD');
+      // dedupe while preserving order
+      opts[s.id] = Array.from(new Set(opts[s.id]));
+    });
+    setDocOptions(prev => ({ ...opts, ...prev }));
+  }, [students]);
 
   // If a highlight query param is present (from global search), scroll to and highlight that row
   const location = useLocation();
@@ -347,6 +366,61 @@ const StudentsPage = () => {
   const handleAccept = async (student) => {
     // open enriched preview modal so admin can review/adjust fee
     await openPreview(student);
+  };
+
+  // Document dropdown change handler (per student)
+  const handleDocSelection = (studentId, value) => {
+    setDocSelections(prev => ({ ...prev, [studentId]: value }));
+  };
+
+  // Add a custom 'other' option (stored upper-case) and select it
+  const addCustomDocOption = (studentId, value) => {
+    if (!value || !value.trim()) return;
+    const u = String(value).trim().toUpperCase();
+    setDocOptions(prev => ({ ...prev, [studentId]: Array.from(new Set([...(prev[studentId] || ['NONE','AADHAR CARD']), u])) }));
+    setDocSelections(prev => ({ ...prev, [studentId]: u }));
+    setDocOtherValue(prev => ({ ...prev, [studentId]: '' }));
+  };
+
+  // Upload document image and persist to student document
+  const handleDocumentUpload = async (student, file) => {
+    if (!file) return;
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const dataUrl = e.target.result;
+        const token = localStorage.getItem('token');
+        if (!token) return alert('Not authenticated');
+
+        // Append a new document entry to the student's documents array
+        const newDoc = {
+          id: `doc_${Date.now()}`,
+          type: docSelections[student.id] || 'NONE',
+          dataUrl,
+          uploadedAt: new Date().toISOString()
+        };
+
+        // Merge with existing documents locally
+        const existing = Array.isArray(student.documents) ? student.documents.slice() : [];
+        existing.push(newDoc);
+
+        // Persist via existing student PUT endpoint
+        const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ documents: existing })
+        });
+        if (!resp.ok) throw new Error('Failed to upload document');
+        const payload = await resp.json();
+
+        // Update local state with updated student
+        setStudents(prev => prev.map(s => s.id === student.id ? ({ ...s, documents: existing }) : s));
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Document upload failed', err);
+      alert('Failed to upload document');
+    }
   };
 
   const confirmAccept = async () => {
@@ -778,6 +852,7 @@ const StudentsPage = () => {
               <tr>
                 <th style={styles.th}>Application No.</th>
                 <th style={styles.th}>Name</th>
+                <th style={styles.th}>Documents</th>
                 <th style={styles.th}>Status</th>
                 <th style={styles.th}>Mobile Number</th>
                 <th style={styles.th}>Current Balance</th>
@@ -799,6 +874,56 @@ const StudentsPage = () => {
                     <td style={styles.td}>{computedAppNo}</td>
                     <td style={styles.td}>
                       <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
+                    </td>
+                    <td style={styles.td}>
+                      {/* Documents column: dropdown, optional other input, upload, previews */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <select
+                          value={docSelections[student.id] || (docOptions[student.id] && docOptions[student.id][0]) || 'NONE'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '__ADD_OTHER__') {
+                              // open a small prompt/input in UI; we set a special selection so input appears
+                              setDocSelections(prev => ({ ...prev, [student.id]: '__ADD_OTHER__' }));
+                              return;
+                            }
+                            handleDocSelection(student.id, val);
+                          }}
+                          style={{ padding: '6px', borderRadius: 6 }}
+                        >
+                          {(docOptions[student.id] || ['NONE','AADHAR CARD']).map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                          <option value="__ADD_OTHER__">Others (add)</option>
+                        </select>
+
+                        {/* If user chose to add other, show input to add label */}
+                        {docSelections[student.id] === '__ADD_OTHER__' && (
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <input value={docOtherValue[student.id] || ''} onChange={(e) => setDocOtherValue(prev => ({ ...prev, [student.id]: e.target.value }))} placeholder="Enter other document name" style={{ flex: 1, padding: '6px', borderRadius: 6 }} />
+                            <button type="button" onClick={() => addCustomDocOption(student.id, docOtherValue[student.id] || '')} style={{ padding: '6px 8px' }}>Add</button>
+                          </div>
+                        )}
+
+                        {/* Upload control shown when selection is not NONE */}
+                        {(docSelections[student.id] && docSelections[student.id] !== 'NONE' && docSelections[student.id] !== '__ADD_OTHER__') && (
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleDocumentUpload(student, f); }} />
+                          </div>
+                        )}
+
+                        {/* Previews of uploaded documents */}
+                        {Array.isArray(student.documents) && student.documents.length > 0 && (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+                            {student.documents.map(doc => (
+                              <div key={doc.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <img src={doc.dataUrl} alt={doc.type} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, cursor: 'pointer' }} onClick={() => setPreviewImage(doc.dataUrl)} />
+                                <div style={{ fontSize: 11, color: '#374151', marginTop: 4 }}>{doc.type}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td style={styles.td}>
                       <span style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusAccepted : student.status === 'rejected' ? styles.statusRejected : {}) }}>
@@ -956,6 +1081,17 @@ const StudentsPage = () => {
         )}
 
         {/* result count moved to table header (top-right) */}
+        {/* Document preview modal */}
+        {previewImage && (
+          <div style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}} onClick={() => setPreviewImage(null)}>
+            <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '92%', maxHeight: '92%', background: '#fff', padding: 12, borderRadius: 8 }}>
+              <img src={previewImage} alt="Preview" style={{ maxWidth: '100%', maxHeight: '80vh', display: 'block' }} />
+              <div style={{ textAlign: 'right', marginTop: 8 }}>
+                <button className="btn" onClick={() => setPreviewImage(null)} style={{ padding: '6px 10px' }}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
         {previewVisible && previewStudent && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ width: 'min(920px, 96%)', maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: 8, padding: 20 }}>
@@ -1157,6 +1293,16 @@ const styles = {
   nameText: {
     fontSize: '0.95rem',
     color: '#111827',
+  },
+  documentsHeader: {
+    padding: '0.75rem 1rem',
+    textAlign: 'left',
+    backgroundColor: '#f9fafb',
+    color: '#374151',
+    fontWeight: '600',
+    fontSize: '0.75rem',
+    borderBottom: '1px solid #e5e7eb',
+    whiteSpace: 'nowrap',
   },
   statusBadge: {
     display: 'inline-block',
