@@ -85,6 +85,7 @@ const HostelAdmissionForm = () => {
   };
 
   const [showPreview, setShowPreview] = useState(false);
+  const [originalStatus, setOriginalStatus] = useState(null);
   const [hostels, setHostels] = useState([]);
   const [translitNameHi, setTranslitNameHi] = useState('');
   const [translitAddressHi, setTranslitAddressHi] = useState('');
@@ -156,6 +157,8 @@ const HostelAdmissionForm = () => {
           parentSignature: data.parentSignature || prev.parentSignature,
           admissionDate: data.admissionDate || prev.admissionDate,
         }));
+  // preserve the original status so edits don't unintentionally reset it
+  try { setOriginalStatus(data.status || null); } catch (e) { /* ignore */ }
         // populate dynamic lists from edited data
         try {
           const visitors = [];
@@ -1031,9 +1034,11 @@ const HostelAdmissionForm = () => {
         fd[`coaching${i + 1}Start`] = (coachingList && coachingList[i] && coachingList[i].start) || fd[`coaching${i + 1}Start`] || '';
         fd[`coaching${i + 1}End`] = (coachingList && coachingList[i] && coachingList[i].end) || fd[`coaching${i + 1}End`] || '';
       }
+      // Decide status: for new submissions set 'pending', but for edits keep original status
+      const finalStatus = editId ? (originalStatus || fd.status || 'pending') : 'pending';
       const formDataWithStatus = {
         ...fd,
-        status: 'pending',
+        status: finalStatus,
         submittedAt: new Date().toISOString()
       };
 
@@ -1151,9 +1156,18 @@ const HostelAdmissionForm = () => {
       }
 
       alert('Record updated successfully');
-      // If this was an admin editing an existing record, go back to admin dashboard
+      // If this was an admin editing an existing record, redirect back to the hostel's students list
       if (editId) {
-        navigate('/admin/dashboard');
+        try {
+          const targetHostel = effectiveHostelId || formData.hostelDocId || preHostelId;
+          if (targetHostel) {
+            navigate(`/hostel/${encodeURIComponent(targetHostel)}/students`);
+          } else {
+            navigate('/admin/dashboard');
+          }
+        } catch (e) {
+          navigate('/admin/dashboard');
+        }
         return;
       }
 

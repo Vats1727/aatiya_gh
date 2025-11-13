@@ -372,8 +372,21 @@ const StudentProfile = () => {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
+        {/* Back button on the top-left */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', marginRight: 12 }}>
+          <button onClick={close} style={styles.smallBackButton} title="Back to Students">
+            <ArrowLeft size={16} />
+          </button>
+        </div>
+
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 6 }}>
           <h1 style={styles.title}>{student.studentName || student.name || 'Student Profile'}</h1>
+          {/* Application number in main header */}
+          { (student.applicationNumber || student.combinedId || student.applicationNo) && (
+            <div style={{ fontSize: '0.95rem', color: '#6b7280', fontWeight: 600 }}>
+              Application No.: {student.applicationNumber || student.combinedId || student.applicationNo}
+            </div>
+          )}
 
           {/* Inline details moved to header (exclude duplicate student name) */}
           <div style={styles.headerDetails}>
@@ -386,11 +399,6 @@ const StudentProfile = () => {
         </div>
 
         <div style={styles.headerActions}>
-          {/* Small back button placed in the actions row (right-most area) */}
-          <button onClick={close} style={styles.smallBackButton} title="Back to Students">
-            <ArrowLeft size={16} />
-          </button>
-
           {!isActive && (
             <button onClick={handleAccept} style={{ ...styles.button, ...styles.acceptButton }}>
               Accept
