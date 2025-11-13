@@ -1,11 +1,190 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { auth, signInWithEmailAndPassword } from '../firebase';
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 // Hardcoded superadmin credentials
 const SUPERADMIN_CREDENTIALS = {
   username: 'superadmin@gmail.com',
   password: 'superadmin@123'
+};
+
+// Common styles for consistent UI
+const styles = {
+  container: {
+    minHeight: '100vh',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    background: 'linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%)',
+    padding: '1.5rem',
+    boxSizing: 'border-box',
+    width: '100%',
+  },
+  card: {
+    background: 'white',
+    borderRadius: '0.75rem',
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    width: '100%',
+    maxWidth: '28rem',
+    padding: '2.5rem',
+    position: 'relative',
+    overflow: 'hidden',
+    border: '1px solid #e2e8f0',
+  },
+  header: {
+    textAlign: 'center',
+    marginBottom: '2rem',
+  },
+  logo: {
+    width: '3.5rem',
+    height: '3.5rem',
+    margin: '0 auto 1rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '0.75rem',
+    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+    color: 'white',
+    fontSize: '1.5rem',
+    fontWeight: '600',
+    boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
+  },
+  title: {
+    fontSize: '1.5rem',
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: '0.5rem',
+    lineHeight: '1.25',
+  },
+  subtitle: {
+    color: '#64748b',
+    fontSize: '0.9375rem',
+    lineHeight: '1.5',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.25rem',
+  },
+  inputGroup: {
+    position: 'relative',
+    width: '100%',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: '1rem',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: '#94a3b8',
+    pointerEvents: 'none',
+  },
+  input: {
+    width: '100%',
+    padding: '0.75rem 1rem 0.75rem 3rem',
+    border: '1px solid #e2e8f0',
+    borderRadius: '0.5rem',
+    fontSize: '0.9375rem',
+    color: '#1e293b',
+    backgroundColor: '#f8fafc',
+    transition: 'all 0.2s ease',
+    '&:focus': {
+      outline: 'none',
+      borderColor: '#3b82f6',
+      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.2)',
+      backgroundColor: 'white',
+    },
+    '&::placeholder': {
+      color: '#94a3b8',
+    },
+  },
+  passwordWrapper: {
+    position: 'relative',
+  },
+  togglePassword: {
+    position: 'absolute',
+    right: '1rem',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: '#94a3b8',
+    cursor: 'pointer',
+    '&:hover': {
+      color: '#64748b',
+    },
+  },
+  button: {
+    width: '100%',
+    padding: '0.875rem 1.5rem',
+    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '0.5rem',
+    fontSize: '1rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    '&:hover': {
+      background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+      boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.3)',
+      transform: 'translateY(-1px)',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+      boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)',
+    },
+    '&:disabled': {
+      opacity: '0.7',
+      cursor: 'not-allowed',
+      transform: 'none',
+      boxShadow: 'none',
+    },
+  },
+  error: {
+    backgroundColor: '#fef2f2',
+    color: '#b91c1c',
+    padding: '0.75rem 1rem',
+    borderRadius: '0.5rem',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginBottom: '1rem',
+    border: '1px solid #fecaca',
+  },
+  footer: {
+    marginTop: '1.5rem',
+    textAlign: 'center',
+    fontSize: '0.875rem',
+    color: '#64748b',
+  },
+  link: {
+    color: '#3b82f6',
+    fontWeight: '500',
+    textDecoration: 'none',
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
+};
+
+// Responsive styles
+const mobileStyles = {
+  '@media (max-width: 640px)': {
+    container: {
+      padding: '1rem',
+    },
+    card: {
+      padding: '1.5rem',
+    },
+    title: {
+      fontSize: '1.25rem',
+    },
+  },
 };
 
 const AdminLogin = () => {
@@ -15,137 +194,8 @@ const AdminLogin = () => {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-
-  // Apply responsive styles
-const applyResponsiveStyles = (styleObj) => {
-  const result = { ...styleObj };
-  
-  // Remove media query properties
-  Object.keys(result).forEach(key => {
-    if (key.startsWith('@media')) {
-      delete result[key];
-    }
-  });
-
-  // Apply mobile styles if needed
-  if (window.innerWidth < 768) {
-    if (styleObj['@media (max-width: 768px)']) {
-      Object.assign(result, styleObj['@media (max-width: 768px)']);
-    }
-  }
-  
-  if (window.innerWidth < 480) {
-    if (styleObj['@media (max-width: 480px)']) {
-      Object.assign(result, styleObj['@media (max-width: 480px)']);
-    }
-  }
-
-  return result;
-};
-
-  const styles = {
-    container: {
-      minHeight: '100vh',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%)',
-      padding: '1rem',
-      boxSizing: 'border-box',
-      width: '100%',
-      minWidth: '320px',
-    },
-    form: {
-      background: 'white',
-      padding: '1.5rem',
-      borderRadius: '0.75rem',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      width: '100%',
-      maxWidth: '400px',
-      margin: '0.5rem',
-      boxSizing: 'border-box',
-      border: '1px solid #e2e8f0',
-    },
-    title: {
-      textAlign: 'center',
-      color: '#1e293b',
-      fontSize: '1.5rem',
-      marginBottom: '1.25rem',
-      lineHeight: '1.25',
-      fontWeight: '600',
-    },
-    inputGroup: {
-      marginBottom: '1rem',
-      width: '100%',
-    },
-    label: {
-      display: 'block',
-      marginBottom: '0.375rem',
-      color: '#334155',
-      fontWeight: '500',
-      fontSize: '0.875rem',
-    },
-    input: {
-      width: '100%',
-      padding: '0.625rem 0.875rem',
-      border: '1px solid #e2e8f0',
-      borderRadius: '0.5rem',
-      fontSize: '0.9375rem',
-      outline: 'none',
-      boxSizing: 'border-box',
-      transition: 'all 0.2s ease',
-      minHeight: '44px',
-      backgroundColor: '#f8fafc',
-      ':focus': {
-        borderColor: '#3b82f6',
-        boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)',
-        backgroundColor: '#ffffff',
-      },
-      '::placeholder': {
-        color: '#94a3b8',
-        fontSize: '0.875rem',
-      },
-    },
-    button: {
-      width: '100%',
-      padding: '0.75rem 1rem',
-      background: '#3b82f6',
-      color: 'white',
-      border: 'none',
-      borderRadius: '0.5rem',
-      fontSize: '0.9375rem',
-      fontWeight: '500',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      WebkitTapHighlightColor: 'transparent',
-      minHeight: '44px',
-      marginTop: '0.25rem',
-      ':hover': {
-        background: '#2563eb',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      },
-      ':active': {
-        transform: 'translateY(1px)',
-      },
-      ':disabled': {
-        opacity: 0.7,
-        cursor: 'not-allowed',
-        background: '#93c5fd',
-      },
-    },
-    error: {
-      color: '#b91c1c',
-      marginBottom: '1rem',
-      textAlign: 'center',
-      fontSize: '0.875rem',
-      padding: '0.75rem',
-      borderRadius: '0.375rem',
-      backgroundColor: '#fef2f2',
-      border: '1px solid #fecaca',
-      fontWeight: '500',
-    },
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -218,108 +268,109 @@ const applyResponsiveStyles = (styleObj) => {
   };
 
   return (
-    <div style={styles.container}>
-      <form style={styles.form} onSubmit={handleSubmit}>
-        <h1 style={styles.title}>Admin Login</h1>
-        
-        {error && (
-          <div style={styles.error}>
-            {error}
+    <div style={applyResponsiveStyles(styles.container)}>
+      <div style={applyResponsiveStyles(styles.card)}>
+        <div style={styles.header}>
+          <div style={styles.logo}>
+            <Lock size={24} />
           </div>
-        )}
-        
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>Email</label>
-          <input
-            type="email"
-            name="username"
-            value={credentials.username}
-            onChange={handleChange}
-            style={styles.input}
-            placeholder="Enter your email"
-            required
-            autoComplete="email"
-            inputMode="email"
-            autoCapitalize="off"
-          />
+          <h1 style={styles.title}>Welcome Back</h1>
+          <p style={styles.subtitle}>Sign in to your admin account</p>
         </div>
         
-        <div style={styles.inputGroup}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <label style={styles.label}>Password</label>
-            {/* <Link 
-              to="/forgot-password" 
+        <form onSubmit={handleSubmit} style={styles.form}>
+          {error && (
+            <div style={styles.error}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              {error}
+            </div>
+          )}
+          
+          <div style={styles.inputGroup}>
+            <Mail size={18} style={styles.inputIcon} />
+            <input
+              type="email"
+              name="username"
+              value={credentials.username}
+              onChange={handleChange}
+              placeholder="Enter your email"
+              required
+              style={styles.input}
+              autoComplete="username"
+              autoFocus
+            />
+          </div>
+          
+          <div style={styles.inputGroup}>
+            <Lock size={18} style={styles.inputIcon} />
+            <div style={styles.passwordWrapper}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={credentials.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                required
+                style={styles.input}
+                autoComplete="current-password"
+              />
+              <div onClick={() => setShowPassword(!showPassword)} style={styles.togglePassword}>
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            type="submit"
+            disabled={isLoading || !credentials.username || !credentials.password}
+            style={{
+              ...styles.button,
+              opacity: (isLoading || !credentials.username || !credentials.password) ? 0.7 : 1,
+              cursor: (isLoading || !credentials.username || !credentials.password) ? 'not-allowed' : 'pointer',
+              ':active': {
+                transform: (isLoading || !credentials.username || !credentials.password) ? 'scale(1)' : 'scale(0.98)',
+              },
+              ':hover': {
+                transform: (isLoading || !credentials.username || !credentials.password) ? 'scale(1)' : 'scale(1.02)',
+              },
+            }}
+            onMouseOver={(e) => !isLoading && !(!credentials.username || !credentials.password) && (e.currentTarget.style.transform = 'scale(1.02)')}
+            onMouseOut={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(1)')}
+            onTouchStart={(e) => !isLoading && !(!credentials.username || !credentials.password) && (e.currentTarget.style.transform = 'scale(0.98)')}
+            onTouchEnd={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(1)')}
+          >
+            {isLoading ? 'Signing in...' : 'Sign In'}
+          </button>
+          
+          <div style={{
+            marginTop: '1.5rem',
+            textAlign: 'center',
+            color: '#4b5563',
+            fontSize: '0.9375rem',
+            paddingTop: '1rem',
+            borderTop: '1px solid #e5e7eb',
+          }}>
+            Don't have an account?{' '}
+            <Link 
+              to="/admin/register" 
               style={{
-                fontSize: '0.875rem',
                 color: '#7c3aed',
                 textDecoration: 'none',
-                fontWeight: '500',
+                fontWeight: '600',
                 ':hover': {
                   textDecoration: 'underline',
                 },
               }}
             >
-              Forgot Password?
-            </Link> */}
+              Sign up
+            </Link>
           </div>
-          <input
-            type="password"
-            name="password"
-            value={credentials.password}
-            onChange={handleChange}
-            style={styles.input}
-            placeholder="Enter your password"
-            required
-            autoComplete="current-password"
-          />
-        </div>
-        
-        <button
-          type="submit"
-          disabled={isLoading}
-          style={{
-            ...styles.button,
-            opacity: isLoading ? 0.7 : 1,
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            ':active': {
-              transform: isLoading ? 'scale(1)' : 'scale(0.98)',
-            },
-            ':hover': {
-              transform: isLoading ? 'scale(1)' : 'scale(1.02)',
-            },
-          }}
-          onMouseOver={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(1.02)')}
-          onMouseOut={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(1)')}
-          onTouchStart={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(0.98)')}
-          onTouchEnd={(e) => !isLoading && (e.currentTarget.style.transform = 'scale(1)')}
-        >
-          {isLoading ? 'Signing in...' : 'Sign In'}
-        </button>
-        
-        <div style={{
-          marginTop: '1.5rem',
-          textAlign: 'center',
-          color: '#4b5563',
-          fontSize: '0.9375rem',
-          paddingTop: '1rem',
-          borderTop: '1px solid #e5e7eb',
-        }}>
-          Don't have an account?{' '}
-          <Link 
-            to="/admin/register" 
-            style={{
-              color: '#7c3aed',
-              textDecoration: 'none',
-              fontWeight: '600',
-              ':hover': {
-                textDecoration: 'underline',
-              },
-            }}
-          >
-            Sign up
-          </Link>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

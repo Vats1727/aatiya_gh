@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Eye, X } from 'lucide-react';
 import StudentPayments from './StudentPayments';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import { renderStudentPrintHtml } from '../utils/printTemplate';
@@ -21,6 +21,8 @@ const StudentProfile = () => {
   const [pendingDoc, setPendingDoc] = useState(null); // holds selected file preview before user clicks Add
   const [previewImage, setPreviewImage] = useState(null);
   const [previewFee, setPreviewFee] = useState('');
+  const [showDocPreview, setShowDocPreview] = useState(false);
+  const [selectedDocForPreview, setSelectedDocForPreview] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -365,48 +367,66 @@ const StudentProfile = () => {
     }
   };
 
+  const handlePreviewDocument = (doc) => {
+    setSelectedDocForPreview(doc);
+    setShowDocPreview(true);
+  };
+
+  const closeDocPreview = () => {
+    setShowDocPreview(false);
+    setSelectedDocForPreview(null);
+  };
+
   if (loading || !student) return <div style={styles.container}><div style={styles.loading}>Loading...</div></div>;
 
   const isActive = student.status === 'approved';
 
   return (
     <div style={styles.container}>
-      {/* Header with back button */}
       <div style={styles.header}>
-        <button onClick={close} style={styles.backButton}>
-          <ArrowLeft size={18} />
-          <span>Back to Students</span>
-        </button>
-
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 6 }}>
-          <h1 style={styles.title}>{student.studentName || student.name || 'Student Profile'}</h1>
-
-          {/* Inline details moved to header (exclude duplicate student name) */}
-          <div style={styles.headerDetails}>
-            <div style={styles.headerDetailItem}><div style={styles.label}>Mobile</div><div style={styles.valueSmall}>{student.mobile1 || '-'}</div></div>
-            <div style={styles.headerDetailItem}><div style={styles.label}>Father's Name</div><div style={styles.valueSmall}>{student.fatherName || '-'}</div></div>
-            <div style={styles.headerDetailItem}><div style={styles.label}>Hostel</div><div style={styles.valueSmall}>{student.hostelName || student.hostel?.name || student.hostel || student.hostelNameEn || student.hostelNameHi || '-'}</div></div>
-            <div style={styles.headerDetailItem}><div style={styles.label}>Monthly Fee</div><div style={styles.valueSmall}><input type="number" value={previewFee || ''} onChange={(e) => setPreviewFee(e.target.value)} style={{ width: 120, padding: '6px 8px', borderRadius: 6, border: '1px solid #e5e7eb' }} /></div></div>
-            <div style={styles.headerDetailItem}><div style={styles.label}>Status</div><div style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusActive : student.status === 'rejected' ? styles.statusRejected : {}) }}>{student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}</div></div>
-          </div>
-        </div>
-
-        <div style={styles.headerActions}>
-          {!isActive && (
-            <button onClick={handleAccept} style={{ ...styles.button, ...styles.acceptButton }}>
-              Accept
+        <div style={styles.headerContent}>
+          <div style={styles.headerLeft}>
+            <button 
+              onClick={() => window.history.back()}
+              style={{
+                ...styles.button,
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+            >
+              <ArrowLeft size={16} /> Back
             </button>
-          )}
-          <button onClick={handleSave} style={{ ...styles.button, ...styles.saveButton }}>
-            Save
-          </button>
-          <button onClick={handleDownload} style={{ ...styles.downloadHeaderButton, marginLeft: 8 }}>
-            <Download size={18} />
-            <span>PDF</span>
-          </button>
-          <button onClick={close} style={{ ...styles.button, ...styles.closeButton }}>
-            Close
-          </button>
+          </div>
+          <div style={styles.headerRight}>
+            <button 
+              onClick={handleSavePdf}
+              style={{
+                ...styles.button,
+                ...styles.primaryButton,
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+              disabled={loading}
+            >
+              <Download size={16} /> Save PDF
+            </button>
+            <button 
+              onClick={() => navigate(-1)}
+              style={{
+                ...styles.button,
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.875rem',
+              }}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
 
@@ -498,7 +518,7 @@ const StudentProfile = () => {
               {Array.isArray(student.documents) && student.documents.length > 0 ? (
                 student.documents.map(doc => (
                   <div key={doc.id} style={styles.docItem}>
-                    <img src={doc.dataUrl} alt={doc.type} style={styles.docImage} onClick={() => setPreviewImage(doc.dataUrl)} />
+                    <img src={doc.dataUrl} alt={doc.type} style={styles.docImage} onClick={() => handlePreviewDocument(doc)} />
                     <button onClick={() => handleDeleteDocument(doc.id)} style={styles.docDeleteBtn}>×</button>
                     <div style={styles.docLabel}>{doc.type}</div>
                   </div>
@@ -511,12 +531,32 @@ const StudentProfile = () => {
         )}
       </div>
 
-      {previewImage && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={() => setPreviewImage(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '92%', maxHeight: '92%', background: '#fff', padding: 12, borderRadius: 8 }}>
-            <img src={previewImage} alt="Preview" style={{ maxWidth: '100%', maxHeight: '80vh', display: 'block' }} />
-            <div style={{ textAlign: 'right', marginTop: 8 }}>
-              <button onClick={() => setPreviewImage(null)} style={{ padding: '6px 10px' }}>Close</button>
+      {showDocPreview && selectedDocForPreview && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h3>{selectedDocForPreview.type}</h3>
+              <button 
+                onClick={closeDocPreview}
+                style={styles.closeButton}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div style={styles.previewContainer}>
+              {selectedDocForPreview.url.endsWith('.pdf') ? (
+                <iframe 
+                  src={selectedDocForPreview.url} 
+                  style={styles.documentPreview} 
+                  title="Document Preview"
+                />
+              ) : (
+                <img 
+                  src={selectedDocForPreview.url} 
+                  alt="Document Preview" 
+                  style={styles.imagePreview}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -560,177 +600,46 @@ const styles = {
       borderTopRightRadius: '0.9rem',
     },
   },
-  backButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    background: '#f8fafc',
-    border: '1px solid #e2e8f0',
-    padding: '0.5rem 0.9rem',
-    borderRadius: '0.6rem',
-    cursor: 'pointer',
-    color: '#4b5563',
-    fontWeight: '500',
-    fontSize: '0.875rem',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      background: '#f1f5f9',
-      borderColor: '#cbd5e1',
-      transform: 'translateY(-1px)',
-    },
-  },
-  title: {
-    fontSize: '1.5rem',
-    fontWeight: '600',
-    color: '#1e293b',
-    margin: 0,
+  headerContent: {
     display: 'flex',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '0.75rem',
+    width: '100%',
   },
-  downloadHeaderButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-    color: 'white',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '0.5rem',
-    cursor: 'pointer',
-    fontWeight: '500',
-    fontSize: '0.875rem',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      opacity: 0.95,
-      transform: 'translateY(-1px)',
-      boxShadow: '0 4px 12px -2px rgba(139, 92, 246, 0.3)',
-    },
+  headerLeft: {
+    flex: 1,
   },
-  headerDetails: {
-    display: 'flex',
-    gap: '1.25rem',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    paddingTop: 6,
-  },
-  headerDetailItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    minWidth: 140,
-    marginRight: 8,
-  },
-  valueSmall: {
-    fontSize: '1rem',
-    fontWeight: 700,
-    color: '#111827',
-  },
-  headerActions: {
-    display: 'flex',
-    gap: '0.5rem',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: '0.5rem',
-    boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
-    padding: '1.5rem',
-    marginBottom: '1.5rem',
-  },
-  detailsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-    gap: '1.5rem',
-    marginBottom: '1.5rem',
-  },
-  label: {
-    fontSize: '0.8125rem',
-    fontWeight: '500',
-    color: '#64748b',
-    marginBottom: '0.375rem',
-    display: 'block',
-  },
-  value: {
-    fontSize: '0.9375rem',
-    color: '#1e293b',
-    fontWeight: '500',
-    lineHeight: '1.5',
-  },
-  statusBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '0.375rem 0.75rem',
-    borderRadius: '9999px',
-    fontSize: '0.8125rem',
-    fontWeight: '500',
-    lineHeight: '1',
-  },
-  statusActive: {
-    backgroundColor: '#ecfccb',
-    color: '#365314',
-  },
-  statusRejected: {
-    backgroundColor: '#fee2e2',
-    color: '#7f1d1d',
-  },
-  actionButtons: {
+  headerRight: {
     display: 'flex',
     gap: '0.75rem',
-    justifyContent: 'flex-end',
-    paddingTop: '1.5rem',
-    marginTop: '1.5rem',
-    borderTop: '1px solid #e2e8f0',
+    alignItems: 'center',
   },
   button: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.5rem',
     padding: '0.5rem 1rem',
     borderRadius: '0.375rem',
     border: '1px solid #e2e8f0',
     backgroundColor: 'white',
-    color: '#334155',
-    fontWeight: '500',
-    fontSize: '0.9375rem',
     cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    fontSize: '0.9375rem',
+    fontWeight: '500',
     transition: 'all 0.2s ease',
-    ':hover': {
+    '&:hover': {
       backgroundColor: '#f8fafc',
       borderColor: '#cbd5e1',
     },
   },
-  acceptButton: {
-    backgroundColor: '#10b981',
-    color: 'white',
-    borderColor: '#10b981',
-    ':hover': {
-      backgroundColor: '#0d9f74',
-      borderColor: '#0d9f74',
-      transform: 'translateY(-1px)',
-    },
-  },
-  saveButton: {
+  primaryButton: {
     backgroundColor: '#3b82f6',
     color: 'white',
     borderColor: '#3b82f6',
-    ':hover': {
+    '&:hover': {
       backgroundColor: '#2563eb',
-      borderColor: '#2563eb',
-      transform: 'translateY(-1px)',
-    },
-    '&:hover': {
-      opacity: 0.9,
-      transform: 'translateY(-1px)',
-    },
-  },
-  closeButton: {
-    background: '#f3f4f6',
-    color: '#374151',
-    border: '1px solid #e5e7eb',
-    '&:hover': {
-      background: '#e5e7eb',
+      borderColor: '#1d4ed8',
+      color: 'white',
     },
   },
   tabsContainer: {
