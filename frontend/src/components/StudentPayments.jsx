@@ -904,10 +904,13 @@ const getResponsiveStyles = () => {
 
 const styles = {
   container: {
-    padding: 'clamp(1rem, 5vw, 2rem)',
-    maxWidth: '1200px',
-    margin: '0 auto',
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
+    padding: '1.5rem',
     boxSizing: 'border-box',
+    width: '100%',
+    maxWidth: '100%',
+    margin: 0,
   },
   header: {
     display: 'flex',

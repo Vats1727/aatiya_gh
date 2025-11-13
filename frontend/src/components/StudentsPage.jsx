@@ -654,7 +654,7 @@ const StudentsPage = () => {
 
 
   return (
-    <div className="container" style={styles.container}>
+    <div style={styles.container}>
       {/* Static profile navbar (sticky) - show current admin info if available */}
       {(() => {
         let stored = null;
@@ -1291,19 +1291,13 @@ const StudentsPage = () => {
 
 const styles = {
   container: {
-    width: '100%',
-    margin: '0 auto',
-    padding: '1rem',
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
+    padding: '1.5rem',
     boxSizing: 'border-box',
-    '@media (min-width: 481px)': {
-      padding: '1.25rem',
-    },
-    '@media (min-width: 769px)': {
-      maxWidth: '1200px',
-      padding: '1.5rem',
-    },
+    width: '100%',
+    maxWidth: '100%',
+    margin: 0,
   },
   tableContainer: {
     backgroundColor: 'white',
