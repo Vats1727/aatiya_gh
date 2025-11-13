@@ -1338,7 +1338,7 @@ const fetchHostels = async () => {
           <div style={{ position: 'relative', width: '100%' }}>
             <div style={{ position: 'relative', width: '100%' }}>
               {/* left icon: search or spinner */}
-              <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }}>
+              <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8b5cf6', pointerEvents: 'none' }}>
                 {isSearching ? (
                   <svg width="18" height="18" viewBox="0 0 50 50">
                     <path fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" d="M25 5a20 20 0 1 0 0 40a20 20 0 1 0 0-40">
