@@ -172,7 +172,7 @@ const styles = {
   },
 };
 
-// Responsive styles
+// Mobile styles
 const mobileStyles = {
   '@media (max-width: 640px)': {
     container: {
@@ -267,9 +267,17 @@ const AdminLogin = () => {
     }
   };
 
+  // Merge base styles with mobile styles if needed
+  const getResponsiveStyles = (baseStyle) => {
+    return {
+      ...baseStyle,
+      ...(window.innerWidth <= 640 && mobileStyles['@media (max-width: 640px)'])
+    };
+  };
+
   return (
-    <div style={applyResponsiveStyles(styles.container)}>
-      <div style={applyResponsiveStyles(styles.card)}>
+    <div style={styles.container}>
+      <div style={styles.card}>
         <div style={styles.header}>
           <div style={styles.logo}>
             <Lock size={24} />
