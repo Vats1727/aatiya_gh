@@ -294,7 +294,7 @@ const SuperAdminPage = () => {
     },
     headerTitle: {
       color: '#db2777',
-      fontSize: '1.75rem',
+      fontSize: '1.25rem',
       margin: 0,
       fontWeight: '700',
     },
@@ -506,11 +506,11 @@ const SuperAdminPage = () => {
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                              <div style={{ fontWeight: 700 }}>{u.name || u.email}</div>
-                              <div style={{ color: u.userId === effectiveSelectedUserId ? 'rgba(255,255,255,0.9)' : '#6b7280', fontSize: 12 }}>{u.email}</div>
+                              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{u.name || u.email}</div>
+                              <div style={{ color: u.userId === effectiveSelectedUserId ? 'rgba(255,255,255,0.9)' : '#6b7280', fontSize: '0.8rem' }}>{u.email}</div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: 12, color: u.userId === effectiveSelectedUserId ? 'rgba(255,255,255,0.95)' : '#374151' }}>{(u.hostels || []).length} hostels</div>
+                              <div style={{ fontSize: '0.8rem', color: u.userId === effectiveSelectedUserId ? 'rgba(255,255,255,0.95)' : '#374151' }}>{(u.hostels || []).length} hostels</div>
                             </div>
                           </div>
                         </div>
@@ -528,8 +528,8 @@ const SuperAdminPage = () => {
                     <div style={{ background: 'white', borderRadius: 12, padding: 16, boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <h2 style={{ margin: 0, color: '#111827' }}>{selectedUser.name || selectedUser.email}</h2>
-                          <p style={{ marginTop: 6, color: '#6b7280' }}>{selectedUser.email}</p>
+                          <h2 style={{ margin: 0, color: '#111827', fontSize: '1.1rem' }}>{selectedUser.name || selectedUser.email}</h2>
+                          <p style={{ marginTop: 6, color: '#6b7280', fontSize: '0.9rem' }}>{selectedUser.email}</p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <input placeholder="Search students..." value={studentSearchTerm} onChange={(e) => setStudentSearchTerm(e.target.value)} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #e6e6e6' }} />
@@ -560,11 +560,11 @@ const SuperAdminPage = () => {
                               <div key={hostel.hostelId} style={{ border: '1px solid #f3f3f3', borderRadius: 10, padding: 12, background: '#ffffff' }}>
                                 <div style={styles.hostelHeader} onClick={() => toggleHostelExpand(selectedUser.userId, hostel.hostelId)}>
                                   <div>
-                                    <h4 style={{ margin: 0 }}>{hostel.name}</h4>
-                                    <div style={{ color: '#6b7280', fontSize: 13 }}>Address: {hostel.address || 'N/A'}</div>
+                                    <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{hostel.name}</h4>
+                                    <div style={{ color: '#6b7280', fontSize: '0.85rem' }}>Address: {hostel.address || 'N/A'}</div>
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <div style={{ color: '#6b7280', fontSize: 13 }}>{(hostel.students || []).length} students</div>
+                                    <div style={{ color: '#6b7280', fontSize: '0.85rem' }}>{(hostel.students || []).length} students</div>
                                     <button style={styles.expandBtn} onClick={(e) => { e.stopPropagation(); toggleHostelExpand(selectedUser.userId, hostel.hostelId); }} aria-label={isOpen ? 'Collapse hostel' : 'Expand hostel'}>
                                       {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                                     </button>
@@ -577,11 +577,11 @@ const SuperAdminPage = () => {
                                       if (!studentQuery) return true;
                                       return (s.studentName || '').toLowerCase().includes(studentQuery) || ((s.email || '').toLowerCase().includes(studentQuery)) || ((s.studentId || '').toString().toLowerCase().includes(studentQuery));
                                     }).map(student => (
-                                      <div key={student.studentId} style={{ padding: 10, borderRadius: 8, background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <div key={student.studentId} style={{ padding: 10, borderRadius: 8, background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
                                         <div>
                                           <div style={{ fontWeight: 700 }}>{student.studentName}</div>
                                         </div>
-                                        <div style={{ minWidth: 240 }}>
+                                        <div style={{ minWidth: 240, fontSize: '0.85rem' }}>
                                           {
                                             (() => {
                                               const key = `${selectedUser.userId}-${hostel.hostelId}-${student.studentId}`;
