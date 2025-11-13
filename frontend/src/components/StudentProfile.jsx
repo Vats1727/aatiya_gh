@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Download, Loader2, Upload, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import StudentPayments from './StudentPayments';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import { renderStudentPrintHtml } from '../utils/printTemplate';
-import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -15,36 +13,13 @@ const StudentProfile = () => {
   const location = useLocation();
 
   const [student, setStudent] = useState(location.state?.student || null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(new URLSearchParams(location.search).get('tab') || 'profile');
   const [docOptions, setDocOptions] = useState([]);
   const [docSelection, setDocSelection] = useState('NONE');
   const [docOtherValue, setDocOtherValue] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
   const [previewFee, setPreviewFee] = useState('');
-  const [hostels, setHostels] = useState([]);
-  const [error, setError] = useState(null);
-
-  // Fetch hostels from Firestore
-  useEffect(() => {
-    const fetchHostels = async () => {
-      try {
-        const hostelsRef = collection(db, 'hostels');
-        const snapshot = await getDocs(hostelsRef);
-        const hostelsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setHostels(hostelsData);
-      } catch (err) {
-        console.error('Error fetching hostels:', err);
-        setError('Failed to load hostels. Please try again.');
-      }
-    };
-
-    fetchHostels();
-  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -54,7 +29,6 @@ const StudentProfile = () => {
         const base = ['NONE', 'AADHAR CARD'];
         setDocOptions(Array.from(new Set([...base, ...opts])));
         setPreviewFee(student.appliedFee || student.monthlyFee || '');
-        setLoading(false);
         return;
       }
 
@@ -252,28 +226,7 @@ const StudentProfile = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div style={styles.loadingContainer}>
-        <Loader2 size={32} className="animate-spin" />
-        <p>Loading student data...</p>
-      </div>
-    );
-  }
-
-  if (!student) {
-    return (
-      <div style={styles.errorContainer}>
-        <AlertCircle size={48} color="#ef4444" />
-        <h2>Student Not Found</h2>
-        <p>The requested student record could not be found.</p>
-        <button onClick={() => navigate(-1)} style={styles.backButton}>
-          <ArrowLeft size={18} />
-          <span>Go Back</span>
-        </button>
-      </div>
-    );
-  }
+  if (loading || !student) return <div style={styles.container}><div style={styles.loading}>Loading...</div></div>;
 
   const isActive = student.status === 'approved';
 
@@ -281,114 +234,40 @@ const StudentProfile = () => {
     <div style={styles.container}>
       {/* Header with back button */}
       <div style={styles.header}>
-        <div style={styles.headerContent}>
-          <button onClick={close} style={styles.backButton}>
-            <ArrowLeft size={18} />
-            <span>Back to Students</span>
+        <button onClick={close} style={styles.backButton}>
+          <ArrowLeft size={18} />
+          <span>Back to Students</span>
+        </button>
+
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 6 }}>
+          <h1 style={styles.title}>{student.studentName || student.name || 'Student Profile'}</h1>
+
+          {/* Inline details moved to header (exclude duplicate student name) */}
+          <div style={styles.headerDetails}>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Mobile</div><div style={styles.valueSmall}>{student.mobile1 || '-'}</div></div>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Father's Name</div><div style={styles.valueSmall}>{student.fatherName || '-'}</div></div>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Hostel</div><div style={styles.valueSmall}>{student.hostelName || student.hostel?.name || student.hostel || student.hostelNameEn || student.hostelNameHi || '-'}</div></div>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Monthly Fee</div><div style={styles.valueSmall}><input type="number" value={previewFee || ''} onChange={(e) => setPreviewFee(e.target.value)} style={{ width: 120, padding: '6px 8px', borderRadius: 6, border: '1px solid #e5e7eb' }} /></div></div>
+            <div style={styles.headerDetailItem}><div style={styles.label}>Status</div><div style={{ ...styles.statusBadge, ...(student.status === 'approved' ? styles.statusActive : student.status === 'rejected' ? styles.statusRejected : {}) }}>{student.status ? (student.status === 'approved' ? 'Active' : student.status === 'rejected' ? 'Rejected' : student.status) : 'Pending'}</div></div>
+          </div>
+        </div>
+
+        <div style={styles.headerActions}>
+          {!isActive && (
+            <button onClick={handleAccept} style={{ ...styles.button, ...styles.acceptButton }}>
+              Accept
+            </button>
+          )}
+          <button onClick={handleSave} style={{ ...styles.button, ...styles.saveButton }}>
+            Save
           </button>
-
-          <div style={styles.headerMain}>
-            <div style={styles.headerInfo}>
-              <h1 style={styles.title}>
-                {student.studentName || student.name || 'Student Profile'}
-              </h1>
-              <div style={styles.headerMeta}>
-                <span style={styles.statusBadge}>
-                  {student.status === 'approved' ? 'Active' : 
-                   student.status === 'rejected' ? 'Rejected' : 
-                   student.status || 'Pending'}
-                </span>
-                <span style={styles.idBadge}>ID: {student.studentId || studentId}</span>
-              </div>
-            </div>
-
-            <div style={styles.headerActions}>
-              <div style={styles.actionGroup}>
-                <label style={styles.feeInputContainer}>
-                  <span style={styles.feeLabel}>Monthly Fee ({student.appliedFeeCurrency || 'INR'})</span>
-                  <input 
-                    type="number" 
-                    value={previewFee} 
-                    onChange={(e) => setPreviewFee(e.target.value)}
-                    style={styles.feeInput}
-                    min="0"
-                    step="100"
-                  />
-                </label>
-              </div>
-              
-              <div style={styles.actionButtons}>
-                {!isActive && (
-                  <button 
-                    onClick={handleAccept} 
-                    disabled={saving}
-                    style={{ ...styles.button, ...styles.acceptButton }}
-                  >
-                    {saving ? 'Processing...' : 'Approve'}
-                  </button>
-                )}
-                <button 
-                  onClick={handleSave} 
-                  disabled={saving}
-                  style={{ ...styles.button, ...styles.saveButton }}
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : 'Save'}
-                </button>
-                <button 
-                  onClick={handleDownload} 
-                  style={styles.iconButton}
-                  title="Download PDF"
-                >
-                  <Download size={18} />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Info Bar */}
-          <div style={styles.quickInfo}>
-            <div style={styles.quickInfoItem}>
-              <span style={styles.quickInfoLabel}>Mobile</span>
-              <span style={styles.quickInfoValue}>{student.mobile1 || '-'}</span>
-            </div>
-            <div style={styles.quickInfoDivider} />
-            <div style={styles.quickInfoItem}>
-              <span style={styles.quickInfoLabel}>Father</span>
-              <span style={styles.quickInfoValue}>{student.fatherName || '-'}</span>
-            </div>
-            <div style={styles.quickInfoDivider} />
-            <div style={styles.quickInfoItem}>
-              <span style={styles.quickInfoLabel}>Hostel</span>
-              <select 
-                value={student.hostelId || ''}
-                onChange={(e) => {
-                  const selectedHostel = hostels.find(h => h.id === e.target.value);
-                  if (selectedHostel) {
-                    setStudent(prev => ({
-                      ...prev,
-                      hostelId: selectedHostel.id,
-                      hostelName: selectedHostel.name,
-                      monthlyFee: selectedHostel.monthlyFee || prev.monthlyFee
-                    }));
-                    setPreviewFee(selectedHostel.monthlyFee || previewFee);
-                  }
-                }}
-                style={styles.hostelSelect}
-                disabled={saving}
-              >
-                {hostels.map(hostel => (
-                  <option key={hostel.id} value={hostel.id}>
-                    {hostel.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <button onClick={close} style={{ ...styles.button, ...styles.closeButton }}>
+            Close
+          </button>
+          <button onClick={handleDownload} style={{ ...styles.downloadHeaderButton, marginLeft: 8 }}>
+            <Download size={18} />
+            <span>PDF</span>
+          </button>
         </div>
       </div>
 
@@ -442,61 +321,32 @@ const StudentProfile = () => {
         {activeTab === 'documents' && (
           <div>
             <h3 style={styles.tabTitle}>Upload Documents ({Array.isArray(student.documents) ? `${student.documents.length} document${student.documents.length !== 1 ? 's' : ''}` : '0 documents'})</h3>
-            
-            {/* Upload Control Row: Dropdown | Upload | Preview */}
-            <div style={styles.docControlsRow}>
+            <div style={styles.docControls}>
               <select value={docSelection} onChange={(e) => setDocSelection(e.target.value)} style={styles.docSelect}>
                 {(docOptions || ['NONE','AADHAR CARD']).map(opt => (<option key={opt} value={opt}>{opt}</option>))}
                 <option value="__ADD_OTHER__">Others (add)</option>
               </select>
-
+              {docSelection === '__ADD_OTHER__' && (
+                <div style={styles.addOtherContainer}>
+                  <input value={docOtherValue} onChange={(e) => setDocOtherValue(e.target.value)} placeholder="Enter document name" style={styles.docInput} />
+                  <button onClick={() => addCustomDocOption(docOtherValue)} style={styles.button}>Add</button>
+                </div>
+              )}
               {(docSelection && docSelection !== 'NONE' && docSelection !== '__ADD_OTHER__') && (
                 <label style={styles.fileUploadLabel}>
-                  <Upload size={16} style={{ marginRight: '0.5rem' }} />
-                  Upload File
+                  Upload
                   <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleDocumentUpload(f); e.target.value = ''; }} style={{ display: 'none' }} />
                 </label>
               )}
-
-              {(docSelection && docSelection !== 'NONE' && docSelection !== '__ADD_OTHER__') && (
-                <button 
-                  style={styles.previewButton}
-                  onClick={() => {
-                    const docs = (student.documents || []).filter(d => d.type === docSelection);
-                    if (docs.length > 0) setPreviewImage(docs[docs.length - 1].dataUrl);
-                  }}
-                >
-                  Preview
-                </button>
-              )}
             </div>
 
-            {/* "Others" Input Row */}
-            {docSelection === '__ADD_OTHER__' && (
-              <div style={styles.addOtherRow}>
-                <input value={docOtherValue} onChange={(e) => setDocOtherValue(e.target.value)} placeholder="Enter document name" style={styles.docInput} />
-                <button onClick={() => addCustomDocOption(docOtherValue)} style={{ ...styles.button, padding: '0.625rem 1rem' }}>Add Type</button>
-              </div>
-            )}
-
-            {/* Add New Document Button */}
-            <div style={styles.addNewDocRow}>
-              <button 
-                onClick={() => setDocSelection('NONE')} 
-                style={styles.addNewDocButton}
-              >
-                + Add New Document
-              </button>
-            </div>
-
-            {/* Documents Grid */}
             <div style={styles.docGrid}>
               {Array.isArray(student.documents) && student.documents.length > 0 ? (
                 student.documents.map(doc => (
                   <div key={doc.id} style={styles.docItem}>
-                    <div style={styles.docLabel}>{doc.type}</div>
                     <img src={doc.dataUrl} alt={doc.type} style={styles.docImage} onClick={() => setPreviewImage(doc.dataUrl)} />
                     <button onClick={() => handleDeleteDocument(doc.id)} style={styles.docDeleteBtn}>×</button>
+                    <div style={styles.docLabel}>{doc.type}</div>
                   </div>
                 ))
               ) : (
@@ -526,219 +376,108 @@ export default StudentProfile;
 const styles = {
   container: {
     minHeight: '100vh',
-    backgroundColor: '#f8fafc',
+    background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
     padding: '1.5rem',
     boxSizing: 'border-box',
   },
-  loadingContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '60vh',
-    gap: '1rem',
-    color: '#64748b',
-  },
-  errorContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '60vh',
-    gap: '1rem',
-    textAlign: 'center',
-    padding: '2rem',
-    '& h2': {
-      color: '#1e293b',
-      margin: '0.5rem 0',
-    },
-    '& p': {
-      color: '#64748b',
-      marginBottom: '1.5rem',
-    },
-  },
   header: {
     background: 'white',
-    borderRadius: '1rem',
-    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.08)',
+    padding: '1.25rem 1.5rem',
+    borderRadius: '0.9rem',
+    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
     marginBottom: '1.5rem',
-    overflow: 'hidden',
-    position: 'relative',
-    border: '1px solid #e2e8f0',
-  },
-  headerContent: {
-    padding: '1.5rem 2rem 0',
-  },
-  headerMain: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '1rem',
-    flexWrap: 'wrap',
-    gap: '1rem',
-  },
-  headerInfo: {
-    flex: 1,
-    minWidth: '300px',
-  },
-  headerMeta: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
-    marginTop: '0.5rem',
-  },
-  idBadge: {
-    fontSize: '0.75rem',
-    color: '#64748b',
-    backgroundColor: '#f1f5f9',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '0.375rem',
+    justifyContent: 'space-between',
+    gap: '1rem',
+    position: 'relative',
+    zIndex: 10,
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '4px',
+      background: 'linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%)',
+      borderTopLeftRadius: '0.9rem',
+      borderTopRightRadius: '0.9rem',
+    },
   },
   backButton: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.5rem',
-    background: 'white',
+    background: '#f8fafc',
     border: '1px solid #e2e8f0',
-    padding: '0.5rem 1rem',
-    borderRadius: '0.5rem',
+    padding: '0.5rem 0.9rem',
+    borderRadius: '0.6rem',
     cursor: 'pointer',
-    color: '#475569',
+    color: '#4b5563',
     fontWeight: '500',
     fontSize: '0.875rem',
     transition: 'all 0.2s ease',
-    marginBottom: '1rem',
     '&:hover': {
-      background: '#f8fafc',
+      background: '#f1f5f9',
       borderColor: '#cbd5e1',
       transform: 'translateY(-1px)',
-      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
     },
   },
   title: {
     fontSize: '1.5rem',
     fontWeight: '700',
-    color: '#1e293b',
+    color: '#6b21a8',
     margin: 0,
-    lineHeight: '1.2',
+    flex: 1,
   },
-  quickInfo: {
-    display: 'flex',
-    backgroundColor: '#f8fafc',
-    borderTop: '1px solid #e2e8f0',
-    marginTop: '1.5rem',
-    padding: '1rem 2rem',
-    gap: '1.5rem',
-    flexWrap: 'wrap',
+  downloadHeaderButton: {
+    display: 'inline-flex',
     alignItems: 'center',
+    gap: '0.5rem',
+    background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+    color: 'white',
+    border: 'none',
+    padding: '0.5rem 1rem',
+    borderRadius: '0.5rem',
+    cursor: 'pointer',
+    fontWeight: '500',
+    fontSize: '0.875rem',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      opacity: 0.95,
+      transform: 'translateY(-1px)',
+      boxShadow: '0 4px 12px -2px rgba(139, 92, 246, 0.3)',
+    },
   },
-  quickInfoItem: {
+  headerDetails: {
+    display: 'flex',
+    gap: '1.25rem',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    paddingTop: 6,
+  },
+  headerDetailItem: {
     display: 'flex',
     flexDirection: 'column',
-    minWidth: '120px',
+    minWidth: 140,
+    marginRight: 8,
   },
-  quickInfoLabel: {
-    fontSize: '0.75rem',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    marginBottom: '0.25rem',
-    fontWeight: '600',
-  },
-  quickInfoValue: {
-    fontSize: '0.95rem',
-    color: '#1e293b',
-    fontWeight: '500',
-  },
-  quickInfoDivider: {
-    width: '1px',
-    height: '2rem',
-    backgroundColor: '#e2e8f0',
-    margin: '0 0.25rem',
+  valueSmall: {
+    fontSize: '1rem',
+    fontWeight: 700,
+    color: '#111827',
   },
   headerActions: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '0.75rem',
-    alignItems: 'flex-end',
-    minWidth: '280px',
-  },
-  actionGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%',
-  },
-  feeInputContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%',
-    marginBottom: '0.5rem',
-  },
-  feeLabel: {
-    fontSize: '0.75rem',
-    color: '#64748b',
-    marginBottom: '0.25rem',
-    fontWeight: '500',
-  },
-  feeInput: {
-    padding: '0.5rem 0.75rem',
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.375rem',
-    fontSize: '0.95rem',
-    width: '100%',
-    boxSizing: 'border-box',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
-    '&:focus': {
-      outline: 'none',
-      borderColor: '#8b5cf6',
-      boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.2)',
-    },
-  },
-  hostelSelect: {
-    padding: '0.5rem 0.75rem',
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.375rem',
-    fontSize: '0.95rem',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    minWidth: '200px',
-    '&:focus': {
-      outline: 'none',
-      borderColor: '#8b5cf6',
-      boxShadow: '0 0 0 3px rgba(139, 92, 246, 0.2)',
-    },
-    '&:disabled': {
-      backgroundColor: '#f8fafc',
-      cursor: 'not-allowed',
-    },
-  },
-  actionButtons: {
-    display: 'flex',
     gap: '0.5rem',
     alignItems: 'center',
-  },
-  iconButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '36px',
-    height: '36px',
-    borderRadius: '0.375rem',
-    border: '1px solid #e2e8f0',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      backgroundColor: '#f8fafc',
-      borderColor: '#cbd5e1',
-    },
+    flexShrink: 0,
   },
   card: {
     backgroundColor: 'white',
     borderRadius: '0.75rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-    border: '1px solid #e2e8f0',
-    padding: '1.75rem 2rem',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    padding: '1.5rem',
     marginBottom: '1.5rem',
   },
   detailsGrid: {
@@ -761,36 +500,21 @@ const styles = {
     fontWeight: '500',
   },
   statusBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.375rem',
-    padding: '0.375rem 0.75rem',
+    display: 'inline-block',
+    padding: '0.5rem 0.75rem',
     borderRadius: '9999px',
-    backgroundColor: '#f1f5f9',
-    color: '#334155',
-    fontWeight: 500,
+    backgroundColor: '#f3f4f6',
+    color: '#374151',
+    fontWeight: 600,
     fontSize: '0.75rem',
-    '&::before': {
-      content: '""',
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      backgroundColor: '#94a3b8',
-    },
   },
   statusActive: {
-    backgroundColor: '#f0fdf4',
-    color: '#166534',
-    '&::before': {
-      backgroundColor: '#22c55e',
-    },
+    backgroundColor: '#ecfccb',
+    color: '#365314',
   },
   statusRejected: {
-    backgroundColor: '#fef2f2',
-    color: '#991b1b',
-    '&::before': {
-      backgroundColor: '#ef4444',
-    },
+    backgroundColor: '#fee2e2',
+    color: '#7f1d1d',
   },
   actionButtons: {
     display: 'flex',
@@ -800,77 +524,60 @@ const styles = {
     borderTop: '1px solid #e5e7eb',
   },
   button: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem 1rem',
+    padding: '0.625rem 1rem',
     borderRadius: '0.5rem',
     border: 'none',
     cursor: 'pointer',
     fontWeight: '500',
     fontSize: '0.875rem',
     transition: 'all 0.2s ease',
-    '&:disabled': {
-      opacity: '0.7',
-      cursor: 'not-allowed',
-      transform: 'none !important',
-    },
   },
   acceptButton: {
     background: '#10b981',
     color: 'white',
-    '&:hover:not(:disabled)': {
-      background: '#0d9f6e',
+    '&:hover': {
+      opacity: 0.9,
       transform: 'translateY(-1px)',
-      boxShadow: '0 2px 8px -1px rgba(16, 185, 129, 0.3)',
     },
   },
   saveButton: {
     background: '#3b82f6',
     color: 'white',
-    '&:hover:not(:disabled)': {
-      background: '#2563eb',
+    '&:hover': {
+      opacity: 0.9,
       transform: 'translateY(-1px)',
-      boxShadow: '0 2px 8px -1px rgba(59, 130, 246, 0.3)',
     },
   },
   closeButton: {
-    background: '#f8fafc',
-    color: '#475569',
-    border: '1px solid #e2e8f0',
-    '&:hover:not(:disabled)': {
-      background: '#f1f5f9',
-      borderColor: '#cbd5e1',
+    background: '#f3f4f6',
+    color: '#374151',
+    border: '1px solid #e5e7eb',
+    '&:hover': {
+      background: '#e5e7eb',
     },
   },
   tabsContainer: {
     display: 'flex',
-    gap: '0.25rem',
+    gap: '0.5rem',
     marginBottom: '1.5rem',
-    padding: '0 2rem',
-    borderBottom: '1px solid #e2e8f0',
+    borderBottom: '2px solid #e5e7eb',
   },
   tabButton: {
-    padding: '0.75rem 1.25rem',
+    padding: '0.75rem 1rem',
     background: 'transparent',
     border: 'none',
-    borderBottom: '2px solid transparent',
-    color: '#64748b',
+    borderBottom: '3px solid transparent',
+    color: '#6b7280',
     fontWeight: '500',
-    fontSize: '0.9375rem',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
-    position: 'relative',
-    marginBottom: '-1px',
     '&:hover': {
-      color: '#4f46e5',
+      color: '#374151',
     },
   },
   tabActive: {
-    color: '#4f46e5',
-    borderBottomColor: '#4f46e5',
-    fontWeight: '600',
+    color: '#8b5cf6',
+    borderBottomColor: '#8b5cf6',
   },
   tabTitle: {
     fontSize: '1.125rem',
@@ -905,48 +612,6 @@ const styles = {
     marginBottom: '1.5rem',
     flexWrap: 'wrap',
   },
-  docControlsRow: {
-    display: 'flex',
-    gap: '1rem',
-    alignItems: 'center',
-    marginBottom: '1rem',
-    flexWrap: 'wrap',
-    padding: '1rem',
-    backgroundColor: '#f8fafc',
-    borderRadius: '0.5rem',
-    border: '1px solid #e5e7eb',
-  },
-  addOtherRow: {
-    display: 'flex',
-    gap: '0.75rem',
-    alignItems: 'center',
-    marginBottom: '1rem',
-    padding: '1rem',
-    backgroundColor: '#fef3c7',
-    borderRadius: '0.5rem',
-    border: '1px solid #fcd34d',
-  },
-  addNewDocRow: {
-    display: 'flex',
-    justifyContent: 'center',
-    marginBottom: '1.5rem',
-  },
-  addNewDocButton: {
-    padding: '0.75rem 1.5rem',
-    background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.5rem',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '0.9375rem',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 2px 4px rgba(124, 58, 237, 0.2)',
-    '&:hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: '0 4px 8px rgba(124, 58, 237, 0.3)',
-    },
-  },
   docSelect: {
     padding: '0.625rem 0.875rem',
     borderRadius: '0.5rem',
@@ -954,8 +619,6 @@ const styles = {
     backgroundColor: 'white',
     fontSize: '0.875rem',
     cursor: 'pointer',
-    flex: '0 0 auto',
-    minWidth: '150px',
   },
   addOtherContainer: {
     display: 'flex',
@@ -966,69 +629,28 @@ const styles = {
     borderRadius: '0.5rem',
     border: '1px solid #e5e7eb',
     fontSize: '0.875rem',
-    flex: '1',
-    minWidth: '200px',
   },
   fileUploadLabel: {
     padding: '0.625rem 1rem',
-    background: '#3b82f6',
-    color: 'white',
+    background: '#f3f4f6',
     borderRadius: '0.5rem',
     cursor: 'pointer',
     fontWeight: '500',
     fontSize: '0.875rem',
-    border: '1px solid #2563eb',
+    border: '1px solid #d1d5db',
     transition: 'all 0.2s ease',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    whiteSpace: 'nowrap',
     '&:hover': {
-      background: '#2563eb',
-    },
-  },
-  previewButton: {
-    padding: '0.625rem 1rem',
-    background: '#8b5cf6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.5rem',
-    cursor: 'pointer',
-    fontWeight: '500',
-    fontSize: '0.875rem',
-    transition: 'all 0.2s ease',
-    whiteSpace: 'nowrap',
-    '&:hover': {
-      background: '#7c3aed',
+      background: '#e5e7eb',
     },
   },
   docGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-    gap: '1.5rem',
-    padding: '1rem',
-    backgroundColor: '#f8fafc',
-    borderRadius: '0.5rem',
-    border: '1px solid #e5e7eb',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+    gap: '1rem',
   },
   docItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '0.5rem',
     position: 'relative',
-  },
-  docLabel: {
-    fontSize: '0.8125rem',
-    fontWeight: '600',
-    color: '#374151',
     textAlign: 'center',
-    width: '100%',
-    wordBreak: 'break-word',
-    minHeight: '2rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   docImage: {
     width: '100%',
