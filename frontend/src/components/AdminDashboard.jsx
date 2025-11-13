@@ -635,6 +635,28 @@ const fetchHostels = async () => {
       return;
     }
 
+    // Validate duplicate hostel name for this user (case-insensitive, trimmed).
+    try {
+      const normalized = String(newHostel.name || '').trim().toLowerCase();
+      if (normalized) {
+        const duplicate = (hostels || []).some(h => {
+          try {
+            const hName = String(h.name || '').trim().toLowerCase();
+            // If editing, allow keeping the same name for the same hostel id
+            if (newHostel.id) return hName === normalized && String(h.id) !== String(newHostel.id);
+            return hName === normalized;
+          } catch (e) { return false; }
+        });
+        if (duplicate) {
+          setError('You already have a hostel with this name. Please choose a different name.');
+          return;
+        }
+      }
+    } catch (e) {
+      // non-fatal validation error; continue and let backend handle any conflict
+      console.warn('Hostel name uniqueness check failed', e);
+    }
+
     try {
       const authHeader = getAuthHeader();
       if (!authHeader) {
