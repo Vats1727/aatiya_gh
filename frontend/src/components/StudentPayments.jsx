@@ -84,7 +84,9 @@ const StudentPayments = () => {
     amount: '',
     paymentMode: 'cash',
     remarks: '',
-    type: 'credit' // credit for payment received, debit for refund/adjustment
+    type: 'credit', // credit for payment received, debit for refund/adjustment
+    penaltyAmount: 50,
+    penaltyCount: 0
   });
 
   useEffect(() => {
@@ -206,8 +208,9 @@ const StudentPayments = () => {
       const token = localStorage.getItem('token');
       if (!token) return alert('Not authenticated');
 
-      // Ensure amount is a clean integer
-      const amount = parseInt(newPayment.amount, 10) || 0;
+  // Ensure amount is a clean integer (round to nearest whole number)
+  const rawAmount = Number(newPayment.amount);
+  const amount = Number.isFinite(rawAmount) ? Math.round(rawAmount) : 0;
       if (amount <= 0) return alert('Please enter a valid amount greater than 0');
       
       const type = newPayment.type || 'credit';
@@ -238,18 +241,43 @@ const StudentPayments = () => {
         amount,
         type,
         timestamp: payload.timestamp,
+        paymentMode: newPayment.paymentMode,
+        remarks: newPayment.remarks
       };
       setPayments(prev => [newEntry, ...prev]);
       setNewPayment({
         amount: '',
         paymentMode: 'cash',
         remarks: '',
-        type: 'credit'
+        type: 'credit',
+        penaltyAmount: 50,
+        penaltyCount: 0
       });
 
-      // Do not mutate student's currentBalance here. The UI derives balance
-      // from `usedFee` and the `payments` array, so updating `payments` above
-      // is sufficient and avoids desyncs.
+      // If penalty needs to be applied, create a debit entry for the penalty
+      try {
+        const pCount = Math.max(0, Math.round(Number(newPayment.penaltyCount || 0)));
+        const pAmt = Number(newPayment.penaltyAmount || 0) || 0;
+        if (pCount > 0 && pAmt > 0) {
+          const penaltyTotal = pAmt * pCount;
+          const penaltyPayload = { amount: penaltyTotal, type: 'debit', paymentMode: 'penalty', remarks: `Penalty x${pCount}`, timestamp: new Date().toISOString() };
+          const penRes = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(penaltyPayload)
+          });
+          if (penRes.ok) {
+            const penData = await penRes.json();
+            const penEntry = { ...(penData || {}), amount: penaltyTotal, type: 'debit', paymentMode: 'penalty', remarks: `Penalty x${pCount}`, timestamp: penaltyPayload.timestamp };
+            setPayments(prev => [penEntry, ...prev]);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to apply penalty entry', e);
+      }
 
     } catch (err) {
       console.error('Failed to add payment:', err);
@@ -591,7 +619,7 @@ const StudentPayments = () => {
                 </div>
 
                 <div style={styles.formGroup}>
-                  <label style={styles.label}>Remarks</label>
+                  <label style={styles.label}>Mode</label>
                   <select
                     value={newPayment.paymentMode}
                     onChange={(e) => setNewPayment(prev => ({ ...prev, paymentMode: e.target.value }))}
@@ -612,6 +640,17 @@ const StudentPayments = () => {
                     style={{ ...styles.input, minHeight: '80px' }}
                     placeholder="Add any additional notes here..."
                   />
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <label style={styles.label}>Penalty Amount</label>
+                    <input type="number" min="0" step="1" value={newPayment.penaltyAmount} onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyAmount: e.target.value }))} style={{ ...styles.input, width: 160 }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <label style={styles.label}>Penalty Count</label>
+                    <input type="number" min="0" step="1" value={newPayment.penaltyCount} onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyCount: e.target.value }))} style={{ ...styles.input, width: 160 }} />
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 8 }}>
