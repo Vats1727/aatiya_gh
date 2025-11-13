@@ -377,6 +377,17 @@ const StudentProfile = () => {
     setSelectedDocForPreview(null);
   };
 
+  const handleSavePdf = async () => {
+    if (!student) return;
+    
+    try {
+      await downloadStudentPdf(student);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
+
   if (loading || !student) return <div style={styles.container}><div style={styles.loading}>Loading...</div></div>;
 
   const isActive = student.status === 'approved';
