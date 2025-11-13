@@ -167,6 +167,16 @@ const StudentsPage = () => {
     setDocOptions(prev => ({ ...opts, ...prev }));
   }, [students]);
 
+  // Ensure per-student selection defaults to NONE to avoid uncontrolled layout
+  useEffect(() => {
+    const sel = {};
+    students.forEach(s => {
+      sel[s.id] = docSelections[s.id] || 'NONE';
+    });
+    setDocSelections(prev => ({ ...sel, ...prev }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [students]);
+
   // If a highlight query param is present (from global search), scroll to and highlight that row
   const location = useLocation();
   useEffect(() => {
@@ -400,9 +410,9 @@ const StudentsPage = () => {
           uploadedAt: new Date().toISOString()
         };
 
-        // Merge with existing documents locally
-        const existing = Array.isArray(student.documents) ? student.documents.slice() : [];
-        existing.push(newDoc);
+  // Merge with existing documents locally
+  const existing = Array.isArray(student.documents) ? student.documents.slice() : [];
+  existing.push(newDoc);
 
         // Persist via existing student PUT endpoint
         const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, {
@@ -420,6 +430,26 @@ const StudentsPage = () => {
     } catch (err) {
       console.error('Document upload failed', err);
       alert('Failed to upload document');
+    }
+  };
+
+  // Delete a specific document from a student
+  const handleDeleteDocument = async (student, docId) => {
+    try {
+      if (!confirm('Delete this document?')) return;
+      const existing = Array.isArray(student.documents) ? student.documents.filter(d => d.id !== docId) : [];
+      const token = localStorage.getItem('token');
+      if (!token) return alert('Not authenticated');
+      const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ documents: existing })
+      });
+      if (!resp.ok) throw new Error('Failed to delete document');
+      setStudents(prev => prev.map(s => s.id === student.id ? ({ ...s, documents: existing }) : s));
+    } catch (err) {
+      console.error('Failed to delete document', err);
+      alert('Failed to delete document');
     }
   };
 
@@ -875,11 +905,11 @@ const StudentsPage = () => {
                     <td style={styles.td}>
                       <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
                     </td>
-                    <td style={styles.td}>
-                      {/* Documents column: dropdown, optional other input, upload, previews */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <td style={{ ...styles.td, minWidth: 220, maxWidth: 320, verticalAlign: 'top' }}>
+                      {/* Documents column: constrained container to avoid table reflow */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 300, overflow: 'hidden' }}>
                         <select
-                          value={docSelections[student.id] || (docOptions[student.id] && docOptions[student.id][0]) || 'NONE'}
+                          value={docSelections[student.id] || 'NONE'}
                           onChange={(e) => {
                             const val = e.target.value;
                             if (val === '__ADD_OTHER__') {
@@ -889,7 +919,7 @@ const StudentsPage = () => {
                             }
                             handleDocSelection(student.id, val);
                           }}
-                          style={{ padding: '6px', borderRadius: 6 }}
+                          style={{ padding: '6px', borderRadius: 6, width: 160 }}
                         >
                           {(docOptions[student.id] || ['NONE','AADHAR CARD']).map(opt => (
                             <option key={opt} value={opt}>{opt}</option>
@@ -900,7 +930,7 @@ const StudentsPage = () => {
                         {/* If user chose to add other, show input to add label */}
                         {docSelections[student.id] === '__ADD_OTHER__' && (
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <input value={docOtherValue[student.id] || ''} onChange={(e) => setDocOtherValue(prev => ({ ...prev, [student.id]: e.target.value }))} placeholder="Enter other document name" style={{ flex: 1, padding: '6px', borderRadius: 6 }} />
+                            <input value={docOtherValue[student.id] || ''} onChange={(e) => setDocOtherValue(prev => ({ ...prev, [student.id]: e.target.value }))} placeholder="Enter other document name" style={{ flex: 1, padding: '6px', borderRadius: 6, width: 140 }} />
                             <button type="button" onClick={() => addCustomDocOption(student.id, docOtherValue[student.id] || '')} style={{ padding: '6px 8px' }}>Add</button>
                           </div>
                         )}
@@ -908,7 +938,7 @@ const StudentsPage = () => {
                         {/* Upload control shown when selection is not NONE */}
                         {(docSelections[student.id] && docSelections[student.id] !== 'NONE' && docSelections[student.id] !== '__ADD_OTHER__') && (
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleDocumentUpload(student, f); }} />
+                            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleDocumentUpload(student, f); }} style={{ width: 140 }} />
                           </div>
                         )}
 
@@ -916,8 +946,9 @@ const StudentsPage = () => {
                         {Array.isArray(student.documents) && student.documents.length > 0 && (
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
                             {student.documents.map(doc => (
-                              <div key={doc.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <div key={doc.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                 <img src={doc.dataUrl} alt={doc.type} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, cursor: 'pointer' }} onClick={() => setPreviewImage(doc.dataUrl)} />
+                                <button title="Delete" onClick={() => handleDeleteDocument(student, doc.id)} style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: 12, width: 20, height: 20, cursor: 'pointer', fontSize: 12 }}>×</button>
                                 <div style={{ fontSize: 11, color: '#374151', marginTop: 4 }}>{doc.type}</div>
                               </div>
                             ))}
