@@ -4,6 +4,7 @@ import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, Che
 import { renderStudentPrintHtml, renderRulesHtml } from '../utils/printTemplate';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import '../styles.css';
+import Spinner from './Spinner';
 
 // Common styles for consistent UI
 const commonStyles = {
@@ -840,7 +841,7 @@ const StudentsPage = () => {
   if (loading) {
     return (
       <div style={styles.container}>
-        <div style={styles.loading}>Loading...</div>
+        <Spinner />
       </div>
     );
   }

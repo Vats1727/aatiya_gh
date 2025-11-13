@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Download } from 'lucide-react';
 import StudentPayments from './StudentPayments';
+import Spinner from './Spinner';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import { renderStudentPrintHtml } from '../utils/printTemplate';
 
@@ -365,7 +366,7 @@ const StudentProfile = () => {
     }
   };
 
-  if (loading || !student) return <div style={styles.container}><div style={styles.loading}>Loading...</div></div>;
+  if (loading || !student) return <div style={styles.container}><Spinner /></div>;
 
   const isActive = student.status === 'approved';
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import Spinner from './components/Spinner';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 const StudentForm = React.lazy(() => import("./components/StudentForm"));
 const AdminLogin = React.lazy(() => import("./components/AdminLogin"));
@@ -42,7 +43,7 @@ const DashboardRoute = () => {
 
 export default function App() {
   return (
-    <React.Suspense fallback={<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh'}}>Loading...</div>}>
+    <React.Suspense fallback={<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh'}}><Spinner /></div>}>
       <Routes>
       {/* Public routes */}
       <Route path="/" element={<Navigate to="/admin" replace />} />

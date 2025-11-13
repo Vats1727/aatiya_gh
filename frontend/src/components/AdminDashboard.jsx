@@ -770,54 +770,67 @@ const fetchHostels = async () => {
   // Global search across all students and hostels
   const performGlobalSearch = async (searchQuery) => {
     if (!searchQuery.trim()) {
+      // clear and abort any ongoing request
       setGlobalSearchResults(null);
       setIsSearching(false);
       if (globalSearchTimerRef.current) { clearTimeout(globalSearchTimerRef.current); globalSearchTimerRef.current = null; }
+      try { if (globalSearchAbortRef.current) { globalSearchAbortRef.current.abort(); } } catch (e) {}
       return;
     }
 
-    setIsSearching(true);
+    // Begin search: cancel previous inflight requests, create a fresh AbortController
     try {
+      if (globalSearchAbortRef.current) {
+        try { globalSearchAbortRef.current.abort(); } catch (e) {}
+      }
+      const controller = new AbortController();
+      globalSearchAbortRef.current = controller;
+      setIsSearching(true);
+
       const token = localStorage.getItem('token');
-      if (!token) return;
-
-      const query = searchQuery.toLowerCase().trim();
-      
-      // Search hostels by name
-      const matchedHostels = uniqueHostels.filter(h => 
-        (h.name || '').toLowerCase().includes(query)
-      );
-
-      // Search for students across all hostels
-      const matchedStudents = [];
-      for (const hostel of uniqueHostels) {
-        try {
-          const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}/students`, {
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const students = data.data || [];
-            const hostelMatches = students.filter(s => 
-              (s.studentName || '').toLowerCase().includes(query) ||
-              (s.mobile1 || '').includes(query) ||
-              (s.applicationNumber || '').toString().includes(query) ||
-              (s.combinedId || '').toString().includes(query)
-            );
-            matchedStudents.push(...hostelMatches.map(s => ({ ...s, hostelId: hostel.id, hostelName: hostel.name })));
-          }
-        } catch (e) {
-          // Continue searching other hostels if one fails
-        }
+      if (!token) {
+        setIsSearching(false);
+        return;
       }
 
-      setGlobalSearchResults({
-        hostels: matchedHostels,
-        students: matchedStudents,
-        query
-      });
+      const query = searchQuery.toLowerCase().trim();
+
+      // Match hostels locally first
+      const matchedHostels = uniqueHostels.filter(h => (h.name || '').toLowerCase().includes(query));
+
+      // Parallelize student fetches for speed, respect AbortController
+      const fetchPromises = uniqueHostels.map(hostel =>
+        fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}/students`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          signal: controller.signal
+        })
+        .then(res => res.ok ? res.json().catch(() => null) : null)
+        .then(data => ({ hostel, data }))
+        .catch(err => ({ hostel, err }))
+      );
+
+      const results = await Promise.all(fetchPromises);
+
+      const matchedStudents = [];
+      for (const r of results) {
+        if (!r || !r.data) continue;
+        const students = r.data.data || r.data || [];
+        const hostelMatches = students.filter(s =>
+          (s.studentName || '').toLowerCase().includes(query) ||
+          String(s.mobile1 || '').includes(query) ||
+          String(s.applicationNumber || '').toLowerCase().includes(query) ||
+          String(s.combinedId || '').toLowerCase().includes(query)
+        );
+        matchedStudents.push(...hostelMatches.map(s => ({ ...s, hostelId: r.hostel.id, hostelName: r.hostel.name })));
+      }
+
+      setGlobalSearchResults({ hostels: matchedHostels, students: matchedStudents, query });
     } catch (err) {
-      console.error('Global search error:', err);
+      if (err && err.name === 'AbortError') {
+        // request was aborted - ignore
+      } else {
+        console.error('Global search error:', err);
+      }
     } finally {
       setIsSearching(false);
     }
@@ -825,6 +838,7 @@ const fetchHostels = async () => {
 
   // Handle global search input
   const globalSearchTimerRef = useRef(null);
+  const globalSearchAbortRef = useRef(null);
   const [isSearching, setIsSearching] = useState(false);
 
   const handleGlobalSearch = (query) => {
@@ -837,7 +851,7 @@ const fetchHostels = async () => {
     globalSearchTimerRef.current = setTimeout(() => {
       performGlobalSearch(query);
       globalSearchTimerRef.current = null;
-    }, 350);
+    }, 500);
   };
 
   // Inject responsive CSS media queries at document level
@@ -1354,9 +1368,8 @@ const fetchHostels = async () => {
               <input
                 type="search"
                 placeholder="Search any student or hostel across all hostels... (name, mobile, application number)"
-                value={isSearching ? 'Loading...' : globalSearchTerm}
+                value={globalSearchTerm}
                 onChange={(e) => handleGlobalSearch(e.target.value)}
-                disabled={isSearching}
                 style={{
                   ...styles.searchInput,
                   width: '100%',
@@ -1365,7 +1378,7 @@ const fetchHostels = async () => {
                 }}
               />
             </div>
-
+ 
             <div style={{
               position: 'absolute',
               right: 12,
@@ -1379,7 +1392,7 @@ const fetchHostels = async () => {
               fontWeight: 600,
               pointerEvents: 'none'
             }}>
-              {uniqueHostels.length} hostels
+              {isSearching ? 'Searching...' : `${uniqueHostels.length} hostels`}
             </div>
           </div>
           

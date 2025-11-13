@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Info } from 'lucide-react';
+import Spinner from './Spinner';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
@@ -259,7 +260,7 @@ const StudentPayments = () => {
   if (loading) {
     return (
       <div style={styles.container}>
-        <div style={styles.loading}>Loading...</div>
+        <Spinner />
       </div>
     );
   }
