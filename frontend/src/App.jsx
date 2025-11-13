@@ -1,14 +1,14 @@
 import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import StudentForm from "./components/StudentForm";
-import AdminLogin from "./components/AdminLogin";
-import AdminDashboard from "./components/AdminDashboard";
-import AdminRegister from "./components/AdminRegister";
-import StudentsPage from "./components/StudentsPage";
-import StudentPayments from "./components/StudentPayments";
-import StudentProfile from "./components/StudentProfile";
-import SubmissionSuccess from "./components/SubmissionSuccess";
-import SuperAdminPage from "./components/SuperAdminPage";
+const StudentForm = React.lazy(() => import("./components/StudentForm"));
+const AdminLogin = React.lazy(() => import("./components/AdminLogin"));
+const AdminDashboard = React.lazy(() => import("./components/AdminDashboard"));
+const AdminRegister = React.lazy(() => import("./components/AdminRegister"));
+const StudentsPage = React.lazy(() => import("./components/StudentsPage"));
+const StudentPayments = React.lazy(() => import("./components/StudentPayments"));
+const StudentProfile = React.lazy(() => import("./components/StudentProfile"));
+const SubmissionSuccess = React.lazy(() => import("./components/SubmissionSuccess"));
+const SuperAdminPage = React.lazy(() => import("./components/SuperAdminPage"));
 
 // Authentication wrapper
 const PrivateRoute = ({ children }) => {
@@ -42,7 +42,8 @@ const DashboardRoute = () => {
 
 export default function App() {
   return (
-    <Routes>
+    <React.Suspense fallback={<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh'}}>Loading...</div>}>
+      <Routes>
       {/* Public routes */}
       <Route path="/" element={<Navigate to="/admin" replace />} />
 
@@ -93,6 +94,7 @@ export default function App() {
 
       {/* Redirect all unknown routes to login */}
       <Route path="*" element={<Navigate to="/admin" replace />} />
-    </Routes>
+      </Routes>
+    </React.Suspense>
   );
 }
