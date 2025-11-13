@@ -555,10 +555,8 @@ const StudentPayments = () => {
           </div>
         </div>
 
-        <div style={styles.formSection}>
-          {/* <h3 style={styles.formTitle}>Payments</h3> */}
-          {showPaymentForm ? (
-            <div>
+        {showPaymentForm && (
+          <div style={styles.formSection}>
               <form onSubmit={handleSubmit} style={styles.form}>
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Amount</label>
@@ -602,8 +600,7 @@ const StudentPayments = () => {
                 </div>
               </form>
             </div>
-          ) : null}
-        </div>
+        )}
 
         {showHistory && (
           <div style={styles.historyModal}>
@@ -1141,6 +1138,122 @@ const styles = {
     '&:active': {
       transform: 'translateY(0)',
     },
+  },
+  historyModal: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10000,
+    padding: '1rem',
+    boxSizing: 'border-box',
+  },
+  historyContent: {
+    background: 'white',
+    borderRadius: '12px',
+    maxWidth: '90vw',
+    maxHeight: '85vh',
+    overflow: 'auto',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    padding: '2rem',
+    width: '100%',
+  },
+  historyHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1.5rem',
+    paddingBottom: '1rem',
+    borderBottom: '2px solid #e5e7eb',
+  },
+  closeButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '2rem',
+    cursor: 'pointer',
+    color: '#6b7280',
+    padding: 0,
+    lineHeight: 1,
+    transition: 'color 0.2s',
+    '&:hover': {
+      color: '#111827',
+    },
+  },
+  historySummary: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gap: '1rem',
+    marginBottom: '1.5rem',
+    padding: '1rem',
+    backgroundColor: '#f8fafc',
+    borderRadius: '8px',
+    border: '1px solid #e2e8f0',
+  },
+  summaryItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+  },
+  summaryLabel: {
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  summaryValue: {
+    fontSize: '1.25rem',
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  historyList: {
+    marginTop: '1.5rem',
+  },
+  noHistory: {
+    textAlign: 'center',
+    padding: '2rem',
+    color: '#6b7280',
+    fontSize: '0.875rem',
+  },
+  historyTableWrapper: {
+    overflowX: 'auto',
+  },
+  historyTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '0.875rem',
+  },
+  th: {
+    textAlign: 'left',
+    padding: '0.75rem',
+    fontWeight: '600',
+    color: '#4b5563',
+    borderBottom: '2px solid #e5e7eb',
+    backgroundColor: '#f9fafb',
+  },
+  paymentCardContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+  },
+  paymentCard: {
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    padding: '1rem',
+    backgroundColor: '#ffffff',
+  },
+  cardRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginBottom: '0.75rem',
+  },
+  cardLabel: {
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    color: '#6b7280',
+    flex: '0 0 auto',
   },
 };
 
