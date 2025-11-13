@@ -76,6 +76,8 @@ const AdminDashboard = () => {
   const [showAddHostel, setShowAddHostel] = useState(false);
   const [newHostel, setNewHostel] = useState({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: 0, monthlyFeeCurrency: 'INR' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+  const [globalSearchResults, setGlobalSearchResults] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const HOSTELS_PER_PAGE = 8;
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
@@ -480,9 +482,76 @@ const fetchHostels = async () => {
   }, [navigate]);
 
   // Helpers for search + pagination UI
-  const filteredHostels = hostels.filter(h => (h.name || '').toLowerCase().includes(searchTerm.toLowerCase().trim()));
+  // Deduplicate hostels by ID to avoid showing same hostel twice
+  const uniqueHostels = (() => {
+    const seen = new Set();
+    return hostels.filter(h => {
+      if (seen.has(h.id)) return false;
+      seen.add(h.id);
+      return true;
+    });
+  })();
+  
+  const filteredHostels = uniqueHostels.filter(h => (h.name || '').toLowerCase().includes(searchTerm.toLowerCase().trim()));
   const totalPages = Math.max(1, Math.ceil(filteredHostels.length / HOSTELS_PER_PAGE));
   const paginatedHostels = filteredHostels.slice((currentPage - 1) * HOSTELS_PER_PAGE, (currentPage - 1) * HOSTELS_PER_PAGE + HOSTELS_PER_PAGE);
+
+  // Global search across all students and hostels
+  const performGlobalSearch = async (searchQuery) => {
+    if (!searchQuery.trim()) {
+      setGlobalSearchResults(null);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const query = searchQuery.toLowerCase().trim();
+      
+      // Search hostels by name
+      const matchedHostels = uniqueHostels.filter(h => 
+        (h.name || '').toLowerCase().includes(query)
+      );
+
+      // Search for students across all hostels
+      const matchedStudents = [];
+      for (const hostel of uniqueHostels) {
+        try {
+          const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostel.id}/students`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const students = data.data || [];
+            const hostelMatches = students.filter(s => 
+              (s.studentName || '').toLowerCase().includes(query) ||
+              (s.mobile1 || '').includes(query) ||
+              (s.applicationNumber || '').toString().includes(query) ||
+              (s.combinedId || '').toString().includes(query)
+            );
+            matchedStudents.push(...hostelMatches.map(s => ({ ...s, hostelId: hostel.id, hostelName: hostel.name })));
+          }
+        } catch (e) {
+          // Continue searching other hostels if one fails
+        }
+      }
+
+      setGlobalSearchResults({
+        hostels: matchedHostels,
+        students: matchedStudents,
+        query
+      });
+    } catch (err) {
+      console.error('Global search error:', err);
+    }
+  };
+
+  // Handle global search input
+  const handleGlobalSearch = (query) => {
+    setGlobalSearchTerm(query);
+    performGlobalSearch(query);
+  };
 
   // Inject responsive CSS media queries at document level
   React.useEffect(() => {
@@ -1122,6 +1191,122 @@ const fetchHostels = async () => {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Global Search Section */}
+        <div style={{
+          background: 'white',
+          padding: 'clamp(0.75rem, 4vw, 1.25rem)',
+          borderRadius: 'clamp(0.5rem, 2vw, 1rem)',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+          marginBottom: 'clamp(0.75rem, 4vw, 1.5rem)',
+          position: 'relative',
+        }}>
+          <input
+            type="search"
+            placeholder="Search any student or hostel across all hostels... (name, mobile, application number)"
+            value={globalSearchTerm}
+            onChange={(e) => handleGlobalSearch(e.target.value)}
+            style={{
+              ...styles.searchInput,
+              width: '100%',
+            }}
+          />
+          
+          {/* Global Search Results Dropdown */}
+          {globalSearchResults && globalSearchTerm.trim() && (
+            <div style={{
+              marginTop: '0.75rem',
+              border: '1px solid #e5e7eb',
+              borderRadius: '0.5rem',
+              maxHeight: '400px',
+              overflowY: 'auto',
+              background: '#f9fafb',
+            }}>
+              {/* Hostel Results */}
+              {globalSearchResults.hostels.length > 0 && (
+                <div>
+                  <div style={{
+                    padding: '0.75rem 1rem',
+                    background: '#f3e8ff',
+                    borderBottom: '1px solid #e5e7eb',
+                    fontSize: 'clamp(0.8rem, 2vw, 0.9rem)',
+                    fontWeight: '600',
+                    color: '#6b21a8',
+                  }}>
+                    Hostels ({globalSearchResults.hostels.length})
+                  </div>
+                  {globalSearchResults.hostels.map((hostel) => (
+                    <div
+                      key={hostel.id}
+                      onClick={() => { setSearchTerm(hostel.name); handleViewStudents(hostel.id); setGlobalSearchTerm(''); setGlobalSearchResults(null); }}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderBottom: '1px solid #e5e7eb',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        ':hover': { background: '#ede9fe' },
+                        fontSize: 'clamp(0.8rem, 2vw, 0.875rem)',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#ede9fe'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{ fontWeight: '500', color: '#1f2937' }}>{hostel.name}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>{hostel.address}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Student Results */}
+              {globalSearchResults.students.length > 0 && (
+                <div>
+                  <div style={{
+                    padding: '0.75rem 1rem',
+                    background: '#fce7f3',
+                    borderBottom: '1px solid #e5e7eb',
+                    fontSize: 'clamp(0.8rem, 2vw, 0.9rem)',
+                    fontWeight: '600',
+                    color: '#be185d',
+                  }}>
+                    Students ({globalSearchResults.students.length})
+                  </div>
+                  {globalSearchResults.students.map((student, idx) => (
+                    <div
+                      key={`${student.hostelId}-${student.id || idx}`}
+                      onClick={() => { navigate(`/hostel/${student.hostelId}/payments/${student.id}`); setGlobalSearchTerm(''); setGlobalSearchResults(null); }}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderBottom: '1px solid #e5e7eb',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontSize: 'clamp(0.8rem, 2vw, 0.875rem)',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#fce7f3'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{ fontWeight: '500', color: '#1f2937' }}>{student.studentName}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                        {student.hostelName} • {student.mobile1 && `+91 ${student.mobile1}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* No Results */}
+              {globalSearchResults.hostels.length === 0 && globalSearchResults.students.length === 0 && (
+                <div style={{
+                  padding: '1rem',
+                  textAlign: 'center',
+                  color: '#6b7280',
+                  fontSize: 'clamp(0.8rem, 2vw, 0.875rem)',
+                }}>
+                  No results found for "{globalSearchResults.query}"
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="table-container" style={styles.tableContainer}>

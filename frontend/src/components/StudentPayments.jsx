@@ -255,13 +255,20 @@ const StudentPayments = () => {
   }
 
   const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      if (!dateStr) return '—';
+      const dateObj = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+      if (isNaN(dateObj.getTime())) return '—';
+      return dateObj.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return '—';
+    }
   };
 
   const formatDateDDMMYYYY = (d) => {
@@ -298,6 +305,13 @@ const StudentPayments = () => {
       const usedFee = Number(student?.appliedFee) || Number(student?.monthlyFee) || 0;
       const openingBal = usedFee - (creditBefore - debitBefore); // positive = due, negative = advance
 
+      // Helper function to trim remarks to max 5 words
+      const getTruncatedRemarks = (remarks) => {
+        if (!remarks) return '';
+        const words = String(remarks).trim().split(/\s+/).slice(0, 5);
+        return words.join(' ');
+      };
+
       // Prepare rows for payments within [start, end]
       const rows = [];
       let running = openingBal;
@@ -308,14 +322,16 @@ const StudentPayments = () => {
 
         // compute effect of this transaction
         const amt = Number(p.amount) || 0;
+        const remarks = getTruncatedRemarks(p.remarks);
+        const modeWithRemarks = remarks ? `${p.paymentMode || ''} (${remarks})` : (p.paymentMode || '');
           if (p.type === 'credit') {
             // student paid: reduces due (running = running - amt)
             running = running - amt;
-            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: '', credit: amt, running });
+            rows.push({ date: p.timestamp, paymentMode: modeWithRemarks, debit: '', credit: amt, running });
           } else {
             // debit (refund/adjustment): increases due
             running = running + amt;
-            rows.push({ date: p.timestamp, paymentMode: p.paymentMode || '', debit: amt, credit: '', running });
+            rows.push({ date: p.timestamp, paymentMode: modeWithRemarks, debit: amt, credit: '', running });
           }
       }
 
@@ -391,7 +407,7 @@ const StudentPayments = () => {
             <thead>
               <tr style="background:#f8fafc;">
                 <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Date</th>
-                <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Payment Mode</th>
+                <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Remarks</th>
                 <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Debit (₹)</th>
                 <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Credit (₹)</th>
                 <th style="text-align:right; padding:8px; border-bottom:1px solid #e6e6e6"> Balance</th>
@@ -403,7 +419,7 @@ const StudentPayments = () => {
                 <td style="padding:8px; border-right:1px solid #e6e6e6"></td>
                 <td style="text-align:right; padding:8px; border-right:1px solid #e6e6e6"></td>
                 <td style="text-align:right; padding:8px; border-right:1px solid #e6e6e6"></td>
-                <td style="text-align:right; padding:8px">${ledgerOpeningBalance}</td>
+                <td style="text-align:right; padding:8px">${formatCurrency(ledgerOpeningBalance)} ${ledgerOpeningBalance > 0 ? 'Dr' : ledgerOpeningBalance < 0 ? 'Cr' : ''}</td>
               </tr>
       `;
 
@@ -422,7 +438,7 @@ const StudentPayments = () => {
             </tbody>
           </table>
           <div style="height:12px"></div>
-          <div style="font-weight:600">Closing Balance:  ${formatCurrency(closing)}</div>
+          <div style="font-weight:600">Closing Balance: ${formatCurrency(closing)} ${closing > 0 ? 'Dr' : closing < 0 ? 'Cr' : ''}</div>
         </div>
       `;
 
@@ -499,6 +515,9 @@ const StudentPayments = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'clamp(0.5rem, 3vw, 1rem)', flexDirection: 'row', flexWrap: 'wrap', width: '100%' }} className="student-info-wrapper">
             <div style={{ flex: '1 1 auto', minWidth: 'clamp(150px, 40%, 400px)' }}>
               <h2 style={styles.studentName}>{student.studentName}</h2>
+              <div style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)', color: '#6b7280', marginBottom: '0.5rem' }}>
+                {student.hostelName || student.hostel?.name || 'Hostel'}
+              </div>
               {/* <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Application No: <strong style={{ color: '#111827' }}>{student.applicationNumber || student.applicationNo || student.application_id || student.appNo || '—'}</strong></div> */}
               <div style={styles.balanceSection}>
                 <span>Current Balance:</span>
@@ -559,7 +578,7 @@ const StudentPayments = () => {
                 </div>
 
                 <div style={styles.formGroup}>
-                  <label style={styles.label}>Payment Mode</label>
+                  <label style={styles.label}>Remarks</label>
                   <select
                     value={newPayment.paymentMode}
                     onChange={(e) => setNewPayment(prev => ({ ...prev, paymentMode: e.target.value }))}
@@ -657,7 +676,7 @@ const StudentPayments = () => {
                                     (Standard: {formatCurrency(monthlyFee)})
                                   </div>
                                 </div>
-                              ) : 'Monthly Fee'}
+                              ) : 'Rent'}
                             </td>
                             <td style={{ textAlign: 'right', color: '#dc2626' }}>
                               {formatCurrency(usedFee)}
@@ -701,7 +720,7 @@ const StudentPayments = () => {
                         <div style={styles.cardRow}>
                           <div style={styles.cardLabel}>Type</div>
                           <div style={styles.cardValue}>
-                            {hasCustomFee ? 'Applied Monthly Fee' : 'Monthly Fee'}
+                            {hasCustomFee ? 'Applied Monthly Fee' : 'Rent'}
                           </div>
                         </div>
                         {hasCustomFee && monthlyFee > 0 && (
@@ -787,7 +806,7 @@ const StudentPayments = () => {
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Date</th>
-                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Payment Mode</th>
+                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Remarks</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Debit</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Credit</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Balance</th>
