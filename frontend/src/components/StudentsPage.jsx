@@ -107,14 +107,30 @@ const StudentsPage = () => {
       const studentsWithBalances = await enrichBalances(rawStudents);
       setStudents(studentsWithBalances);
 
-      // If we have students, we can get hostel details from the first student or set a default
-      if (studentsWithBalances && studentsWithBalances.length > 0) {
-        setHostel({
-          id: hostelId,
-          // prefer explicit hostelName stored on student doc, fallback to fetch
-          name: studentsWithBalances[0].hostelName || 'Hostel',
-          address: studentsWithBalances[0].hostelAddress || ''
+      // Always fetch hostel details from Firestore (authenticated API) to ensure fresh data
+      try {
+        const hostelsRes = await fetch(`${API_BASE}/api/users/me/hostels`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         });
+        if (hostelsRes.ok) {
+          const hostelsPayload = await hostelsRes.json();
+          const hostels = hostelsPayload?.data || hostelsPayload || [];
+          const found = hostels.find(h => String(h.id) === String(hostelId) || String(h._id) === String(hostelId) || String(h.hostelId) === String(hostelId));
+          if (found) {
+            setHostel({
+              id: hostelId,
+              name: found.name || found.hostelName || 'Hostel',
+              name_hi: found.name_hi || found.nameHi || '',
+              address: found.address || '',
+              address_hi: found.address_hi || found.addressHi || '',
+              monthlyFee: found.monthlyFee != null ? Number(found.monthlyFee) : (found.monthlyfee != null ? Number(found.monthlyfee) : 0),
+              monthlyFeeCurrency: found.monthlyFeeCurrency || found.monthlyfeeCurrency || 'INR'
+            });
+          }
+        }
+      } catch (e) {
+        // If fetch fails, fallback to setting defaults
+        console.warn('Failed to fetch hostel details from API:', e);
       }
 
     } catch (err) {
@@ -136,10 +152,8 @@ const StudentsPage = () => {
     const onStorage = (e) => {
       try {
         if (!e.key) return;
-        // hostels_updated -> refresh hostel metadata
+        // hostels_updated -> refresh hostel metadata and students
         if (e.key === 'hostels_updated') {
-          // re-run fetchHostelsForName effect by fetching hostels and students again
-          fetchHostelsForName();
           fetchStudents();
           return;
         }
@@ -271,30 +285,7 @@ const StudentsPage = () => {
     return () => { mounted = false; };
   }, [hostel && hostel.name, hostel && hostel.name_hi]);
 
-  // Fetch hostels list for current user and resolve the hostel name if available
-  useEffect(() => {
-    const fetchHostelsForName = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await fetch(`${API_BASE}/api/users/me/hostels`, {
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-        });
-        if (!res.ok) return;
-        const payload = await res.json();
-        const list = payload.data || [];
-        const found = list.find(h => String(h.id) === String(hostelId));
-        if (found) {
-          setHostel(prev => ({ ...(prev || {}), id: hostelId, name: found.name || found.displayName || found.hostelName || prev?.name || 'Hostel', address: found.address || prev?.address || '', monthlyFee: (found.monthlyFee != null ? found.monthlyFee : (found.monthlyfee != null ? found.monthlyfee : 0)), monthlyFeeCurrency: found.monthlyFeeCurrency || found.monthlyfeeCurrency || 'INR' }));
-        }
-      } catch (err) {
-        // ignore errors — we already have fallback from student docs
-        console.warn('Could not fetch hostels for name resolution', err);
-      }
-    };
 
-    fetchHostelsForName();
-  }, [hostelId]);
 
   const handleAddStudent = (e) => {
     e.preventDefault();

@@ -529,7 +529,7 @@ const StudentPayments = () => {
                 <label style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', color: '#374151', marginBottom: 4 }}>To</label>
                 <input type="date" value={ledgerEnd} onChange={(e) => setLedgerEnd(e.target.value)} style={{ padding: 'clamp(0.4rem, 1.5vw, 0.5rem)', borderRadius: 6, border: '1px solid #e5e7eb', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', boxSizing: 'border-box' }} />
               </div>
-              <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} style={{ padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.6rem, 2vw, 0.9rem)', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', fontWeight: '500', whiteSpace: 'nowrap', minWidth: 'clamp(70px, 20vw, 130px)' }} className="ledger-button">{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
+              <button onClick={() => generateLedger(ledgerStart, ledgerEnd)} disabled={!ledgerStart || !ledgerEnd} style={{ padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.6rem, 2vw, 0.9rem)', background: (!ledgerStart || !ledgerEnd) ? '#d1d5db' : '#8b5cf6', color: 'white', border: 'none', borderRadius: 6, cursor: (!ledgerStart || !ledgerEnd) ? 'not-allowed' : 'pointer', fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)', fontWeight: '500', whiteSpace: 'nowrap', minWidth: 'clamp(70px, 20vw, 130px)', opacity: (!ledgerStart || !ledgerEnd) ? 0.6 : 1 }} className="ledger-button">{ledgerLoading ? 'Generating...' : 'Generate Ledger'}</button>
             </div>
           </div>
         </div>
@@ -537,7 +537,7 @@ const StudentPayments = () => {
         <div style={styles.formSection}>
           <h3 style={styles.formTitle}>Payments</h3>
           {!showPaymentForm ? (
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button type="button" onClick={() => setShowPaymentForm(true)} style={{ ...styles.submitButton, padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.6rem, 2vw, 1rem)' }}>New Payment</button>
             </div>
           ) : (
