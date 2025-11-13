@@ -905,8 +905,8 @@ const getResponsiveStyles = () => {
 const styles = {
   container: {
     minHeight: '100vh',
-    background: '#f8fafc',
-    padding: '2rem 1.5rem',
+    background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
+    padding: '1.5rem',
     boxSizing: 'border-box',
     width: '100%',
     maxWidth: '100%',
