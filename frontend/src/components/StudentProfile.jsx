@@ -18,6 +18,7 @@ const StudentProfile = () => {
   const [docOptions, setDocOptions] = useState([]);
   const [docSelection, setDocSelection] = useState('NONE');
   const [docOtherValue, setDocOtherValue] = useState('');
+  const [pendingDoc, setPendingDoc] = useState(null); // holds selected file preview before user clicks Add
   const [previewImage, setPreviewImage] = useState(null);
   const [previewFee, setPreviewFee] = useState('');
 
@@ -241,6 +242,8 @@ const StudentProfile = () => {
     setDocOtherValue('');
   };
 
+  // When user selects a file, process it and create a pending preview only.
+  // The file will be saved to the student's documents only when the user clicks the Add button.
   const handleDocumentUpload = async (file) => {
     if (!file || !student) return;
     try {
@@ -290,7 +293,22 @@ const StudentProfile = () => {
         return alert('Image is too large after compression. Please choose a smaller image or crop it before uploading.');
       }
 
-      const newDoc = { id: `doc_${Date.now()}`, type: docSelection || 'NONE', dataUrl: compressedDataUrl, uploadedAt: new Date().toISOString() };
+      // create pending doc (do not persist yet)
+      const pending = { id: `pending_${Date.now()}`, type: docSelection || 'NONE', dataUrl: compressedDataUrl, uploadedAt: new Date().toISOString(), fileName: file.name };
+      setPendingDoc(pending);
+      // show preview of pending doc
+      setPreviewImage(pending.dataUrl);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to process selected image');
+    }
+  };
+
+  // Commit pendingDoc to student's documents (persist to backend)
+  const addPendingDocument = async () => {
+    if (!pendingDoc || !student) return alert('No file selected');
+    try {
+      const newDoc = { id: `doc_${Date.now()}`, type: pendingDoc.type || 'NONE', dataUrl: pendingDoc.dataUrl, uploadedAt: pendingDoc.uploadedAt };
       const existing = Array.isArray(student.documents) ? [newDoc, ...student.documents] : [newDoc];
       const token = localStorage.getItem('token');
       const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
@@ -300,14 +318,23 @@ const StudentProfile = () => {
       });
       if (!resp.ok) {
         const errText = await resp.text().catch(() => null);
-        console.error('Upload response not OK', resp.status, errText);
-        throw new Error('Failed to upload');
+        console.error('Add pending document failed', resp.status, errText);
+        throw new Error('Failed to add document');
       }
       setStudent(prev => ({ ...prev, documents: existing }));
+      setPendingDoc(null);
+      setPreviewImage(null);
+      // reset selection
+      setDocSelection('NONE');
     } catch (err) {
       console.error(err);
-      alert('Upload failed');
+      alert('Failed to add document');
     }
+  };
+
+  const cancelPendingDocument = () => {
+    setPendingDoc(null);
+    setPreviewImage(null);
   };
 
   const handleDeleteDocument = async (docId) => {
@@ -364,12 +391,12 @@ const StudentProfile = () => {
           <button onClick={handleSave} style={{ ...styles.button, ...styles.saveButton }}>
             Save
           </button>
-          <button onClick={close} style={{ ...styles.button, ...styles.closeButton }}>
-            Close
-          </button>
           <button onClick={handleDownload} style={{ ...styles.downloadHeaderButton, marginLeft: 8 }}>
             <Download size={18} />
             <span>PDF</span>
+          </button>
+          <button onClick={close} style={{ ...styles.button, ...styles.closeButton }}>
+            Close
           </button>
         </div>
       </div>
@@ -429,17 +456,32 @@ const StudentProfile = () => {
                 {(docOptions || ['NONE','AADHAR CARD']).map(opt => (<option key={opt} value={opt}>{opt}</option>))}
                 <option value="__ADD_OTHER__">Others (add)</option>
               </select>
+
               {docSelection === '__ADD_OTHER__' && (
                 <div style={styles.addOtherContainer}>
                   <input value={docOtherValue} onChange={(e) => setDocOtherValue(e.target.value)} placeholder="Enter document name" style={styles.docInput} />
                   <button onClick={() => addCustomDocOption(docOtherValue)} style={styles.button}>Add</button>
                 </div>
               )}
+
               {(docSelection && docSelection !== 'NONE' && docSelection !== '__ADD_OTHER__') && (
-                <label style={styles.fileUploadLabel}>
-                  Upload
-                  <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleDocumentUpload(f); e.target.value = ''; }} style={{ display: 'none' }} />
-                </label>
+                <>
+                  <label style={styles.fileUploadLabel}>
+                    Upload
+                    <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleDocumentUpload(f); e.target.value = ''; }} style={{ display: 'none' }} />
+                  </label>
+
+                  {/* If a file is selected and pending, show preview + Add/Cancel buttons */}
+                  {pendingDoc ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <img src={pendingDoc.dataUrl} alt="preview" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={addPendingDocument} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>Add</button>
+                        <button onClick={cancelPendingDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
               )}
             </div>
 
