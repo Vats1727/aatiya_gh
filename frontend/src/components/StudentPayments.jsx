@@ -130,6 +130,22 @@ const StudentPayments = () => {
                 };
               }
             }
+          } else {
+            // Always try to fetch hostel name from Firestore authenticated API
+            const hostelsRes = await fetch(`${API_BASE}/api/users/me/hostels`, {
+              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            if (hostelsRes.ok) {
+              const hostelsPayload = await hostelsRes.json();
+              const list = hostelsPayload?.data || hostelsPayload || [];
+              const found = (list || []).find(h => String(h.id) === String(hostelId) || String(h._id) === String(hostelId) || String(h.hostelId) === String(hostelId));
+              if (found && (found.name || found.hostelName || found.title)) {
+                studentObj = {
+                  ...studentObj,
+                  hostelName: found.name || found.hostelName || found.title
+                };
+              }
+            }
           }
         } catch (e) {
           // ignore enrichment errors and continue with whatever studentObj we have

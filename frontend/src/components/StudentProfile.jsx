@@ -173,6 +173,11 @@ const StudentProfile = () => {
   const addCustomDocOption = (value) => {
     if (!value || !value.trim()) return;
     const u = String(value).trim().toUpperCase();
+    // Check if option already exists (case-insensitive)
+    if (docOptions && docOptions.some(opt => opt.toUpperCase() === u)) {
+      alert('This document type already exists');
+      return;
+    }
     setDocOptions(prev => Array.from(new Set([...(prev || ['NONE','AADHAR CARD']), u])));
     setDocSelection(u);
     setDocOtherValue('');
