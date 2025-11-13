@@ -113,6 +113,7 @@ const StudentProfile = () => {
       }
     };
     load();
+    //edbqhbd
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostelId, studentId]);
 
