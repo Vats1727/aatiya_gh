@@ -501,10 +501,6 @@ const StudentPayments = () => {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <button onClick={() => navigate(`/hostel/${hostelId}/students`)} style={styles.backButton}>
-          <ArrowLeft size={18} />
-          <span style={{ marginLeft: '0.5rem' }}>Back to Students</span>
-        </button>
         <h1 style={styles.title}>Manage Payments</h1>
         {/* ledger controls moved into student info section */}
       </div>

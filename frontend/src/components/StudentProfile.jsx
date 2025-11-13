@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Download } from 'lucide-react';
+import StudentPayments from './StudentPayments';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import { renderStudentPrintHtml } from '../utils/printTemplate';
 
@@ -19,14 +20,6 @@ const StudentProfile = () => {
   const [docOtherValue, setDocOtherValue] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
   const [previewFee, setPreviewFee] = useState('');
-  const [payments, setPayments] = useState([]);
-  const [newPayment, setNewPayment] = useState({
-    amount: '',
-    paymentMode: 'cash',
-    remarks: '',
-    type: 'credit'
-  });
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -103,35 +96,6 @@ const StudentProfile = () => {
       }
     };
     load();
-
-    // Fetch payments
-    const fetchPayments = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const rawPayments = data.data || [];
-            const normalized = rawPayments
-              .map(p => ({
-                ...p,
-                amount: Number(p.amount) || 0,
-                type: p.type || 'credit',
-                paymentMode: p.paymentMode || p.mode || '',
-                timestamp: p.timestamp || p.createdAt || new Date().toISOString(),
-              }))
-              .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            setPayments(normalized);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch payments', err);
-      }
-    };
-    fetchPayments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostelId, studentId]);
 
@@ -237,36 +201,6 @@ const StudentProfile = () => {
     }
   };
 
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return alert('Not authenticated');
-      const amount = Number(newPayment.amount) || 0;
-      const type = newPayment.type || 'credit';
-      const payload = {
-        ...newPayment,
-        amount,
-        type,
-        timestamp: new Date().toISOString()
-      };
-      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error('Failed to add payment');
-      const data = await res.json();
-      const newEntry = { ...data, amount, type, timestamp: payload.timestamp };
-      setPayments(prev => [newEntry, ...prev]);
-      setNewPayment({ amount: '', paymentMode: 'cash', remarks: '', type: 'credit' });
-      setShowPaymentForm(false);
-    } catch (err) {
-      console.error('Failed to add payment:', err);
-      alert('Failed to add payment');
-    }
-  };
-
   if (loading || !student) return <div style={styles.container}><div style={styles.loading}>Loading...</div></div>;
 
   const isActive = student.status === 'approved';
@@ -330,7 +264,7 @@ const StudentProfile = () => {
           onClick={() => setActiveTab('documents')} 
           style={{ ...styles.tabButton, ...(activeTab === 'documents' ? styles.tabActive : {}) }}
         >
-          Documents ({Array.isArray(student.documents) ? student.documents.length : 0})
+          Documents
         </button>
       </div>
 
@@ -355,111 +289,13 @@ const StudentProfile = () => {
 
         {activeTab === 'payments' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={styles.tabTitle}>Payment History</h3>
-              <button 
-                onClick={() => setShowPaymentForm(!showPaymentForm)} 
-                style={styles.addPaymentButton}
-              >
-                {showPaymentForm ? 'Cancel' : 'Add Payment'}
-              </button>
-            </div>
-
-            {showPaymentForm && (
-              <form onSubmit={handlePaymentSubmit} style={styles.paymentForm}>
-                <div style={styles.formGrid}>
-                  <div>
-                    <label style={styles.formLabel}>Amount</label>
-                    <input type="number" value={newPayment.amount} onChange={(e) => setNewPayment({...newPayment, amount: e.target.value})} placeholder="0" style={styles.formInput} required />
-                  </div>
-                  <div>
-                    <label style={styles.formLabel}>Payment Mode</label>
-                    <select value={newPayment.paymentMode} onChange={(e) => setNewPayment({...newPayment, paymentMode: e.target.value})} style={styles.formInput}>
-                      <option value="cash">Cash</option>
-                      <option value="cheque">Cheque</option>
-                      <option value="bank transfer">Bank Transfer</option>
-                      <option value="online">Online</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={styles.formLabel}>Type</label>
-                    <select value={newPayment.type} onChange={(e) => setNewPayment({...newPayment, type: e.target.value})} style={styles.formInput}>
-                      <option value="credit">Payment Received</option>
-                      <option value="debit">Refund/Adjustment</option>
-                    </select>
-                  </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={styles.formLabel}>Remarks</label>
-                    <input type="text" value={newPayment.remarks} onChange={(e) => setNewPayment({...newPayment, remarks: e.target.value})} placeholder="Enter remarks" style={styles.formInput} />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                  <button type="submit" style={{ ...styles.button, ...styles.submitButton }}>Submit</button>
-                  <button type="button" onClick={() => setShowPaymentForm(false)} style={{ ...styles.button, ...styles.cancelButton }}>Cancel</button>
-                </div>
-              </form>
-            )}
-
-            {(() => {
-              const usedFee = Number(student?.appliedFee) || Number(student?.monthlyFee) || 0;
-              const totalCredit = payments.filter(p => p.type === 'credit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
-              const totalDebit = payments.filter(p => p.type === 'debit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
-              const currentBalance = usedFee - (totalCredit - totalDebit);
-
-              return (
-                <div style={styles.paymentSummary}>
-                  <div style={styles.summaryItem}>
-                    <div style={styles.summaryLabel}>Total Fee</div>
-                    <div style={styles.summaryValue}>₹{usedFee}</div>
-                  </div>
-                  <div style={styles.summaryItem}>
-                    <div style={styles.summaryLabel}>Total Paid</div>
-                    <div style={styles.summaryValue}>₹{totalCredit}</div>
-                  </div>
-                  <div style={styles.summaryItem}>
-                    <div style={styles.summaryLabel}>Current Balance</div>
-                    <div style={{ ...styles.summaryValue, color: currentBalance > 0 ? '#dc2626' : '#059669' }}>
-                      {currentBalance > 0 ? `₹${currentBalance} Due` : `₹${Math.abs(currentBalance)} Advance`}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            <div style={styles.paymentHistoryTable}>
-              {payments.length > 0 ? (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e5e7eb' }}>
-                      <th style={styles.tableHeader}>Date</th>
-                      <th style={styles.tableHeader}>Mode</th>
-                      <th style={styles.tableHeader}>Type</th>
-                      <th style={styles.tableHeader}>Amount</th>
-                      <th style={styles.tableHeader}>Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payments.map((p, idx) => (
-                      <tr key={p.id || idx} style={{ borderBottom: '1px solid #e5e7eb', background: idx % 2 === 0 ? '#fff' : '#f9fafb' }}>
-                        <td style={styles.tableCell}>{new Date(p.timestamp).toLocaleDateString('en-IN')}</td>
-                        <td style={styles.tableCell}>{p.paymentMode || '-'}</td>
-                        <td style={styles.tableCell}><span style={{ ...styles.typeBadge, ...(p.type === 'credit' ? styles.creditBadge : styles.debitBadge) }}>{p.type === 'credit' ? 'Credit' : 'Debit'}</span></td>
-                        <td style={styles.tableCell}>₹{p.amount}</td>
-                        <td style={styles.tableCell}>{p.remarks || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div style={styles.emptyState}>No payments recorded yet</div>
-              )}
-            </div>
+            <StudentPayments />
           </div>
         )}
 
         {activeTab === 'documents' && (
           <div>
-            <h3 style={styles.tabTitle}>Upload Documents</h3>
+            <h3 style={styles.tabTitle}>Upload Documents ({Array.isArray(student.documents) ? student.documents.length : 0})</h3>
             <div style={styles.docControls}>
               <select value={docSelection} onChange={(e) => setDocSelection(e.target.value)} style={styles.docSelect}>
                 {(docOptions || ['NONE','AADHAR CARD']).map(opt => (<option key={opt} value={opt}>{opt}</option>))}
@@ -845,111 +681,5 @@ const styles = {
     padding: '3rem',
     color: '#64748b',
     fontSize: '1rem',
-  },
-  paymentForm: {
-    background: '#f9fafb',
-    padding: '1rem',
-    borderRadius: '0.5rem',
-    marginBottom: '1.5rem',
-    border: '1px solid #e5e7eb',
-  },
-  formGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gap: '1rem',
-  },
-  formLabel: {
-    fontSize: '0.75rem',
-    fontWeight: '600',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    marginBottom: '0.5rem',
-    display: 'block',
-  },
-  formInput: {
-    width: '100%',
-    padding: '0.625rem 0.875rem',
-    borderRadius: '0.5rem',
-    border: '1px solid #e5e7eb',
-    fontSize: '0.875rem',
-    boxSizing: 'border-box',
-  },
-  submitButton: {
-    background: '#10b981',
-    color: 'white',
-  },
-  cancelButton: {
-    background: '#f3f4f6',
-    color: '#374151',
-    border: '1px solid #e5e7eb',
-  },
-  paymentSummary: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gap: '1rem',
-    marginBottom: '1.5rem',
-  },
-  summaryItem: {
-    background: '#f9fafb',
-    padding: '1rem',
-    borderRadius: '0.5rem',
-    border: '1px solid #e5e7eb',
-  },
-  summaryLabel: {
-    fontSize: '0.75rem',
-    fontWeight: '600',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    marginBottom: '0.5rem',
-  },
-  summaryValue: {
-    fontSize: '1.25rem',
-    fontWeight: '700',
-    color: '#111827',
-  },
-  paymentHistoryTable: {
-    overflowX: 'auto',
-    border: '1px solid #e5e7eb',
-    borderRadius: '0.5rem',
-    marginTop: '1rem',
-  },
-  tableHeader: {
-    padding: '0.75rem',
-    textAlign: 'left',
-    fontSize: '0.75rem',
-    fontWeight: '600',
-    color: '#374151',
-  },
-  tableCell: {
-    padding: '0.75rem',
-    fontSize: '0.875rem',
-    color: '#111827',
-  },
-  typeBadge: {
-    display: 'inline-block',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '0.25rem',
-    fontSize: '0.75rem',
-    fontWeight: '600',
-  },
-  creditBadge: {
-    background: '#dcfce7',
-    color: '#15803d',
-  },
-  debitBadge: {
-    background: '#fee2e2',
-    color: '#991b1b',
-  },
-  addPaymentButton: {
-    padding: '0.625rem 1rem',
-    background: '#3b82f6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.5rem',
-    cursor: 'pointer',
-    fontWeight: '500',
-    fontSize: '0.875rem',
-    transition: 'all 0.2s ease',
   },
 };
