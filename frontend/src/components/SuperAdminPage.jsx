@@ -1,8 +1,210 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, ChevronDown, ChevronUp, Users, Building2, FileText, IndianRupee } from 'lucide-react';
+import { LogOut, ChevronDown, ChevronUp, Users, Building2, FileText, IndianRupee, Search } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onrender.com';
+
+// Common styles for consistent UI
+const styles = {
+  container: {
+    maxWidth: '1400px',
+    margin: '0 auto',
+    padding: '1.5rem',
+    minHeight: '100vh',
+    background: '#f8fafc',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1.5rem',
+    paddingBottom: '1rem',
+    borderBottom: '1px solid #e2e8f0',
+  },
+  heading: {
+    fontSize: '1.5rem',
+    fontWeight: '600',
+    color: '#1e293b',
+    margin: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: '0.5rem',
+    boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)', 
+    padding: '1.5rem',
+    marginBottom: '1.5rem',
+  },
+  button: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem 1rem',
+    borderRadius: '0.375rem',
+    border: '1px solid #e2e8f0',
+    backgroundColor: 'white',
+    color: '#334155',
+    fontWeight: '500',
+    fontSize: '0.9375rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      backgroundColor: '#f8fafc',
+      borderColor: '#cbd5e1',
+    },
+  },
+  primaryButton: {
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    borderColor: '#3b82f6',
+    '&:hover': {
+      backgroundColor: '#2563eb',
+      borderColor: '#1d4ed8',
+    },
+  },
+  dangerButton: {
+    backgroundColor: '#ef4444',
+    color: 'white',
+    borderColor: '#ef4444',
+    '&:hover': {
+      backgroundColor: '#dc2626',
+      borderColor: '#b91c1c',
+    },
+  },
+  input: {
+    padding: '0.5rem 0.75rem',
+    borderRadius: '0.375rem',
+    border: '1px solid #e2e8f0',
+    fontSize: '0.9375rem',
+    width: '100%',
+    '&:focus': {
+      outline: 'none',
+      borderColor: '#93c5fd',
+      boxShadow: '0 0 0 3px rgba(147, 197, 253, 0.5)',
+    },
+  },
+  searchContainer: {
+    position: 'relative',
+    width: '100%',
+    maxWidth: '400px',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '0.75rem',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: '#9ca3af',
+    pointerEvents: 'none',
+  },
+  searchInput: {
+    paddingLeft: '2.5rem',
+  },
+  userCard: {
+    padding: '1rem',
+    borderRadius: '0.5rem',
+    border: '1px solid #e2e8f0',
+    marginBottom: '0.75rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      borderColor: '#cbd5e1',
+      boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+    },
+  },
+  userCardActive: {
+    backgroundColor: '#f0f9ff',
+    borderColor: '#7dd3fc',
+  },
+  userName: {
+    fontSize: '0.95rem',
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: '0.25rem',
+  },
+  userEmail: {
+    fontSize: '0.8125rem',
+    color: '#64748b',
+  },
+  hostelHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.75rem',
+    borderRadius: '0.375rem',
+    backgroundColor: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    cursor: 'pointer',
+    '&:hover': {
+      backgroundColor: '#f1f5f9',
+    },
+  },
+  paymentItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0.75rem',
+    borderRadius: '0.375rem',
+    backgroundColor: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    marginBottom: '0.5rem',
+  },
+  emptyState: {
+    padding: '2rem',
+    textAlign: 'center',
+    color: '#64748b',
+    backgroundColor: '#f8fafc',
+    borderRadius: '0.5rem',
+    border: '1px dashed #e2e8f0',
+  },
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+    gap: '1rem',
+    marginBottom: '1.5rem',
+  },
+  statCard: {
+    backgroundColor: 'white',
+    borderRadius: '0.5rem',
+    padding: '1.25rem',
+    boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+  },
+  statValue: {
+    fontSize: '1.5rem',
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: '0.25rem',
+  },
+  statLabel: {
+    fontSize: '0.8125rem',
+    color: '#64748b',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+  },
+};
+
+// Responsive styles for mobile devices
+const mobileStyles = {
+  '@media (max-width: 640px)': {
+    container: {
+      padding: '1rem',
+    },
+    statsGrid: {
+      gridTemplateColumns: '1fr',
+    },
+    header: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      gap: '1rem',
+    },
+    searchContainer: {
+      maxWidth: '100%',
+    },
+  },
+};
 
 const SuperAdminPage = () => {
   const [allData, setAllData] = useState({});

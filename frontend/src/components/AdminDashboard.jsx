@@ -68,6 +68,277 @@ const transliterateText = async (text) => {
 };
 import '../styles.css';
 
+// Common styles for consistent UI
+const commonStyles = {
+  container: {
+    padding: '1.5rem',
+    maxWidth: '1400px',
+    margin: '0 auto',
+  },
+  card: {
+    background: 'white',
+    borderRadius: '0.5rem',
+    boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+    padding: '1.5rem',
+    marginBottom: '1.5rem',
+  },
+  heading: {
+    fontSize: '1.5rem',
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: '1.25rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  button: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem 1rem',
+    borderRadius: '0.375rem',
+    fontWeight: '500',
+    fontSize: '0.9375rem',
+    transition: 'all 0.2s ease',
+    cursor: 'pointer',
+    border: '1px solid #e2e8f0',
+    backgroundColor: 'white',
+    color: '#334155',
+    ':hover': {
+      backgroundColor: '#f8fafc',
+      borderColor: '#cbd5e1',
+    },
+  },
+  primaryButton: {
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    ':hover': {
+      backgroundColor: '#2563eb',
+    },
+  },
+  input: {
+    width: '100%',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '0.375rem',
+    border: '1px solid #e2e8f0',
+    fontSize: '0.9375rem',
+    lineHeight: '1.5',
+    ':focus': {
+      outline: 'none',
+      borderColor: '#93c5fd',
+      boxShadow: '0 0 0 3px rgba(147, 197, 253, 0.5)',
+    },
+  },
+  label: {
+    display: 'block',
+    marginBottom: '0.5rem',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    color: '#475569',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '0.9375rem',
+  },
+  th: {
+    textAlign: 'left',
+    padding: '0.75rem 1rem',
+    backgroundColor: '#f8fafc',
+    borderBottom: '1px solid #e2e8f0',
+    fontWeight: '600',
+    color: '#475569',
+    fontSize: '0.8125rem',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+  },
+  td: {
+    padding: '1rem',
+    borderBottom: '1px solid #f1f5f9',
+    verticalAlign: 'middle',
+  },
+  actionButton: {
+    padding: '0.375rem 0.5rem',
+    borderRadius: '0.25rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    ':hover': {
+      backgroundColor: '#f1f5f9',
+    },
+  },
+  badge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0.25rem 0.5rem',
+    borderRadius: '9999px',
+    fontSize: '0.75rem',
+    fontWeight: '500',
+    lineHeight: '1',
+  },
+  successBadge: {
+    backgroundColor: '#dcfce7',
+    color: '#166534',
+  },
+  warningBadge: {
+    backgroundColor: '#fef3c7',
+    color: '#92400e',
+  },
+  dangerBadge: {
+    backgroundColor: '#fee2e2',
+    color: '#991b1b',
+  },
+  infoBadge: {
+    backgroundColor: '#dbeafe',
+    color: '#1e40af',
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 50,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: '0.5rem',
+    width: '100%',
+    maxWidth: '32rem',
+    maxHeight: '90vh',
+    overflowY: 'auto',
+    boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+  },
+  modalHeader: {
+    padding: '1.25rem 1.5rem',
+    borderBottom: '1px solid #e2e8f0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  modalTitle: {
+    fontSize: '1.25rem',
+    fontWeight: '600',
+    color: '#1e293b',
+    margin: 0,
+  },
+  modalBody: {
+    padding: '1.5rem',
+  },
+  modalFooter: {
+    padding: '1rem 1.5rem',
+    borderTop: '1px solid #e2e8f0',
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '0.75rem',
+  },
+  formGroup: {
+    marginBottom: '1.25rem',
+  },
+  formLabel: {
+    display: 'block',
+    marginBottom: '0.5rem',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    color: '#475569',
+  },
+  formInput: {
+    width: '100%',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '0.375rem',
+    border: '1px solid #e2e8f0',
+    fontSize: '0.9375rem',
+    lineHeight: '1.5',
+    ':focus': {
+      outline: 'none',
+      borderColor: '#93c5fd',
+      boxShadow: '0 0 0 3px rgba(147, 197, 253, 0.5)',
+    },
+  },
+  formTextarea: {
+    width: '100%',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '0.375rem',
+    border: '1px solid #e2e8f0',
+    fontSize: '0.9375rem',
+    lineHeight: '1.5',
+    minHeight: '6rem',
+    resize: 'vertical',
+    ':focus': {
+      outline: 'none',
+      borderColor: '#93c5fd',
+      boxShadow: '0 0 0 3px rgba(147, 197, 253, 0.5)',
+    },
+  },
+  formHelpText: {
+    marginTop: '0.25rem',
+    fontSize: '0.75rem',
+    color: '#64748b',
+  },
+  formError: {
+    marginTop: '0.25rem',
+    fontSize: '0.75rem',
+    color: '#dc2626',
+  },
+  formActions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '0.75rem',
+    marginTop: '1.5rem',
+  },
+  formSection: {
+    marginBottom: '2rem',
+  },
+  formSectionTitle: {
+    fontSize: '1.125rem',
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: '1rem',
+    paddingBottom: '0.5rem',
+    borderBottom: '1px solid #e2e8f0',
+  },
+  formRow: {
+    display: 'flex',
+    gap: '1rem',
+    marginBottom: '1rem',
+  },
+  formCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+};
+
+// Responsive styles for mobile devices
+const mobileStyles = {
+  '@media (max-width: 640px)': {
+    container: {
+      padding: '1rem',
+    },
+    card: {
+      padding: '1rem',
+    },
+    heading: {
+      fontSize: '1.25rem',
+    },
+    formRow: {
+      flexDirection: 'column',
+      gap: '0',
+    },
+    formCol: {
+      width: '100%',
+      marginBottom: '1rem',
+      ':last-child': {
+        marginBottom: 0,
+      },
+    },
+  },
+};
+
 // Use production URL if environment variable is not set
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://aatiya-gh-backend.onrender.com';
 

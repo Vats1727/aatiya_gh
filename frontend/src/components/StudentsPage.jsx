@@ -5,6 +5,201 @@ import { renderStudentPrintHtml, renderRulesHtml } from '../utils/printTemplate'
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import '../styles.css';
 
+// Common styles for consistent UI
+const commonStyles = {
+  container: {
+    padding: '1.5rem',
+    maxWidth: '1400px',
+    margin: '0 auto',
+  },
+  card: {
+    background: 'white',
+    borderRadius: '0.5rem',
+    boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+    padding: '1.5rem',
+    marginBottom: '1.5rem',
+  },
+  heading: {
+    fontSize: '1.5rem',
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: '1.25rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  button: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem 1rem',
+    borderRadius: '0.375rem',
+    fontWeight: '500',
+    fontSize: '0.9375rem',
+    transition: 'all 0.2s ease',
+    cursor: 'pointer',
+    border: '1px solid #e2e8f0',
+    backgroundColor: 'white',
+    color: '#334155',
+    ':hover': {
+      backgroundColor: '#f8fafc',
+      borderColor: '#cbd5e1',
+    },
+  },
+  primaryButton: {
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    ':hover': {
+      backgroundColor: '#2563eb',
+    },
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '0.9375rem',
+    marginTop: '1rem',
+  },
+  th: {
+    textAlign: 'left',
+    padding: '0.75rem 1rem',
+    backgroundColor: '#f8fafc',
+    borderBottom: '1px solid #e2e8f0',
+    fontWeight: '600',
+    color: '#475569',
+    fontSize: '0.8125rem',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+  },
+  td: {
+    padding: '1rem',
+    borderBottom: '1px solid #f1f5f9',
+    verticalAlign: 'middle',
+  },
+  actionButton: {
+    padding: '0.375rem 0.5rem',
+    borderRadius: '0.25rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    ':hover': {
+      backgroundColor: '#f1f5f9',
+    },
+  },
+  badge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0.25rem 0.5rem',
+    borderRadius: '9999px',
+    fontSize: '0.75rem',
+    fontWeight: '500',
+    lineHeight: '1',
+  },
+  successBadge: {
+    backgroundColor: '#dcfce7',
+    color: '#166534',
+  },
+  warningBadge: {
+    backgroundColor: '#fef3c7',
+    color: '#92400e',
+  },
+  dangerBadge: {
+    backgroundColor: '#fee2e2',
+    color: '#991b1b',
+  },
+  infoBadge: {
+    backgroundColor: '#dbeafe',
+    color: '#1e40af',
+  },
+  searchContainer: {
+    display: 'flex',
+    gap: '1rem',
+    marginBottom: '1.5rem',
+    flexWrap: 'wrap',
+  },
+  searchInput: {
+    flex: '1',
+    minWidth: '200px',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '0.375rem',
+    border: '1px solid #e2e8f0',
+    fontSize: '0.9375rem',
+    ':focus': {
+      outline: 'none',
+      borderColor: '#93c5fd',
+      boxShadow: '0 0 0 3px rgba(147, 197, 253, 0.5)',
+    },
+  },
+  filterSelect: {
+    padding: '0.5rem 0.75rem',
+    borderRadius: '0.375rem',
+    border: '1px solid #e2e8f0',
+    backgroundColor: 'white',
+    fontSize: '0.9375rem',
+    cursor: 'pointer',
+    ':focus': {
+      outline: 'none',
+      borderColor: '#93c5fd',
+      boxShadow: '0 0 0 3px rgba(147, 197, 253, 0.5)',
+    },
+  },
+  pagination: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginTop: '1.5rem',
+  },
+  pageButton: {
+    padding: '0.5rem 0.75rem',
+    borderRadius: '0.375rem',
+    border: '1px solid #e2e8f0',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    ':hover': {
+      backgroundColor: '#f8fafc',
+    },
+    ':disabled': {
+      opacity: 0.5,
+      cursor: 'not-allowed',
+    },
+  },
+  activePageButton: {
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    borderColor: '#3b82f6',
+    ':hover': {
+      backgroundColor: '#2563eb',
+    },
+  },
+};
+
+// Responsive styles for mobile devices
+const mobileStyles = {
+  '@media (max-width: 640px)': {
+    container: {
+      padding: '1rem',
+    },
+    card: {
+      padding: '1rem',
+    },
+    heading: {
+      fontSize: '1.25rem',
+    },
+    searchContainer: {
+      flexDirection: 'column',
+      gap: '0.75rem',
+    },
+    searchInput: {
+      width: '100%',
+    },
+    filterSelect: {
+      width: '100%',
+    },
+  },
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 const ITEMS_PER_PAGE = 10;
