@@ -1353,8 +1353,9 @@ const fetchHostels = async () => {
               <input
                 type="search"
                 placeholder="Search any student or hostel across all hostels... (name, mobile, application number)"
-                value={globalSearchTerm}
+                value={isSearching ? 'Loading...' : globalSearchTerm}
                 onChange={(e) => handleGlobalSearch(e.target.value)}
+                disabled={isSearching}
                 style={{
                   ...styles.searchInput,
                   width: '100%',
