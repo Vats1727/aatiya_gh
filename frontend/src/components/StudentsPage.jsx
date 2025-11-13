@@ -722,8 +722,8 @@ const StudentsPage = () => {
                             color: (student.currentBalance || 0) > 0 ? '#dc2626' : '#059669' 
                           }}>
                             {(student.currentBalance || 0) > 0 ? 
-                              `Due: ₹${Math.abs(student.currentBalance)}` : 
-                              `Advance: ₹${Math.abs(student.currentBalance || 0)}`}
+                              `Due: ₹${Math.abs(student.currentBalance)} Dr` : 
+                              `Advance: ₹${Math.abs(student.currentBalance || 0)} Cr`}
                           </div>
                         </div>
                         <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/payments`)} style={{ ...styles.iconButton, ...styles.paymentButton }} title="Payments">💳</button>
@@ -786,8 +786,8 @@ const StudentsPage = () => {
                         color: (student.currentBalance || 0) > 0 ? '#dc2626' : '#059669'
                       }}>
                         {(student.currentBalance || 0) > 0 ? 
-                          `Due: ₹${Math.abs(student.currentBalance)}` : 
-                          `Advance: ₹${Math.abs(student.currentBalance || 0)}`}
+                          `Due: ₹${Math.abs(student.currentBalance)} Dr` : 
+                          `Advance: ₹${Math.abs(student.currentBalance || 0)} Cr`}
                       </div>
                     </td>
                     <td style={styles.td}>

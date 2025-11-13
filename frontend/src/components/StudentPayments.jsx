@@ -781,8 +781,6 @@ const StudentPayments = () => {
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <div style={{ fontSize: 13, color: '#374151', marginBottom: 8 }}>Opening Balance: {formatCurrency(ledgerOpeningBalance)}</div>
-              
               {/* Desktop Table View */}
               <div className="desktop-table" style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -810,8 +808,12 @@ const StudentPayments = () => {
                       ))
                     )}
                     <tr>
+                      <td colSpan={4} style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>Opening Balance</td>
+                      <td style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>{formatCurrency(ledgerOpeningBalance)} {ledgerOpeningBalance > 0 ? 'Dr' : ledgerOpeningBalance < 0 ? 'Cr' : ''}</td>
+                    </tr>
+                    <tr>
                       <td colSpan={4} style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>Closing Balance</td>
-                      <td style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>{formatCurrency(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance)}</td>
+                      <td style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>{formatCurrency(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance)} {(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance) > 0 ? 'Dr' : (ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance) < 0 ? 'Cr' : ''}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -852,12 +854,20 @@ const StudentPayments = () => {
                   ))
                 )}
                 {ledgerRows.length > 0 && (
-                  <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: 'clamp(0.75rem, 3vw, 1rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                      <span style={{ fontWeight: 700, color: '#059669', minWidth: 'clamp(80px, 30vw, 120px)' }}>Closing Balance</span>
-                      <span style={{ flex: 1, textAlign: 'right', fontWeight: 700, color: '#059669' }}>{formatCurrency(ledgerRows[ledgerRows.length-1].running)}</span>
+                  <>
+                    <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 'clamp(0.75rem, 3vw, 1rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <span style={{ fontWeight: 700, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Opening Balance</span>
+                        <span style={{ flex: 1, textAlign: 'right', fontWeight: 700 }}>{formatCurrency(ledgerOpeningBalance)} {ledgerOpeningBalance > 0 ? 'Dr' : ledgerOpeningBalance < 0 ? 'Cr' : ''}</span>
+                      </div>
                     </div>
-                  </div>
+                    <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: 'clamp(0.75rem, 3vw, 1rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <span style={{ fontWeight: 700, color: '#059669', minWidth: 'clamp(80px, 30vw, 120px)' }}>Closing Balance</span>
+                        <span style={{ flex: 1, textAlign: 'right', fontWeight: 700, color: '#059669' }}>{formatCurrency(ledgerRows[ledgerRows.length-1].running)} {ledgerRows[ledgerRows.length-1].running > 0 ? 'Dr' : ledgerRows[ledgerRows.length-1].running < 0 ? 'Cr' : ''}</span>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
