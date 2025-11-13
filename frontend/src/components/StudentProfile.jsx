@@ -308,8 +308,17 @@ const StudentProfile = () => {
   const addPendingDocument = async () => {
     if (!pendingDoc || !student) return alert('No file selected');
     try {
+      const pendingType = String(pendingDoc.type || '').trim().toUpperCase();
+      if (!pendingType || pendingType === 'NONE') return alert('Please select a valid document type before adding');
+
+      const existingDocs = Array.isArray(student.documents) ? student.documents : [];
+      const duplicate = existingDocs.some(d => String(d.type || '').trim().toUpperCase() === pendingType);
+      if (duplicate) {
+        return alert(`A document of type "${pendingDoc.type}" has already been uploaded`);
+      }
+
       const newDoc = { id: `doc_${Date.now()}`, type: pendingDoc.type || 'NONE', dataUrl: pendingDoc.dataUrl, uploadedAt: pendingDoc.uploadedAt };
-      const existing = Array.isArray(student.documents) ? [newDoc, ...student.documents] : [newDoc];
+      const existing = [newDoc, ...existingDocs];
       const token = localStorage.getItem('token');
       const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
         method: 'PUT',
