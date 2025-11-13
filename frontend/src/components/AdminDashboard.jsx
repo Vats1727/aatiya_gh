@@ -1070,6 +1070,9 @@ const fetchHostels = async () => {
               width: '100%',
             }}
           />
+          <div style={{ marginTop: '0.5rem', color: '#6b7280', fontSize: '0.9rem' }}>
+            Total hostels: {uniqueHostels.length}
+          </div>
           
           {/* Global Search Results Dropdown */}
           {globalSearchResults && globalSearchTerm.trim() && (
@@ -1313,14 +1316,7 @@ const fetchHostels = async () => {
         {/* Removed duplicate header + global-search block (kept the first instance above). */}
 
         <div className="table-container" style={styles.tableContainer}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem' }}>
-            <input
-              type="search"
-              placeholder="Search hostels by name..."
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              style={{ ...styles.searchInput, maxWidth: 420 }}
-            />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '0.75rem' }}>
             <div style={{ color: '#6b7280' }}>{filteredHostels.length} hostels</div>
           </div>
 
