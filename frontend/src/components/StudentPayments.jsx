@@ -205,8 +205,10 @@ const StudentPayments = () => {
       const token = localStorage.getItem('token');
       if (!token) return alert('Not authenticated');
 
-      // capture numeric amount and type before resetting state
-      const amount = Number(newPayment.amount) || 0;
+      // Ensure amount is a clean integer
+      const amount = parseInt(newPayment.amount, 10) || 0;
+      if (amount <= 0) return alert('Please enter a valid amount greater than 0');
+      
       const type = newPayment.type || 'credit';
 
       const payload = {
@@ -583,6 +585,7 @@ const StudentPayments = () => {
                     style={styles.input}
                     required
                     min="0"
+                    step="1"
                   />
                 </div>
 

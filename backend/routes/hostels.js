@@ -418,8 +418,8 @@ router.post('/users/me/hostels/:hostelId/students/:studentId/payments', async (r
     const { amount, paymentMode, remarks, type, timestamp } = req.body || {};
 
     if (!userId || !hostelId || !studentId) return res.status(400).json({ success: false, error: 'Invalid parameters' });
-    const amt = Number(amount || 0);
-    if (Number.isNaN(amt) || amt < 0) return res.status(400).json({ success: false, error: 'Invalid amount' });
+    const amt = parseInt(amount, 10) || 0;
+    if (isNaN(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'Invalid amount' });
     if (!['credit', 'debit'].includes(type)) return res.status(400).json({ success: false, error: 'Invalid payment type' });
 
     const studentRef = db.collection('users').doc(userId).collection('hostels').doc(hostelId).collection('students').doc(studentId);
