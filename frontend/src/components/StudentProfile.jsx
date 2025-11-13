@@ -18,7 +18,6 @@ const StudentProfile = () => {
   const [docOptions, setDocOptions] = useState([]);
   const [docSelection, setDocSelection] = useState('NONE');
   const [docOtherValue, setDocOtherValue] = useState('');
-  const [addingDoc, setAddingDoc] = useState(true);
   const [previewImage, setPreviewImage] = useState(null);
   const [previewFee, setPreviewFee] = useState('');
 
@@ -104,8 +103,6 @@ const StudentProfile = () => {
         }
 
         setStudent(merged);
-        // if there are already documents, start with controls hidden (user can click Add to add more)
-        setAddingDoc(!(merged?.documents && merged.documents.length > 0));
       } catch (err) {
         console.error('Failed to load student', err);
       } finally {
@@ -113,7 +110,6 @@ const StudentProfile = () => {
       }
     };
     load();
-    //edbqhbd
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostelId, studentId]);
 
@@ -197,8 +193,6 @@ const StudentProfile = () => {
         });
         if (!resp.ok) throw new Error('Failed to upload');
         setStudent(prev => ({ ...prev, documents: existing }));
-        // after uploading, collapse controls so document becomes static
-        setAddingDoc(false);
       };
       reader.readAsDataURL(file);
     } catch (err) {
@@ -321,59 +315,32 @@ const StudentProfile = () => {
         {activeTab === 'documents' && (
           <div>
             <h3 style={styles.tabTitle}>Upload Documents ({Array.isArray(student.documents) ? `${student.documents.length} document${student.documents.length !== 1 ? 's' : ''}` : '0 documents'})</h3>
+            <div style={styles.docControls}>
+              <select value={docSelection} onChange={(e) => setDocSelection(e.target.value)} style={styles.docSelect}>
+                {(docOptions || ['NONE','AADHAR CARD']).map(opt => (<option key={opt} value={opt}>{opt}</option>))}
+                <option value="__ADD_OTHER__">Others (add)</option>
+              </select>
+              {docSelection === '__ADD_OTHER__' && (
+                <div style={styles.addOtherContainer}>
+                  <input value={docOtherValue} onChange={(e) => setDocOtherValue(e.target.value)} placeholder="Enter document name" style={styles.docInput} />
+                  <button onClick={() => addCustomDocOption(docOtherValue)} style={styles.button}>Add</button>
+                </div>
+              )}
+              {(docSelection && docSelection !== 'NONE' && docSelection !== '__ADD_OTHER__') && (
+                <label style={styles.fileUploadLabel}>
+                  Upload
+                  <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleDocumentUpload(f); e.target.value = ''; }} style={{ display: 'none' }} />
+                </label>
+              )}
+            </div>
 
-            {/* Controls row: dropdown | upload | preview (visible when addingDoc is true) */}
-            {addingDoc ? (
-              <div style={styles.docControlsRow}>
-                <select value={docSelection} onChange={(e) => setDocSelection(e.target.value)} style={styles.docSelect}>
-                  {(docOptions || ['NONE','AADHAR CARD']).map(opt => (<option key={opt} value={opt}>{opt}</option>))}
-                  <option value="__ADD_OTHER__">Others (add)</option>
-                </select>
-
-                {docSelection === '__ADD_OTHER__' && (
-                  <div style={styles.addOtherRow}>
-                    <input value={docOtherValue} onChange={(e) => setDocOtherValue(e.target.value)} placeholder="Enter document name" style={styles.docInput} />
-                    <button onClick={() => addCustomDocOption(docOtherValue)} style={{ ...styles.button, padding: '0.5rem 0.75rem' }}>Add Type</button>
-                  </div>
-                )}
-
-                {(docSelection && docSelection !== 'NONE' && docSelection !== '__ADD_OTHER__') && (
-                  <>
-                    <label style={styles.fileUploadLabel}>
-                      Upload File
-                      <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleDocumentUpload(f); e.target.value = ''; }} style={{ display: 'none' }} />
-                    </label>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const docs = (student.documents || []).filter(d => String((d.type||'').toUpperCase()) === String(docSelection || '').toUpperCase());
-                        if (docs.length > 0) setPreviewImage(docs[0].dataUrl);
-                        else alert('No documents for this type yet');
-                      }}
-                      style={styles.previewButton}
-                    >
-                      Preview
-                    </button>
-                  </>
-                )}
-              </div>
-            ) : (
-              <div style={styles.addNewDocRow}>
-                <button onClick={() => { setAddingDoc(true); setDocSelection('NONE'); setDocOtherValue(''); }} style={styles.addNewDocButton}>+ Add New Document</button>
-              </div>
-            )}
-
-            {/* Documents Grid: show name above image */}
             <div style={styles.docGrid}>
               {Array.isArray(student.documents) && student.documents.length > 0 ? (
                 student.documents.map(doc => (
                   <div key={doc.id} style={styles.docItem}>
+                    <img src={doc.dataUrl} alt={doc.type} style={styles.docImage} onClick={() => setPreviewImage(doc.dataUrl)} />
+                    <button onClick={() => handleDeleteDocument(doc.id)} style={styles.docDeleteBtn}>×</button>
                     <div style={styles.docLabel}>{doc.type}</div>
-                    <div style={{ position: 'relative', width: '100%' }}>
-                      <img src={doc.dataUrl} alt={doc.type} style={styles.docImage} onClick={() => setPreviewImage(doc.dataUrl)} />
-                      <button onClick={() => handleDeleteDocument(doc.id)} style={styles.docDeleteBtn}>×</button>
-                    </div>
                   </div>
                 ))
               ) : (
@@ -638,44 +605,6 @@ const styles = {
     alignItems: 'center',
     marginBottom: '1.5rem',
     flexWrap: 'wrap',
-  },
-  docControlsRow: {
-    display: 'flex',
-    gap: '1rem',
-    alignItems: 'center',
-    marginBottom: '1rem',
-    flexWrap: 'wrap',
-    padding: '0.75rem',
-    backgroundColor: '#f8fafc',
-    borderRadius: '0.5rem',
-    border: '1px solid #e5e7eb',
-  },
-  addOtherRow: {
-    display: 'flex',
-    gap: '0.75rem',
-    alignItems: 'center',
-  },
-  addNewDocRow: {
-    display: 'flex',
-    justifyContent: 'center',
-    marginBottom: '1rem',
-  },
-  addNewDocButton: {
-    padding: '0.75rem 1.25rem',
-    background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.5rem',
-    cursor: 'pointer',
-    fontWeight: '600',
-  },
-  previewButton: {
-    padding: '0.5rem 0.75rem',
-    background: '#8b5cf6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.5rem',
-    cursor: 'pointer',
   },
   docSelect: {
     padding: '0.625rem 0.875rem',
