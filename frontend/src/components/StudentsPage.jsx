@@ -943,16 +943,23 @@ const StudentsPage = () => {
                         )}
 
                         {/* Previews of uploaded documents */}
-                        {Array.isArray(student.documents) && student.documents.length > 0 && (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-                            {student.documents.map(doc => (
-                              <div key={doc.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <img src={doc.dataUrl} alt={doc.type} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, cursor: 'pointer' }} onClick={() => setPreviewImage(doc.dataUrl)} />
-                                <button title="Delete" onClick={() => handleDeleteDocument(student, doc.id)} style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: 12, width: 20, height: 20, cursor: 'pointer', fontSize: 12 }}>×</button>
-                                <div style={{ fontSize: 11, color: '#374151', marginTop: 4 }}>{doc.type}</div>
+                        {Array.isArray(student.documents) && student.documents.length > 0 && docSelections[student.id] && docSelections[student.id] !== 'NONE' && docSelections[student.id] !== '__ADD_OTHER__' && (
+                          (() => {
+                            const sel = docSelections[student.id];
+                            const matched = student.documents.filter(d => String(d.type || '').toUpperCase() === String(sel || '').toUpperCase());
+                            if (matched.length === 0) return null;
+                            return (
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+                                {matched.map(doc => (
+                                  <div key={doc.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <img src={doc.dataUrl} alt={doc.type} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, cursor: 'pointer' }} onClick={() => setPreviewImage(doc.dataUrl)} />
+                                    <button title="Delete" onClick={() => handleDeleteDocument(student, doc.id)} style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: 12, width: 20, height: 20, cursor: 'pointer', fontSize: 12 }}>×</button>
+                                    <div style={{ fontSize: 11, color: '#374151', marginTop: 4 }}>{doc.type}</div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
+                            );
+                          })()
                         )}
                       </div>
                     </td>
