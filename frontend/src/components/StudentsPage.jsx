@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { renderStudentPrintHtml, renderRulesHtml } from '../utils/printTemplate';
 import { downloadStudentPdf } from '../utils/pdfUtils';
@@ -18,6 +18,7 @@ const StudentsPage = () => {
   const [previewFee, setPreviewFee] = useState('');
   const [previewCurrency, setPreviewCurrency] = useState('INR');
   const [students, setStudents] = useState([]);
+  const [highlightId, setHighlightId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -146,6 +147,31 @@ const StudentsPage = () => {
     fetchStudents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostelId]);
+
+  // If a highlight query param is present (from global search), scroll to and highlight that row
+  const location = useLocation();
+  useEffect(() => {
+    if (!students || students.length === 0) return;
+    try {
+      const params = new URLSearchParams(location.search);
+      const h = params.get('highlight');
+      if (!h) return;
+      setHighlightId(h);
+      // Scroll into view if element exists after render
+      setTimeout(() => {
+        const el = document.getElementById(`student-row-${h}`);
+        if (el && typeof el.scrollIntoView === 'function') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+
+      // Remove highlight after 8 seconds
+      const t = setTimeout(() => setHighlightId(null), 8000);
+      return () => clearTimeout(t);
+    } catch (err) {
+      // ignore
+    }
+  }, [students, location.search]);
 
   // Listen for cross-tab storage events so other pages (Add Hostel / Add Student) can trigger refreshes
   useEffect(() => {
@@ -769,7 +795,7 @@ const StudentsPage = () => {
                 })();
 
                 return (
-                  <tr key={student.id} style={index % 2 === 0 ? styles.trEven : styles.trOdd}>
+                  <tr key={student.id} id={`student-row-${student.id}`} style={student.id === highlightId ? { ...(index % 2 === 0 ? styles.trEven : styles.trOdd), ...styles.highlightRow } : (index % 2 === 0 ? styles.trEven : styles.trOdd)}>
                     <td style={styles.td}>{computedAppNo}</td>
                     <td style={styles.td}>
                       <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
@@ -1085,6 +1111,11 @@ const styles = {
   },
   trOdd: {
     backgroundColor: '#f9fafb',
+  },
+  highlightRow: {
+    backgroundColor: '#fff4cc',
+    transition: 'background-color 0.3s ease',
+    boxShadow: 'inset 4px 0 0 0 rgba(250, 204, 21, 0.25)'
   },
   actionButton: {
     padding: '6px 10px',
