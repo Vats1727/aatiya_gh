@@ -1293,11 +1293,11 @@ const styles = {
   container: {
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-    padding: '1rem',
+    padding: '1.5rem',
     boxSizing: 'border-box',
     width: '100%',
-    maxWidth: '1400px',
-    margin: '0 auto',
+    maxWidth: '100%',
+    margin: 0,
   },
   tableContainer: {
     backgroundColor: 'white',
