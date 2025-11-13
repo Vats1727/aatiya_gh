@@ -371,13 +371,7 @@ const StudentProfile = () => {
 
   return (
     <div style={styles.container}>
-      {/* Header with back button */}
       <div style={styles.header}>
-        <button onClick={close} style={styles.backButton}>
-          <ArrowLeft size={18} />
-          <span>Back to Students</span>
-        </button>
-
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 6 }}>
           <h1 style={styles.title}>{student.studentName || student.name || 'Student Profile'}</h1>
 
@@ -392,18 +386,26 @@ const StudentProfile = () => {
         </div>
 
         <div style={styles.headerActions}>
+          {/* Small back button placed in the actions row (right-most area) */}
+          <button onClick={close} style={styles.smallBackButton} title="Back to Students">
+            <ArrowLeft size={16} />
+          </button>
+
           {!isActive && (
             <button onClick={handleAccept} style={{ ...styles.button, ...styles.acceptButton }}>
               Accept
             </button>
           )}
+
           <button onClick={handleSave} style={{ ...styles.button, ...styles.saveButton }}>
             Save
           </button>
+
           <button onClick={handleDownload} style={{ ...styles.downloadHeaderButton, marginLeft: 8 }}>
             <Download size={18} />
             <span>PDF</span>
           </button>
+
           <button onClick={close} style={{ ...styles.button, ...styles.closeButton }}>
             Close
           </button>
@@ -539,13 +541,14 @@ const styles = {
   },
   header: {
     background: 'white',
-    padding: '1.5rem 2rem',
+    padding: '1.25rem 1.5rem',
     borderRadius: '0.75rem',
     boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
     marginBottom: '1.5rem',
     display: 'flex',
-    flexDirection: 'column',
-    gap: '1.25rem',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '1rem',
     position: 'relative',
     zIndex: 10,
     '&::before': {
@@ -578,6 +581,20 @@ const styles = {
       borderColor: '#cbd5e1',
       transform: 'translateY(-1px)',
     },
+  },
+  smallBackButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 36,
+    height: 36,
+    background: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderRadius: 10,
+    cursor: 'pointer',
+    color: '#374151',
+    fontWeight: 600,
+    transition: 'all 0.15s ease',
   },
   title: {
     fontSize: '1.5rem',

@@ -17,33 +17,6 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Apply responsive styles
-const applyResponsiveStyles = (styleObj) => {
-  const result = { ...styleObj };
-  
-  // Remove media query properties
-  Object.keys(result).forEach(key => {
-    if (key.startsWith('@media')) {
-      delete result[key];
-    }
-  });
-
-  // Apply mobile styles if needed
-  if (window.innerWidth < 768) {
-    if (styleObj['@media (max-width: 768px)']) {
-      Object.assign(result, styleObj['@media (max-width: 768px)']);
-    }
-  }
-  
-  if (window.innerWidth < 480) {
-    if (styleObj['@media (max-width: 480px)']) {
-      Object.assign(result, styleObj['@media (max-width: 480px)']);
-    }
-  }
-
-  return result;
-};
-
   const styles = {
     container: {
       minHeight: '100vh',
@@ -62,7 +35,7 @@ const applyResponsiveStyles = (styleObj) => {
       borderRadius: '0.75rem',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
       width: '100%',
-      maxWidth: '400px',
+      maxWidth: '480px',
       margin: '0.5rem',
       boxSizing: 'border-box',
       border: '1px solid #e2e8f0',
@@ -96,16 +69,7 @@ const applyResponsiveStyles = (styleObj) => {
       boxSizing: 'border-box',
       transition: 'all 0.2s ease',
       minHeight: '44px',
-      backgroundColor: '#f8fafc',
-      ':focus': {
-        borderColor: '#3b82f6',
-        boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)',
-        backgroundColor: '#ffffff',
-      },
-      '::placeholder': {
-        color: '#94a3b8',
-        fontSize: '0.875rem',
-      },
+      backgroundColor: '#ffffff',
     },
     button: {
       width: '100%',
@@ -121,18 +85,7 @@ const applyResponsiveStyles = (styleObj) => {
       WebkitTapHighlightColor: 'transparent',
       minHeight: '44px',
       marginTop: '0.25rem',
-      ':hover': {
-        background: '#2563eb',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      },
-      ':active': {
-        transform: 'translateY(1px)',
-      },
-      ':disabled': {
-        opacity: 0.7,
-        cursor: 'not-allowed',
-        background: '#93c5fd',
-      },
+      // hover/active handled via inline handlers where needed
     },
     error: {
       color: '#b91c1c',

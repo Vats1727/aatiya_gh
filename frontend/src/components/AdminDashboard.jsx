@@ -829,6 +829,8 @@ const fetchHostels = async () => {
 
   const handleGlobalSearch = (query) => {
     setGlobalSearchTerm(query);
+    // show buffering spinner immediately when user types
+    if (query && query.trim()) setIsSearching(true);
     // debounce network-heavy global search
     if (globalSearchTimerRef.current) clearTimeout(globalSearchTimerRef.current);
     globalSearchTimerRef.current = setTimeout(() => {
