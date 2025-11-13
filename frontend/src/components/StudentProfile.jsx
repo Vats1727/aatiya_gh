@@ -23,12 +23,70 @@ const StudentProfile = () => {
 
   useEffect(() => {
     const load = async () => {
+      let studentData = student;
+      
+      // If student was passed via location.state, ensure we enrich it with hostel data
       if (student) {
-        // prefill docOptions from existing documents
-        const opts = (student.documents || []).map(d => d.type).filter(Boolean);
+        studentData = { ...student };
+        
+        // Try to fetch hostel details from authenticated API first (Firestore)
+        try {
+          const token = localStorage.getItem('token');
+          if (token && !(studentData?.hostelName || studentData?.hostel?.name)) {
+            const hostelsRes = await fetch(`${API_BASE}/api/users/me/hostels`, {
+              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            if (hostelsRes.ok) {
+              const hostelsPayload = await hostelsRes.json();
+              const hostels = hostelsPayload?.data || hostelsPayload || [];
+              const found = hostels.find(h => String(h.id) === String(hostelId) || String(h._id) === String(hostelId) || String(h.hostelId) === String(hostelId));
+              if (found) {
+                studentData = { ...studentData, hostelName: found.name || found.hostelName || studentData.hostelName };
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to fetch hostel from authenticated API', e);
+        }
+        
+        // If hostelName still missing, try public endpoint
+        if (!(studentData?.hostelName || studentData?.hostel?.name)) {
+          try {
+            const pub = await fetch(`${API_BASE}/api/public/hostels/${hostelId}`);
+            if (pub.ok) {
+              const pubJson = await pub.json();
+              const pubData = pubJson?.data || pubJson || null;
+              if (pubData) {
+                studentData = { ...studentData, hostelName: pubData.name || studentData.hostelName || studentData.hostel };
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to fetch hostel from public API', e);
+          }
+        }
+        
+        // If hostelName still missing, try alternate ids present on student
+        if (!(studentData?.hostelName || studentData?.hostel?.name)) {
+          const altId = studentData.ownerHostelDocId || studentData.hostelDocId || studentData.hostelId || null;
+          if (altId) {
+            try {
+              const pub2 = await fetch(`${API_BASE}/api/public/hostels/${altId}`);
+              if (pub2.ok) {
+                const pj = await pub2.json();
+                const pd = pj?.data || pj || null;
+                if (pd) {
+                  studentData = { ...studentData, hostelName: pd.name || studentData.hostelName };
+                }
+              }
+            } catch (e) { /* ignore */ }
+          }
+        }
+        
+        setStudent(studentData);
+        const opts = (studentData?.documents || []).map(d => d.type).filter(Boolean);
         const base = ['NONE', 'AADHAR CARD'];
         setDocOptions(Array.from(new Set([...base, ...opts])));
-        setPreviewFee(student.appliedFee || student.monthlyFee || '');
+        setPreviewFee(studentData?.appliedFee ?? studentData?.monthlyFee ?? '');
         return;
       }
 
@@ -44,8 +102,29 @@ const StudentProfile = () => {
           const s = payload?.data || payload || null;
           if (s) {
             let merged = { ...s };
+            
+            // Try to fetch hostel details from authenticated API first (Firestore)
             try {
-              if ((!merged.hostelName && !merged.hostel) && hostelId) {
+              if (token) {
+                const hostelsRes = await fetch(`${API_BASE}/api/users/me/hostels`, {
+                  headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                });
+                if (hostelsRes.ok) {
+                  const hostelsPayload = await hostelsRes.json();
+                  const hostels = hostelsPayload?.data || hostelsPayload || [];
+                  const found = hostels.find(h => String(h.id) === String(hostelId) || String(h._id) === String(hostelId) || String(h.hostelId) === String(hostelId));
+                  if (found) {
+                    merged = { ...merged, hostelName: found.name || found.hostelName || merged.hostelName, hostelAddress: found.address || merged.hostelAddress, monthlyFee: (found.monthlyFee != null ? found.monthlyFee : merged.monthlyFee), monthlyFeeCurrency: found.monthlyFeeCurrency || merged.monthlyFeeCurrency || 'INR' };
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn('Failed to fetch hostel from authenticated API', e);
+            }
+            
+            // If hostelName still missing, try public endpoint
+            if (!(merged?.hostelName || merged?.hostel)) {
+              try {
                 const pub = await fetch(`${API_BASE}/api/public/hostels/${hostelId}`);
                 if (pub.ok) {
                   const pubJson = await pub.json();
@@ -54,12 +133,11 @@ const StudentProfile = () => {
                     merged = { ...merged, hostelName: pubData.name || merged.hostelName || merged.hostel, hostelAddress: pubData.address || merged.hostelAddress, monthlyFee: (pubData.monthlyFee != null ? pubData.monthlyFee : merged.monthlyFee), monthlyFeeCurrency: pubData.monthlyFeeCurrency || merged.monthlyFeeCurrency || 'INR' };
                   }
                 }
+              } catch (e) {
+                console.warn('Failed to fetch hostel from public API', e);
               }
-            } catch (e) {
-              // ignore fetch errors for hostel
-              console.warn('Failed to fetch hostel for profile header', e);
             }
-
+            
             // If hostelName still missing, try alternate ids present on student
             if (!(merged?.hostelName || merged?.hostel)) {
               const altId = merged.ownerHostelDocId || merged.hostelDocId || merged.hostelId || null;
@@ -153,6 +231,11 @@ const StudentProfile = () => {
   const addCustomDocOption = (value) => {
     if (!value || !value.trim()) return;
     const u = String(value).trim().toUpperCase();
+    // Check if option already exists (case-insensitive)
+    if (docOptions && docOptions.some(opt => opt.toUpperCase() === u)) {
+      alert('This document type already exists');
+      return;
+    }
     setDocOptions(prev => Array.from(new Set([...(prev || ['NONE','AADHAR CARD']), u])));
     setDocSelection(u);
     setDocOtherValue('');
@@ -295,7 +378,7 @@ const StudentProfile = () => {
 
         {activeTab === 'documents' && (
           <div>
-            <h3 style={styles.tabTitle}>Upload Documents</h3>
+            <h3 style={styles.tabTitle}>Upload Documents ({Array.isArray(student.documents) ? `${student.documents.length} document${student.documents.length !== 1 ? 's' : ''}` : '0 documents'})</h3>
             <div style={styles.docControls}>
               <select value={docSelection} onChange={(e) => setDocSelection(e.target.value)} style={styles.docSelect}>
                 {(docOptions || ['NONE','AADHAR CARD']).map(opt => (<option key={opt} value={opt}>{opt}</option>))}

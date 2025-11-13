@@ -28,6 +28,9 @@ const StudentsPage = () => {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
   const [translitNameHi, setTranslitNameHi] = useState('');
   const [translitAddressHi, setTranslitAddressHi] = useState('');
+  const [docSelections, setDocSelections] = useState({});
+  const [docOptions, setDocOptions] = useState({});
+  const [docOtherValue, setDocOtherValue] = useState({});
   const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
@@ -161,6 +164,17 @@ const StudentsPage = () => {
       // dedupe while preserving order
       opts[s.id] = Array.from(new Set(opts[s.id]));
     });
+    setDocOptions(prev => ({ ...opts, ...prev }));
+  }, [students]);
+
+  // Ensure per-student selection defaults to NONE to avoid uncontrolled layout
+  useEffect(() => {
+    const sel = {};
+    students.forEach(s => {
+      sel[s.id] = docSelections[s.id] || 'NONE';
+    });
+    setDocSelections(prev => ({ ...sel, ...prev }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [students]);
 
   // If a highlight query param is present (from global search), scroll to and highlight that row
@@ -362,6 +376,82 @@ const StudentsPage = () => {
   const handleAccept = async (student) => {
     // open enriched preview modal so admin can review/adjust fee
     await openPreview(student);
+  };
+
+  // Document dropdown change handler (per student)
+  const handleDocSelection = (studentId, value) => {
+    setDocSelections(prev => ({ ...prev, [studentId]: value }));
+  };
+
+  // Add a custom 'other' option (stored upper-case) and select it
+  const addCustomDocOption = (studentId, value) => {
+    if (!value || !value.trim()) return;
+    const u = String(value).trim().toUpperCase();
+    setDocOptions(prev => ({ ...prev, [studentId]: Array.from(new Set([...(prev[studentId] || ['NONE','AADHAR CARD']), u])) }));
+    setDocSelections(prev => ({ ...prev, [studentId]: u }));
+    setDocOtherValue(prev => ({ ...prev, [studentId]: '' }));
+  };
+
+  // Upload document image and persist to student document
+  const handleDocumentUpload = async (student, file) => {
+    if (!file) return;
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const dataUrl = e.target.result;
+        const token = localStorage.getItem('token');
+        if (!token) return alert('Not authenticated');
+
+        // Append a new document entry to the student's documents array
+        const newDoc = {
+          id: `doc_${Date.now()}`,
+          type: docSelections[student.id] || 'NONE',
+          dataUrl,
+          uploadedAt: new Date().toISOString()
+        };
+
+  // Merge with existing documents locally
+  const existing = Array.isArray(student.documents) ? student.documents.slice() : [];
+        // Put newest documents first so UI shows the latest upload prominently
+        existing.unshift(newDoc);
+
+        // Persist via existing student PUT endpoint
+        const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ documents: existing })
+        });
+        if (!resp.ok) throw new Error('Failed to upload document');
+        const payload = await resp.json();
+
+        // Update local state with updated student
+        setStudents(prev => prev.map(s => s.id === student.id ? ({ ...s, documents: existing }) : s));
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Document upload failed', err);
+      alert('Failed to upload document');
+    }
+  };
+
+  // Delete a specific document from a student
+  const handleDeleteDocument = async (student, docId) => {
+    try {
+      if (!confirm('Delete this document?')) return;
+      const existing = Array.isArray(student.documents) ? student.documents.filter(d => d.id !== docId) : [];
+      const token = localStorage.getItem('token');
+      if (!token) return alert('Not authenticated');
+      const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ documents: existing })
+      });
+      if (!resp.ok) throw new Error('Failed to delete document');
+      setStudents(prev => prev.map(s => s.id === student.id ? ({ ...s, documents: existing }) : s));
+    } catch (err) {
+      console.error('Failed to delete document', err);
+      alert('Failed to delete document');
+    }
   };
 
   const confirmAccept = async () => {
@@ -793,7 +883,6 @@ const StudentsPage = () => {
               <tr>
                 <th style={styles.th}>Application No.</th>
                 <th style={styles.th}>Name</th>
-                <th style={styles.th}>Documents</th>
                 <th style={styles.th}>Status</th>
                 <th style={styles.th}>Mobile Number</th>
                 <th style={styles.th}>Current Balance</th>
