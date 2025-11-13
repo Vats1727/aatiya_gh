@@ -681,19 +681,7 @@ const fetchHostels = async () => {
       gap: 'clamp(0.75rem, 3vw, 1rem)',
       marginTop: 'clamp(0.75rem, 3vw, 1rem)',
     },
-    input: {
-      padding: 'clamp(0.5rem, 2vw, 0.75rem)',
-      border: '1px solid #e5e7eb',
-      borderRadius: '0.5rem',
-      fontSize: 'clamp(0.875rem, 3vw, 0.9375rem)',
-      '&:focus': {
-        outline: 'none',
-        borderColor: '#8b5cf6',
-        boxShadow: '0 0 0 2px rgba(168, 85, 247, 0.2)',
-      },
-    },
     submitButton: {
-      background: 'linear-gradient(135deg, #ec4899 0%, #9333ea 100%)',
       color: 'white',
       border: 'none',
       padding: 'clamp(0.5rem, 2vw, 0.75rem)',
@@ -706,6 +694,7 @@ const fetchHostels = async () => {
         opacity: 0.95,
       },
     },
+    
     cancelButton: {
       background: '#6b7280',
       color: 'white',
@@ -1060,18 +1049,34 @@ const fetchHostels = async () => {
           marginBottom: 'clamp(0.75rem, 4vw, 1.5rem)',
           position: 'relative',
         }}>
-          <input
-            type="search"
-            placeholder="Search any student or hostel across all hostels... (name, mobile, application number)"
-            value={globalSearchTerm}
-            onChange={(e) => handleGlobalSearch(e.target.value)}
-            style={{
-              ...styles.searchInput,
-              width: '100%',
-            }}
-          />
-          <div style={{ marginTop: '0.5rem', color: '#6b7280', fontSize: '0.9rem' }}>
-            Total hostels: {uniqueHostels.length}
+          <div style={{ position: 'relative', width: '100%' }}>
+            <input
+              type="search"
+              placeholder="Search any student or hostel across all hostels... (name, mobile, application number)"
+              value={globalSearchTerm}
+              onChange={(e) => handleGlobalSearch(e.target.value)}
+              style={{
+                ...styles.searchInput,
+                width: '100%',
+                paddingRight: '140px'
+              }}
+            />
+
+            <div style={{
+              position: 'absolute',
+              right: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: '#f3f4f6',
+              padding: '6px 10px',
+              borderRadius: 8,
+              color: '#374151',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              pointerEvents: 'none'
+            }}>
+              {uniqueHostels.length} hostels
+            </div>
           </div>
           
           {/* Global Search Results Dropdown */}
@@ -1316,9 +1321,7 @@ const fetchHostels = async () => {
         {/* Removed duplicate header + global-search block (kept the first instance above). */}
 
         <div className="table-container" style={styles.tableContainer}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '0.75rem' }}>
-            <div style={{ color: '#6b7280' }}>{filteredHostels.length} hostels</div>
-          </div>
+          {/* hostels count moved into global search bar */}
 
           {isMobile ? (
             <div style={styles.hostelGrid}>
