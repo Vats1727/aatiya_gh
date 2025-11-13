@@ -462,8 +462,11 @@ const SuperAdminPage = () => {
               return (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
             });
             const defaultSelected = filtered[0] || null;
-            const selectedUser = (allData.users || []).find(u => u.userId === selectedUserId) || defaultSelected;
-            const effectiveSelectedUserId = selectedUserId || (defaultSelected && defaultSelected.userId) || null;
+            // prefer the explicitly selected user only if it is part of the current filtered list;
+            // otherwise fall back to the first filtered user so the right panel reflects the filter
+            const selectedUserFromId = (allData.users || []).find(u => u.userId === selectedUserId) || null;
+            const selectedUser = (selectedUserFromId && filtered.some(f => f.userId === selectedUserFromId.userId)) ? selectedUserFromId : defaultSelected;
+            const effectiveSelectedUserId = selectedUser ? selectedUser.userId : null;
             const selectedStudentCount = (selectedUser?.hostels || []).reduce((acc, h) => acc + ((h.students && h.students.length) || 0), 0);
             const studentQuery = (studentSearchTerm || '').trim().toLowerCase();
             return (
@@ -489,14 +492,25 @@ const SuperAdminPage = () => {
                     />
                     <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {filtered.map(u => (
-                        <div key={u.userId} onClick={() => setSelectedUserId(u.userId)} style={{ cursor: 'pointer', padding: 10, borderRadius: 8, background: u.userId === effectiveSelectedUserId ? 'linear-gradient(90deg,#fbf7ff,#f3e8ff)' : '#fff', border: u.userId === effectiveSelectedUserId ? '1px solid #e9d5ff' : '1px solid #f3f3f3' }}>
+                        <div
+                          key={u.userId}
+                          onClick={() => setSelectedUserId(u.userId)}
+                          style={{
+                            cursor: 'pointer',
+                            padding: 10,
+                            borderRadius: 8,
+                            background: u.userId === effectiveSelectedUserId ? '#6d28d9' : '#fff',
+                            border: u.userId === effectiveSelectedUserId ? '1px solid #5b21b6' : '1px solid #f3f3f3',
+                            color: u.userId === effectiveSelectedUserId ? '#ffffff' : 'inherit'
+                          }}
+                        >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                               <div style={{ fontWeight: 700 }}>{u.name || u.email}</div>
-                              <div style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</div>
+                              <div style={{ color: u.userId === effectiveSelectedUserId ? 'rgba(255,255,255,0.9)' : '#6b7280', fontSize: 12 }}>{u.email}</div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: 12, color: '#374151' }}>{(u.hostels || []).length} hostels</div>
+                              <div style={{ fontSize: 12, color: u.userId === effectiveSelectedUserId ? 'rgba(255,255,255,0.95)' : '#374151' }}>{(u.hostels || []).length} hostels</div>
                             </div>
                           </div>
                         </div>
