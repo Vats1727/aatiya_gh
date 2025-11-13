@@ -537,75 +537,91 @@ const SuperAdminPage = () => {
                         </div>
                       </div>
 
-                      <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {(selectedUser.hostels || []).map(hostel => {
-                          const hostelKey = `${selectedUser.userId}-${hostel.hostelId}`;
-                          const isOpen = !!expandedHostels[hostelKey];
-                          return (
-                            <div key={hostel.hostelId} style={{ border: '1px solid #f3f3f3', borderRadius: 10, padding: 12, background: '#ffffff' }}>
-                              <div style={styles.hostelHeader} onClick={() => toggleHostelExpand(selectedUser.userId, hostel.hostelId)}>
-                                <div>
-                                  <h4 style={{ margin: 0 }}>{hostel.name}</h4>
-                                  <div style={{ color: '#6b7280', fontSize: 13 }}>Address: {hostel.address || 'N/A'}</div>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                  <div style={{ color: '#6b7280', fontSize: 13 }}>{(hostel.students || []).length} students</div>
-                                  <button style={styles.expandBtn} onClick={(e) => { e.stopPropagation(); toggleHostelExpand(selectedUser.userId, hostel.hostelId); }} aria-label={isOpen ? 'Collapse hostel' : 'Expand hostel'}>
-                                    {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                                  </button>
-                                </div>
-                              </div>
+                      <div style={{ marginTime: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {(() => {
+                          // when a student search is active, only show hostels that contain at least one matching student
+                          const hostelsToShow = (selectedUser.hostels || []).filter(hostel => {
+                            if (!studentQuery) return true;
+                            return (hostel.students || []).some(s => {
+                              return (s.studentName || '').toLowerCase().includes(studentQuery)
+                                || (s.email || '').toLowerCase().includes(studentQuery)
+                                || (s.studentId || '').toString().toLowerCase().includes(studentQuery);
+                            });
+                          });
 
-                              {isOpen && (
-                                <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  {(hostel.students || []).filter(s => {
-                                    if (!studentQuery) return true;
-                                    return (s.studentName || '').toLowerCase().includes(studentQuery) || ((s.email || '').toLowerCase().includes(studentQuery)) || ((s.studentId || '').toString().toLowerCase().includes(studentQuery));
-                                  }).map(student => (
-                                    <div key={student.studentId} style={{ padding: 10, borderRadius: 8, background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                      <div>
-                                        <div style={{ fontWeight: 700 }}>{student.studentName}</div>
-                                      </div>
-                                      <div style={{ minWidth: 240 }}>
-                                        {
-                                          (() => {
-                                            const key = `${selectedUser.userId}-${hostel.hostelId}-${student.studentId}`;
-                                            const payments = studentPaymentsMap[key] || (student.payments || []);
-                                            if (!payments || payments.length === 0) return <div style={{ color: '#9ca3af' }}>No payments</div>;
+                          if (hostelsToShow.length === 0) {
+                            return <div key="no-hostels" style={{ color: '#9ca3af' }}>No hostels with matching students</div>;
+                          }
 
-                                            return (
-                                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                {payments.map((payment, idx) => {
-                                                  const expected = Number(payment.expectedAmount ?? payment.dueAmount ?? hostel?.monthlyFee ?? payment.monthlyFee ?? 0);
-                                                  const paid = Number(payment.amount || 0);
-                                                  const diff = (!Number.isNaN(expected) && !Number.isNaN(paid)) ? (expected - paid) : null;
-                                                  const dateStr = formatDateValue(payment.date ?? payment.paidAt ?? payment.createdAt ?? payment.timestamp ?? payment.paid_on ?? payment.paymentDate);
-                                                  return (
-                                                    <div key={payment.paymentId || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                                                      <div style={{ fontWeight: 700 }}>{formatAmount(paid)}</div>
-                                                      <div style={{ color: '#6b7280' }}>{dateStr}</div>
-                                                      <div style={{ minWidth: 120, textAlign: 'right' }}>
-                                                        {diff === null ? <span style={{ color: '#9ca3af' }}>N/A</span> : diff > 0 ? <span style={{ color: '#92400e' }}>{formatAmount(diff)} left</span> : diff < 0 ? <span style={{ color: '#166534' }}>{formatAmount(Math.abs(diff))} advance</span> : <span style={{ color: '#3730a3' }}>Settled</span>}
+                          return hostelsToShow.map(hostel => {
+                            const hostelKey = `${selectedUser.userId}-${hostel.hostelId}`;
+                            const isOpen = !!expandedHostels[hostelKey];
+                            return (
+                              <div key={hostel.hostelId} style={{ border: '1px solid #f3f3f3', borderRadius: 10, padding: 12, background: '#ffffff' }}>
+                                <div style={styles.hostelHeader} onClick={() => toggleHostelExpand(selectedUser.userId, hostel.hostelId)}>
+                                  <div>
+                                    <h4 style={{ margin: 0 }}>{hostel.name}</h4>
+                                    <div style={{ color: '#6b7280', fontSize: 13 }}>Address: {hostel.address || 'N/A'}</div>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div style={{ color: '#6b7280', fontSize: 13 }}>{(hostel.students || []).length} students</div>
+                                    <button style={styles.expandBtn} onClick={(e) => { e.stopPropagation(); toggleHostelExpand(selectedUser.userId, hostel.hostelId); }} aria-label={isOpen ? 'Collapse hostel' : 'Expand hostel'}>
+                                      {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {isOpen && (
+                                  <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    {(hostel.students || []).filter(s => {
+                                      if (!studentQuery) return true;
+                                      return (s.studentName || '').toLowerCase().includes(studentQuery) || ((s.email || '').toLowerCase().includes(studentQuery)) || ((s.studentId || '').toString().toLowerCase().includes(studentQuery));
+                                    }).map(student => (
+                                      <div key={student.studentId} style={{ padding: 10, borderRadius: 8, background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                          <div style={{ fontWeight: 700 }}>{student.studentName}</div>
+                                        </div>
+                                        <div style={{ minWidth: 240 }}>
+                                          {
+                                            (() => {
+                                              const key = `${selectedUser.userId}-${hostel.hostelId}-${student.studentId}`;
+                                              const payments = studentPaymentsMap[key] || (student.payments || []);
+                                              if (!payments || payments.length === 0) return <div style={{ color: '#9ca3af' }}>No payments</div>;
+
+                                              return (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                  {payments.map((payment, idx) => {
+                                                    const expected = Number(payment.expectedAmount ?? payment.dueAmount ?? hostel?.monthlyFee ?? payment.monthlyFee ?? 0);
+                                                    const paid = Number(payment.amount || 0);
+                                                    const diff = (!Number.isNaN(expected) && !Number.isNaN(paid)) ? (expected - paid) : null;
+                                                    const dateStr = formatDateValue(payment.date ?? payment.paidAt ?? payment.createdAt ?? payment.timestamp ?? payment.paid_on ?? payment.paymentDate);
+                                                    return (
+                                                      <div key={payment.paymentId || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                                                        <div style={{ fontWeight: 700 }}>{formatAmount(paid)}</div>
+                                                        <div style={{ color: '#6b7280' }}>{dateStr}</div>
+                                                        <div style={{ minWidth: 120, textAlign: 'right' }}>
+                                                          {diff === null ? <span style={{ color: '#9ca3af' }}>N/A</span> : diff > 0 ? <span style={{ color: '#92400e' }}>{formatAmount(diff)} left</span> : diff < 0 ? <span style={{ color: '#166534' }}>{formatAmount(Math.abs(diff))} advance</span> : <span style={{ color: '#3730a3' }}>Settled</span>}
+                                                        </div>
                                                       </div>
-                                                    </div>
-                                                  );
-                                                })}
-                                              </div>
-                                            );
-                                          })()
-                                        }
+                                                    );
+                                                  })}
+                                                </div>
+                                              );
+                                            })()
+                                          }
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
-                                  {((hostel.students || []).filter(s => {
-                                    if (!studentQuery) return true;
-                                    return (s.studentName || '').toLowerCase().includes(studentQuery) || ((s.email || '').toLowerCase().includes(studentQuery)) || ((s.studentId || '').toString().toLowerCase().includes(studentQuery));
-                                  }).length === 0) && <div style={{ color: '#9ca3af', marginLeft: 6 }}>No students in this hostel</div>}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                                    ))}
+                                    {((hostel.students || []).filter(s => {
+                                      if (!studentQuery) return true;
+                                      return (s.studentName || '').toLowerCase().includes(studentQuery) || ((s.email || '').toLowerCase().includes(studentQuery)) || ((s.studentId || '').toString().toLowerCase().includes(studentQuery));
+                                    }).length === 0) && <div style={{ color: '#9ca3af', marginLeft: 6 }}>No students in this hostel</div>}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
                   )}
