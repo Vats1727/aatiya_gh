@@ -412,7 +412,8 @@ const StudentsPage = () => {
 
   // Merge with existing documents locally
   const existing = Array.isArray(student.documents) ? student.documents.slice() : [];
-  existing.push(newDoc);
+        // Put newest documents first so UI shows the latest upload prominently
+        existing.unshift(newDoc);
 
         // Persist via existing student PUT endpoint
         const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, {
@@ -653,7 +654,7 @@ const StudentsPage = () => {
 
 
   return (
-    <div className="container" style={styles.container}>
+    <div style={styles.container}>
       {/* Static profile navbar (sticky) - show current admin info if available */}
       {(() => {
         let stored = null;
@@ -837,12 +838,12 @@ const StudentsPage = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
                     <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Accept"><Check size={16} /></button>
                     <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Reject"><X size={16} /></button>
-                    <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
+                    <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=edit`, { state: { student } })} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
                     <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
-                    <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
+                    <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=view`, { state: { student } })} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
                     {student.status === 'approved' && (
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', marginRight: 8 }}>
@@ -856,7 +857,7 @@ const StudentsPage = () => {
                               `Advance: ₹${Math.abs(student.currentBalance || 0)} Cr`}
                           </div>
                         </div>
-                        <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/payments`)} style={{ ...styles.iconButton, ...styles.paymentButton }} title="Payments">💳</button>
+                        <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?tab=payments`, { state: { student } })} style={{ ...styles.iconButton, ...styles.paymentButton }} title="Payments">💳</button>
                       </>
                     )}
                     <button onClick={async () => {
@@ -905,9 +906,9 @@ const StudentsPage = () => {
                     <td style={styles.td}>
                       <span style={styles.nameText}>{student.studentName || student.name || 'N/A'}</span>
                     </td>
-                    <td style={{ ...styles.td, minWidth: 220, maxWidth: 320, verticalAlign: 'top' }}>
+                    <td style={{ ...styles.td, minWidth: 200, maxWidth: 280, verticalAlign: 'middle', padding: '8px 12px' }}>
                       {/* Documents column: constrained container to avoid table reflow */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 300, overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 260, overflow: 'hidden' }}>
                         <select
                           value={docSelections[student.id] || 'NONE'}
                           onChange={(e) => {
@@ -938,29 +939,116 @@ const StudentsPage = () => {
                         {/* Upload control shown when selection is not NONE */}
                         {(docSelections[student.id] && docSelections[student.id] !== 'NONE' && docSelections[student.id] !== '__ADD_OTHER__') && (
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleDocumentUpload(student, f); }} style={{ width: 140 }} />
+                            <label style={{
+                              display: 'inline-block',
+                              padding: '4px 8px',
+                              fontSize: '0.8rem',
+                              color: '#4b5563',
+                              backgroundColor: '#f3f4f6',
+                              borderRadius: '4px',
+                              border: '1px solid #d1d5db',
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: '140px',
+                              textAlign: 'center'
+                            }}>
+                              Choose File
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => { 
+                                  const f = e.target.files && e.target.files[0]; 
+                                  if (f) handleDocumentUpload(student, f);
+                                  e.target.value = ''; // Reset input to allow re-uploading same file
+                                }} 
+                                style={{ display: 'none' }} 
+                              />
+                            </label>
                           </div>
                         )}
 
                         {/* Previews of uploaded documents */}
-                        {Array.isArray(student.documents) && student.documents.length > 0 && docSelections[student.id] && docSelections[student.id] !== 'NONE' && docSelections[student.id] !== '__ADD_OTHER__' && (
-                          (() => {
-                            const sel = docSelections[student.id];
-                            const matched = student.documents.filter(d => String(d.type || '').toUpperCase() === String(sel || '').toUpperCase());
-                            if (matched.length === 0) return null;
-                            return (
-                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-                                {matched.map(doc => (
-                                  <div key={doc.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <img src={doc.dataUrl} alt={doc.type} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, cursor: 'pointer' }} onClick={() => setPreviewImage(doc.dataUrl)} />
-                                    <button title="Delete" onClick={() => handleDeleteDocument(student, doc.id)} style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: 12, width: 20, height: 20, cursor: 'pointer', fontSize: 12 }}>×</button>
-                                    <div style={{ fontSize: 11, color: '#374151', marginTop: 4 }}>{doc.type}</div>
+                        {Array.isArray(student.documents) && student.documents.length > 0 && docSelections[student.id] && docSelections[student.id] !== 'NONE' && docSelections[student.id] !== '__ADD_OTHER__' && (() => {
+                          const sel = docSelections[student.id];
+                          const matched = student.documents.filter(d => String(d.type || '').toUpperCase() === String(sel || '').toUpperCase());
+                          if (matched.length === 0) return null;
+                          
+                          const matchedSorted = matched.slice().sort((a, b) => {
+                            const ta = a.uploadedAt ? Date.parse(a.uploadedAt) : 0;
+                            const tb = b.uploadedAt ? Date.parse(b.uploadedAt) : 0;
+                            return tb - ta;
+                          });
+                          
+                          const newestId = matchedSorted[0]?.id;
+                          
+                          return (
+                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+                              {matchedSorted.map(doc => (
+                                <div key={doc.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '2px' }}>
+                                  {newestId === doc.id && <div style={styles.docNewBadge}>New</div>}
+                                  <div style={{ position: 'relative' }}>
+                                    <img 
+                                      src={doc.dataUrl} 
+                                      alt={doc.type} 
+                                      style={{ 
+                                        width: 40, 
+                                        height: 40, 
+                                        objectFit: 'cover', 
+                                        borderRadius: 4, 
+                                        border: '1px solid #e5e7eb',
+                                        cursor: 'pointer' 
+                                      }} 
+                                      onClick={() => setPreviewImage(doc.dataUrl)} 
+                                    />
+                                    <button 
+                                      title="Delete" 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteDocument(student, doc.id);
+                                      }} 
+                                      style={{ 
+                                        position: 'absolute', 
+                                        top: -8, 
+                                        right: -8, 
+                                        background: '#ef4444', 
+                                        color: '#fff', 
+                                        border: '2px solid #fff',
+                                        borderRadius: '50%', 
+                                        width: 18, 
+                                        height: 18, 
+                                        cursor: 'pointer', 
+                                        fontSize: 12,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        padding: 0,
+                                        lineHeight: 1
+                                      }}
+                                    >
+                                      ×
+                                    </button>
                                   </div>
-                                ))}
-                              </div>
-                            );
-                          })()
-                        )}
+                                  <div style={{ 
+                                    fontSize: '0.65rem', 
+                                    color: '#6b7280', 
+                                    marginTop: 1, 
+                                    textAlign: 'center', 
+                                    maxWidth: '100%', 
+                                    overflow: 'hidden', 
+                                    textOverflow: 'ellipsis', 
+                                    whiteSpace: 'nowrap',
+                                    lineHeight: '1.1',
+                                    padding: '0 2px'
+                                  }}>
+                                    {doc.type.length > 8 ? `${doc.type.substring(0, 6)}...` : doc.type}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td style={styles.td}>
@@ -1008,18 +1096,18 @@ const StudentsPage = () => {
                         >
                           <X size={16} />
                         </button>
-                        <button onClick={() => navigate(`/hostel/${hostelId}/add-student?editId=${student.id}&hostelDocId=${student.ownerHostelDocId || hostel?.id || hostelId}`)} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
+                        <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=edit`, { state: { student } })} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit">
                           <Edit size={16} />
                         </button>
                         <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
                           <Download size={16} />
                         </button>
-                        <button onClick={() => openPreview(student)} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
+                        <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=view`, { state: { student } })} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
                           <Eye size={16} />
                         </button>
                         {student.status === 'approved' && (
                           <button 
-                            onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/payments`)}
+                            onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?tab=payments`, { state: { student } })}
                             style={{ ...styles.iconButton, ...styles.paymentButton }}
                             title="Manage Payments"
                           >
@@ -1203,19 +1291,13 @@ const StudentsPage = () => {
 
 const styles = {
   container: {
-    width: '100%',
-    margin: '0 auto',
-    padding: '1rem',
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
+    padding: '1.5rem',
     boxSizing: 'border-box',
-    '@media (min-width: 481px)': {
-      padding: '1.25rem',
-    },
-    '@media (min-width: 769px)': {
-      maxWidth: '1200px',
-      padding: '1.5rem',
-    },
+    width: '100%',
+    maxWidth: '100%',
+    margin: 0,
   },
   tableContainer: {
     backgroundColor: 'white',
@@ -1350,6 +1432,19 @@ const styles = {
     color: '#374151',
     fontWeight: 600,
     fontSize: '0.75rem',
+  },
+  docNewBadge: {
+    position: 'absolute',
+    top: -8,
+    left: -8,
+    backgroundColor: '#fffbeb',
+    color: '#92400e',
+    borderRadius: 6,
+    padding: '2px 6px',
+    fontSize: 11,
+    fontWeight: 700,
+    border: '1px solid #fef3c7',
+    zIndex: 3,
   },
   statusAccepted: {
     backgroundColor: '#ecfccb',

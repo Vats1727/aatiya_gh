@@ -6,6 +6,7 @@ import AdminDashboard from "./components/AdminDashboard";
 import AdminRegister from "./components/AdminRegister";
 import StudentsPage from "./components/StudentsPage";
 import StudentPayments from "./components/StudentPayments";
+import StudentProfile from "./components/StudentProfile";
 import SubmissionSuccess from "./components/SubmissionSuccess";
 import SuperAdminPage from "./components/SuperAdminPage";
 
@@ -73,6 +74,12 @@ export default function App() {
       <Route path="/hostel/:hostelId/students/:studentId/payments" element={
         <PrivateRoute>
           <StudentPayments />
+        </PrivateRoute>
+      } />
+
+      <Route path="/hostel/:hostelId/students/:studentId/profile" element={
+        <PrivateRoute>
+          <StudentProfile />
         </PrivateRoute>
       } />
 

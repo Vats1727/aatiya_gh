@@ -590,10 +590,11 @@ const fetchHostels = async () => {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #dbeafe 100%)',
-      padding: 'clamp(0.5rem, 3vw, 1.5rem)',
+      padding: '1.5rem',
       boxSizing: 'border-box',
       width: '100%',
-      overflowX: 'hidden',
+      maxWidth: '100%',
+      margin: 0,
       position: 'relative',
     },
     content: {
@@ -932,7 +933,7 @@ const fetchHostels = async () => {
   };
 
   return (
-    <div className="container" style={styles.container}>
+    <div style={styles.container}>
       <div className="content" style={styles.content}>
         {/* User Profile Section */}
         <div className="card" style={{
