@@ -1260,7 +1260,7 @@ const fetchHostels = async () => {
                   fontWeight: '600',
                   color: '#1f2937'
                 }}>
-                  {user?.name || user?.displayName || user?.fullName || (user?.email && user.email.split('@')[0]) || 'User'}
+                  {`Hi, ${user?.name || user?.displayName || user?.fullName || (user?.email && user.email.split('@')[0]) || 'User'}`}
                 </h2>
                 <p style={{
                   margin: '0.25rem 0 0',

@@ -384,7 +384,7 @@ const StudentProfile = () => {
           {/* Application number in main header */}
           { (student.applicationNumber || student.combinedId || student.applicationNo) && (
             <div style={{ fontSize: '0.95rem', color: '#6b7280', fontWeight: 600 }}>
-              Application No.: {student.applicationNumber || student.combinedId || student.applicationNo}
+              Application No. {String(student.applicationNumber || student.combinedId || student.applicationNo).replace(/\//g, '')}
             </div>
           )}
 
