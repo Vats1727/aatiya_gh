@@ -67,6 +67,7 @@ if (typeof document !== 'undefined') {
 const StudentPayments = () => {
   const { hostelId, studentId } = useParams();
   const navigate = useNavigate();
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [student, setStudent] = useState(null);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -337,7 +338,7 @@ const StudentPayments = () => {
     const endLabel = ledgerEnd || 'end';
     const filename = `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${startLabel}_${endLabel}.csv`;
     const lines = [];
-    lines.push(['Date', 'Payment Mode', 'Debit (₹)', 'Credit (₹)', 'Running Balance (₹)'].join(','));
+    lines.push(['Date', 'Payment Mode', 'Debit ', 'Credit ', 'Running Balance '].join(','));
     // Opening balance
     lines.push([`Opening Balance`, '', '', '', `${ledgerOpeningBalance}`].join(','));
     for (const r of ledgerRows) {
@@ -393,7 +394,7 @@ const StudentPayments = () => {
                 <th style="text-align:left; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Payment Mode</th>
                 <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Debit (₹)</th>
                 <th style="text-align:right; border-right:1px solid #e6e6e6; padding:8px; border-bottom:1px solid #e6e6e6">Credit (₹)</th>
-                <th style="text-align:right; padding:8px; border-bottom:1px solid #e6e6e6">Running Balance (₹)</th>
+                <th style="text-align:right; padding:8px; border-bottom:1px solid #e6e6e6"> Balance</th>
               </tr>
             </thead>
             <tbody>
@@ -534,47 +535,57 @@ const StudentPayments = () => {
         </div>
 
         <div style={styles.formSection}>
-          <h3 style={styles.formTitle}>Add New Payment</h3>
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Amount</label>
-              <input
-                type="number"
-                value={newPayment.amount}
-                onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
-                style={styles.input}
-                required
-                min="0"
-              />
+          <h3 style={styles.formTitle}>Payments</h3>
+          {!showPaymentForm ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={() => setShowPaymentForm(true)} style={{ ...styles.submitButton, padding: 'clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.6rem, 2vw, 1rem)' }}>New Payment</button>
             </div>
+          ) : (
+            <div>
+              <form onSubmit={handleSubmit} style={styles.form}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Amount</label>
+                  <input
+                    type="number"
+                    value={newPayment.amount}
+                    onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
+                    style={styles.input}
+                    required
+                    min="0"
+                  />
+                </div>
 
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Payment Mode</label>
+                  <select
+                    value={newPayment.paymentMode}
+                    onChange={(e) => setNewPayment(prev => ({ ...prev, paymentMode: e.target.value }))}
+                    style={styles.select}
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="upi">UPI</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="cheque">Cheque</option>
+                  </select>
+                </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Payment Mode</label>
-              <select
-                value={newPayment.paymentMode}
-                onChange={(e) => setNewPayment(prev => ({ ...prev, paymentMode: e.target.value }))}
-                style={styles.select}
-              >
-                <option value="cash">Cash</option>
-                <option value="upi">UPI</option>
-                <option value="bank_transfer">Bank Transfer</option>
-                <option value="cheque">Cheque</option>
-              </select>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Remarks</label>
+                  <textarea
+                    value={newPayment.remarks}
+                    onChange={(e) => setNewPayment(prev => ({ ...prev, remarks: e.target.value }))}
+                    style={{ ...styles.input, minHeight: '80px' }}
+                    placeholder="Add any additional notes here..."
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="submit" style={styles.submitButton}>Add Payment</button>
+                  <button type="button" onClick={() => { setShowPaymentForm(false); setNewPayment({ amount: '', paymentMode: 'cash', remarks: '', type: 'credit' }); }} style={{ ...styles.actionButton, backgroundColor: '#f3f4f6' }}>Cancel</button>
+                </div>
+              </form>
             </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Remarks</label>
-              <textarea
-                value={newPayment.remarks}
-                onChange={(e) => setNewPayment(prev => ({ ...prev, remarks: e.target.value }))}
-                style={{ ...styles.input, minHeight: '80px' }}
-                placeholder="Add any additional notes here..."
-              />
-            </div>
-
-            <button type="submit" style={styles.submitButton}>Add Payment</button>
-          </form>
+          )}
         </div>
 
         {showHistory && (
@@ -778,7 +789,7 @@ const StudentPayments = () => {
                       <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Payment Mode</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Debit</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Credit</th>
-                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Running</th>
+                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Balance</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -831,7 +842,7 @@ const StudentPayments = () => {
                         </div>
                       )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, borderTop: '1px solid #d1d5db', paddingTop: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
-                        <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Running</span>
+                        <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Balance</span>
                         <span style={{ flex: 1, textAlign: 'right', fontWeight: 700 }}>{formatCurrency(r.running)}</span>
                       </div>
                     </div>

@@ -1106,6 +1106,7 @@ const HostelAdmissionForm = () => {
         const payload = await res.json();
         // backend returns { success: true, data: { combinedId, studentPath } }
         const combined = payload && ((payload.data && payload.data.combinedId) || payload.combinedId);
+        try { localStorage.setItem(`students_updated_${effectiveHostelId}`, String(Date.now())); } catch (e) { /* ignore */ }
         alert(`Student created with Application no: ${combined || 'N/A'}`);
         return;
       }
@@ -1129,7 +1130,7 @@ const HostelAdmissionForm = () => {
           }
         }
         // Navigate to success page regardless so user sees confirmation and can download PDF.
-        try {
+    try {
             // Attach hostel bilingual metadata to formData so success page and PDF can show correct Hindi/English
             try {
               const hb = getHostelBilingual(effectiveHostelId) || {};
@@ -1140,6 +1141,7 @@ const HostelAdmissionForm = () => {
             } catch (e) {
               // ignore
             }
+            try { localStorage.setItem(`students_updated_${effectiveHostelId}`, String(Date.now())); } catch (e) { /* ignore */ }
             navigate('/submission-success', { state: { combinedId: combined, formData: formDataWithStatus } });
         } catch (e) {
           console.error('Navigation to submission-success failed', e);

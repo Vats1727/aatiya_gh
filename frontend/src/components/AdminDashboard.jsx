@@ -395,6 +395,8 @@ const fetchHostels = async () => {
         const payload = await response.json();
         const updated = payload?.data || payload;
         setHostels(prev => prev.map(h => h.id === updated.id || h.id === newHostel.id ? { ...h, ...updated } : h));
+        // notify other tabs/pages that hostels list changed
+        try { localStorage.setItem('hostels_updated', String(Date.now())); } catch (e) { /* ignore */ }
       } else {
         // Create new hostel
         const response = await fetch(`${API_BASE}/api/users/me/hostels`, {
@@ -409,6 +411,8 @@ const fetchHostels = async () => {
         const data = await response.json();
         const created = data?.hostel || data?.data || data;
         setHostels(prev => [...prev, created]);
+        // notify other tabs/pages that hostels list changed
+        try { localStorage.setItem('hostels_updated', String(Date.now())); } catch (e) { /* ignore */ }
       }
 
   setNewHostel({ name: '', address: '', name_hi: '', address_hi: '', monthlyFee: 0, monthlyFeeCurrency: 'INR' });

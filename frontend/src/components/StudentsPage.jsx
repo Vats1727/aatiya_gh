@@ -34,32 +34,32 @@ const StudentsPage = () => {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem('token');
+  // fetchStudents is used initially and by storage-event updates
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
 
-        if (!token) {
-          navigate('/admin');
-          return;
+      if (!token) {
+        navigate('/admin');
+        return;
+      }
+
+      // Fetch students for this hostel using the correct endpoint
+      const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
+      });
 
-        // Fetch students for this hostel using the correct endpoint
-        const response = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+      if (!response.ok) throw new Error('Failed to fetch students');
 
-        if (!response.ok) throw new Error('Failed to fetch students');
+      const data = await response.json();
+      const rawStudents = data.data || [];
 
-        const data = await response.json();
-        const rawStudents = data.data || [];
-
-        // Enrich each student with computed currentBalance derived from payment history
-        const enrichBalances = async (list) => {
+      // Enrich each student with computed currentBalance derived from payment history
+      const enrichBalances = async (list) => {
           const token = localStorage.getItem('token');
           // Try to get a hostel-level monthlyFee fallback from the first student
           const hostelMonthlyFallback = (list && list[0] && (list[0].monthlyFee != null ? Number(list[0].monthlyFee) : null)) || null;
@@ -104,28 +104,59 @@ const StudentsPage = () => {
           return results;
         };
 
-        const studentsWithBalances = await enrichBalances(rawStudents);
-        setStudents(studentsWithBalances);
+      const studentsWithBalances = await enrichBalances(rawStudents);
+      setStudents(studentsWithBalances);
 
-        // If we have students, we can get hostel details from the first student or set a default
-        if (studentsWithBalances && studentsWithBalances.length > 0) {
-          setHostel({
-            id: hostelId,
-            // prefer explicit hostelName stored on student doc, fallback to fetch
-            name: studentsWithBalances[0].hostelName || 'Hostel',
-            address: studentsWithBalances[0].hostelAddress || ''
-          });
+      // If we have students, we can get hostel details from the first student or set a default
+      if (studentsWithBalances && studentsWithBalances.length > 0) {
+        setHostel({
+          id: hostelId,
+          // prefer explicit hostelName stored on student doc, fallback to fetch
+          name: studentsWithBalances[0].hostelName || 'Hostel',
+          address: studentsWithBalances[0].hostelAddress || ''
+        });
+      }
+
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hostelId]);
+
+  // Listen for cross-tab storage events so other pages (Add Hostel / Add Student) can trigger refreshes
+  useEffect(() => {
+    const onStorage = (e) => {
+      try {
+        if (!e.key) return;
+        // hostels_updated -> refresh hostel metadata
+        if (e.key === 'hostels_updated') {
+          // re-run fetchHostelsForName effect by fetching hostels and students again
+          fetchHostelsForName();
+          fetchStudents();
+          return;
         }
-
+        // students_updated_<hostelId>
+        if (e.key.startsWith('students_updated_')) {
+          const parts = e.key.split('_');
+          const updatedHostelId = parts.slice(2).join('_');
+          if (!updatedHostelId || String(updatedHostelId) === String(hostelId)) {
+            fetchStudents();
+          }
+        }
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        // ignore
       }
     };
-
-    fetchStudents();
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, [hostelId]);
 
   // Helper to fetch public hostel metadata when viewing as an unauthenticated user or via QR links

@@ -73,7 +73,7 @@ export async function runMonthlyDebitsOnce(db, opts = {}) {
             const payload = {
               amount,
               type: 'debit',
-              paymentMode: 'system',
+              paymentMode: 'Rent Dr',
               remarks: opts.remarks || `Monthly fee for ${monthKey}`,
               billingMonth: monthKey,
               timestamp: (new Date()).toISOString(),
