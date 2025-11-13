@@ -1031,16 +1031,18 @@ const StudentsPage = () => {
                                     </button>
                                   </div>
                                   <div style={{ 
-                                    fontSize: '0.7rem', 
+                                    fontSize: '0.65rem', 
                                     color: '#6b7280', 
-                                    marginTop: 2, 
+                                    marginTop: 1, 
                                     textAlign: 'center', 
                                     maxWidth: '100%', 
                                     overflow: 'hidden', 
                                     textOverflow: 'ellipsis', 
-                                    whiteSpace: 'nowrap' 
+                                    whiteSpace: 'nowrap',
+                                    lineHeight: '1.1',
+                                    padding: '0 2px'
                                   }}>
-                                    {doc.type.length > 10 ? `${doc.type.substring(0, 8)}...` : doc.type}
+                                    {doc.type.length > 8 ? `${doc.type.substring(0, 6)}...` : doc.type}
                                   </div>
                                 </div>
                               ))}
