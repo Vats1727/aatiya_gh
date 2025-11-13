@@ -412,7 +412,8 @@ const StudentsPage = () => {
 
   // Merge with existing documents locally
   const existing = Array.isArray(student.documents) ? student.documents.slice() : [];
-  existing.push(newDoc);
+        // Put newest documents first so UI shows the latest upload prominently
+        existing.unshift(newDoc);
 
         // Persist via existing student PUT endpoint
         const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, {
@@ -950,13 +951,26 @@ const StudentsPage = () => {
                             if (matched.length === 0) return null;
                             return (
                               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-                                {matched.map(doc => (
-                                  <div key={doc.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <img src={doc.dataUrl} alt={doc.type} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, cursor: 'pointer' }} onClick={() => setPreviewImage(doc.dataUrl)} />
-                                    <button title="Delete" onClick={() => handleDeleteDocument(student, doc.id)} style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: 12, width: 20, height: 20, cursor: 'pointer', fontSize: 12 }}>×</button>
-                                    <div style={{ fontSize: 11, color: '#374151', marginTop: 4 }}>{doc.type}</div>
-                                  </div>
-                                ))}
+                                {(() => {
+                                  const matchedSorted = matched.slice().sort((a, b) => {
+                                    const ta = a.uploadedAt ? Date.parse(a.uploadedAt) : 0;
+                                    const tb = b.uploadedAt ? Date.parse(b.uploadedAt) : 0;
+                                    return tb - ta;
+                                  });
+                                  const newestId = matchedSorted[0]?.id;
+                                  return (
+                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+                                      {matchedSorted.map(doc => (
+                                        <div key={doc.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                          {newestId === doc.id && <div style={styles.docNewBadge}>New</div>}
+                                          <img src={doc.dataUrl} alt={doc.type} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, cursor: 'pointer' }} onClick={() => setPreviewImage(doc.dataUrl)} />
+                                          <button title="Delete" onClick={() => handleDeleteDocument(student, doc.id)} style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: 12, width: 20, height: 20, cursor: 'pointer', fontSize: 12 }}>×</button>
+                                          <div style={{ fontSize: 11, color: '#374151', marginTop: 4 }}>{doc.type}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             );
                           })()
@@ -1350,6 +1364,19 @@ const styles = {
     color: '#374151',
     fontWeight: 600,
     fontSize: '0.75rem',
+  },
+  docNewBadge: {
+    position: 'absolute',
+    top: -8,
+    left: -8,
+    backgroundColor: '#fffbeb',
+    color: '#92400e',
+    borderRadius: 6,
+    padding: '2px 6px',
+    fontSize: 11,
+    fontWeight: 700,
+    border: '1px solid #fef3c7',
+    zIndex: 3,
   },
   statusAccepted: {
     backgroundColor: '#ecfccb',
