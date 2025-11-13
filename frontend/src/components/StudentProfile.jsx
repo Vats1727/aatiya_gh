@@ -244,21 +244,66 @@ const StudentProfile = () => {
   const handleDocumentUpload = async (file) => {
     if (!file || !student) return;
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const dataUrl = e.target.result;
-        const newDoc = { id: `doc_${Date.now()}`, type: docSelection || 'NONE', dataUrl, uploadedAt: new Date().toISOString() };
-        const existing = Array.isArray(student.documents) ? [newDoc, ...student.documents] : [newDoc];
-        const token = localStorage.getItem('token');
-        const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ documents: existing })
-        });
-        if (!resp.ok) throw new Error('Failed to upload');
-        setStudent(prev => ({ ...prev, documents: existing }));
-      };
-      reader.readAsDataURL(file);
+      // Resize/compress image client-side to avoid Firestore document size limits
+      const dataUrlFromFile = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = (err) => reject(err);
+        fr.readAsDataURL(file);
+      });
+
+      // Create image element to draw on canvas
+      const img = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = (e) => reject(new Error('Invalid image'));
+        image.src = dataUrlFromFile;
+      });
+
+      // Determine target size (limit dimensions)
+      const MAX_DIM = 1200; // px
+      let { width, height } = img;
+      let ratio = 1;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Export compressed JPEG (fallback to PNG if quality not supported)
+      let compressedDataUrl;
+      try {
+        compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+      } catch (e) {
+        compressedDataUrl = canvas.toDataURL();
+      }
+
+      // Safety: ensure result size is reasonable (< 800KB) to avoid Firestore 1MB limit
+      const approxBytes = Math.ceil((compressedDataUrl.length * 3) / 4);
+      if (approxBytes > 800 * 1024) {
+        return alert('Image is too large after compression. Please choose a smaller image or crop it before uploading.');
+      }
+
+      const newDoc = { id: `doc_${Date.now()}`, type: docSelection || 'NONE', dataUrl: compressedDataUrl, uploadedAt: new Date().toISOString() };
+      const existing = Array.isArray(student.documents) ? [newDoc, ...student.documents] : [newDoc];
+      const token = localStorage.getItem('token');
+      const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ documents: existing })
+      });
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => null);
+        console.error('Upload response not OK', resp.status, errText);
+        throw new Error('Failed to upload');
+      }
+      setStudent(prev => ({ ...prev, documents: existing }));
     } catch (err) {
       console.error(err);
       alert('Upload failed');
