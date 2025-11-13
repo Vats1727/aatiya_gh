@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { renderStudentPrintHtml, renderRulesHtml } from '../utils/printTemplate';
@@ -227,6 +227,8 @@ const StudentsPage = () => {
   const [docOptions, setDocOptions] = useState({});
   const [docOtherValue, setDocOtherValue] = useState({});
   const [previewImage, setPreviewImage] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimerRef = useRef(null);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640);
@@ -340,6 +342,13 @@ const StudentsPage = () => {
       setLoading(false);
     }
   };
+
+  // cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
 
   // Initial load
   useEffect(() => {
@@ -944,7 +953,16 @@ const StudentsPage = () => {
       {/* Search and Filter Section */}
       <div style={styles.searchFilterContainer}>
         <div style={styles.searchContainer}>
-          <Search size={18} style={styles.searchIcon} />
+          {isSearching ? (
+            // inline SVG spinner (SMIL animateTransform) so it rotates without external CSS
+            <svg width="18" height="18" viewBox="0 0 50 50" style={styles.searchIcon}>
+              <path fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" d="M25 5a20 20 0 1 0 0 40a20 20 0 1 0 0-40">
+                <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
+              </path>
+            </svg>
+          ) : (
+            <Search size={18} style={styles.searchIcon} />
+          )}
           <input
             type="text"
             placeholder="Search by name or application number..."
@@ -952,6 +970,13 @@ const StudentsPage = () => {
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1); // Reset to first page when searching
+              // show buffering icon while user types (debounced)
+              setIsSearching(true);
+              if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+              searchTimerRef.current = setTimeout(() => {
+                setIsSearching(false);
+                searchTimerRef.current = null;
+              }, 600);
             }}
             style={styles.searchInput}
           />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, ChevronDown, ChevronUp, Users, Building2, FileText, IndianRupee, Search } from 'lucide-react';
 
@@ -359,6 +359,17 @@ const SuperAdminPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
+  const [isUserSearching, setIsUserSearching] = useState(false);
+  const [isStudentSearching, setIsStudentSearching] = useState(false);
+  const userSearchTimerRef = useRef(null);
+  const studentSearchTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (userSearchTimerRef.current) clearTimeout(userSearchTimerRef.current);
+      if (studentSearchTimerRef.current) clearTimeout(studentSearchTimerRef.current);
+    };
+  }, []);
 
   const computeStats = () => {
     const users = allData.users || [];
@@ -686,12 +697,30 @@ const SuperAdminPage = () => {
                   </div>
 
                   <div style={{ background: 'white', borderRadius: 12, padding: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.06)', flex: 1, overflow: 'auto' }}>
-                    <input
-                      placeholder="Search users by name or email..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #e6e6e6' }}
-                    />
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }}>
+                        {isUserSearching ? (
+                          <svg width="16" height="16" viewBox="0 0 50 50">
+                            <path fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" d="M25 5a20 20 0 1 0 0 40a20 20 0 1 0 0-40">
+                              <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
+                            </path>
+                          </svg>
+                        ) : (
+                          <Search size={16} />
+                        )}
+                      </div>
+                      <input
+                        placeholder="Search users by name or email..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          setIsUserSearching(true);
+                          if (userSearchTimerRef.current) clearTimeout(userSearchTimerRef.current);
+                          userSearchTimerRef.current = setTimeout(() => { setIsUserSearching(false); userSearchTimerRef.current = null; }, 500);
+                        }}
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #e6e6e6', paddingLeft: '40px' }}
+                      />
+                    </div>
                     <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {filtered.map(u => (
                         <div
@@ -734,7 +763,25 @@ const SuperAdminPage = () => {
                           <p style={{ marginTop: 6, color: '#6b7280', fontSize: '0.9rem' }}>{selectedUser.email}</p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <input placeholder="Search students..." value={studentSearchTerm} onChange={(e) => setStudentSearchTerm(e.target.value)} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #e6e6e6' }} />
+                          <div style={{ position: 'relative' }}>
+                            <div style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }}>
+                              {isStudentSearching ? (
+                                <svg width="14" height="14" viewBox="0 0 50 50">
+                                  <path fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" d="M25 5a20 20 0 1 0 0 40a20 20 0 1 0 0-40">
+                                    <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
+                                  </path>
+                                </svg>
+                              ) : (
+                                <Search size={14} />
+                              )}
+                            </div>
+                            <input placeholder="Search students..." value={studentSearchTerm} onChange={(e) => {
+                              setStudentSearchTerm(e.target.value);
+                              setIsStudentSearching(true);
+                              if (studentSearchTimerRef.current) clearTimeout(studentSearchTimerRef.current);
+                              studentSearchTimerRef.current = setTimeout(() => { setIsStudentSearching(false); studentSearchTimerRef.current = null; }, 500);
+                            }} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #e6e6e6', paddingLeft: '34px' }} />
+                          </div>
                           <div style={{ background: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: 8, fontWeight: 700 }}>{selectedStudentCount} students</div>
                         </div>
                       </div>

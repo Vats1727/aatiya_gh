@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2 } from 'lucide-react';
+import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2, Search } from 'lucide-react';
 import QRCode from 'qrcode';
 import HindiKeyboard from './HindiKeyboard';
 import { itransToDevanagari } from '../libs/itransToDevanagari';
@@ -771,9 +771,12 @@ const fetchHostels = async () => {
   const performGlobalSearch = async (searchQuery) => {
     if (!searchQuery.trim()) {
       setGlobalSearchResults(null);
+      setIsSearching(false);
+      if (globalSearchTimerRef.current) { clearTimeout(globalSearchTimerRef.current); globalSearchTimerRef.current = null; }
       return;
     }
 
+    setIsSearching(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
@@ -815,13 +818,23 @@ const fetchHostels = async () => {
       });
     } catch (err) {
       console.error('Global search error:', err);
+    } finally {
+      setIsSearching(false);
     }
   };
 
   // Handle global search input
+  const globalSearchTimerRef = useRef(null);
+  const [isSearching, setIsSearching] = useState(false);
+
   const handleGlobalSearch = (query) => {
     setGlobalSearchTerm(query);
-    performGlobalSearch(query);
+    // debounce network-heavy global search
+    if (globalSearchTimerRef.current) clearTimeout(globalSearchTimerRef.current);
+    globalSearchTimerRef.current = setTimeout(() => {
+      performGlobalSearch(query);
+      globalSearchTimerRef.current = null;
+    }, 350);
   };
 
   // Inject responsive CSS media queries at document level
@@ -1321,17 +1334,33 @@ const fetchHostels = async () => {
           position: 'relative',
         }}>
           <div style={{ position: 'relative', width: '100%' }}>
-            <input
-              type="search"
-              placeholder="Search any student or hostel across all hostels... (name, mobile, application number)"
-              value={globalSearchTerm}
-              onChange={(e) => handleGlobalSearch(e.target.value)}
-              style={{
-                ...styles.searchInput,
-                width: '100%',
-                paddingRight: '140px'
-              }}
-            />
+            <div style={{ position: 'relative', width: '100%' }}>
+              {/* left icon: search or spinner */}
+              <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }}>
+                {isSearching ? (
+                  <svg width="18" height="18" viewBox="0 0 50 50">
+                    <path fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" d="M25 5a20 20 0 1 0 0 40a20 20 0 1 0 0-40">
+                      <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
+                    </path>
+                  </svg>
+                ) : (
+                  <Search size={18} />
+                )}
+              </div>
+
+              <input
+                type="search"
+                placeholder="Search any student or hostel across all hostels... (name, mobile, application number)"
+                value={globalSearchTerm}
+                onChange={(e) => handleGlobalSearch(e.target.value)}
+                style={{
+                  ...styles.searchInput,
+                  width: '100%',
+                  paddingRight: '140px',
+                  paddingLeft: '44px'
+                }}
+              />
+            </div>
 
             <div style={{
               position: 'absolute',
