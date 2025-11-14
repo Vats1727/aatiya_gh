@@ -299,6 +299,11 @@ const StudentProfile = () => {
 
       // create pending doc (do not persist yet)
       const pending = { id: `pending_${Date.now()}`, type: docSelection || 'NONE', dataUrl: compressedDataUrl, uploadedAt: new Date().toISOString(), fileName: file.name };
+      // If we're editing an existing doc, preserve its id and mark as edit
+      if (editDocId) {
+        pending.id = editDocId;
+        pending.isEdit = true;
+      }
       setPendingDoc(pending);
       // Do NOT auto-show preview. Preview will be shown only when user clicks Preview.
     } catch (err) {
@@ -361,9 +366,10 @@ const StudentProfile = () => {
   };
 
   const startEditDocument = (doc) => {
+    // Reuse the top dropdown + upload flow for editing: preselect type and set pendingDoc to existing doc
     setEditDocId(doc.id);
-    setEditDocType(doc.type || '');
-    setEditDocPending(null);
+    setDocSelection(doc.type || 'NONE');
+    setPendingDoc({ ...doc, isEdit: true });
   };
 
   const cancelEditDocument = () => {
@@ -413,13 +419,21 @@ const StudentProfile = () => {
       if (!pendingType || pendingType === 'NONE') return alert('Please select a valid document type before adding');
 
       const existingDocs = Array.isArray(student.documents) ? student.documents : [];
-      const duplicate = existingDocs.some(d => String(d.type || '').trim().toUpperCase() === pendingType);
+      // When editing, allow same type for the document being edited; check duplicates excluding the edited doc id
+      const duplicate = existingDocs.some(d => d.id !== pendingDoc.id && String(d.type || '').trim().toUpperCase() === pendingType);
       if (duplicate) {
         return alert(`A document of type "${pendingDoc.type}" has already been uploaded`);
       }
 
-      const newDoc = { id: `doc_${Date.now()}`, type: pendingDoc.type || 'NONE', dataUrl: pendingDoc.dataUrl, uploadedAt: pendingDoc.uploadedAt };
-      const existing = [newDoc, ...existingDocs];
+      let existing;
+      if (pendingDoc.isEdit) {
+        // Replace the existing doc with same id
+        const newDoc = { id: pendingDoc.id, type: pendingDoc.type || 'NONE', dataUrl: pendingDoc.dataUrl, uploadedAt: pendingDoc.uploadedAt };
+        existing = existingDocs.map(d => (d.id === newDoc.id ? newDoc : d));
+      } else {
+        const newDoc = { id: `doc_${Date.now()}`, type: pendingDoc.type || 'NONE', dataUrl: pendingDoc.dataUrl, uploadedAt: pendingDoc.uploadedAt };
+        existing = [newDoc, ...existingDocs];
+      }
       const token = localStorage.getItem('token');
       const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
         method: 'PUT',
@@ -436,6 +450,7 @@ const StudentProfile = () => {
       setPreviewImage(null);
       // reset selection
       setDocSelection('NONE');
+      setEditDocId(null);
     } catch (err) {
       console.error(err);
       alert('Failed to add document');
@@ -445,6 +460,8 @@ const StudentProfile = () => {
   const cancelPendingDocument = () => {
     setPendingDoc(null);
     setPreviewImage(null);
+    setEditDocId(null);
+    setDocSelection('NONE');
   };
 
   const handleDeleteDocument = async (docId) => {
