@@ -950,6 +950,25 @@ const HostelAdmissionForm = () => {
     }));
   };
 
+  // Validation helpers
+  const isValidName = (s) => {
+    if (!s) return false;
+    try {
+      return /^[\p{L}.\s]+$/u.test(String(s).trim());
+    } catch (e) {
+      // Fallback to ASCII letters, dot and space if Unicode not supported
+      return /^[A-Za-z.\s]+$/.test(String(s).trim());
+    }
+  };
+
+  const isValidMobile = (s) => {
+    return /^[0-9]{10}$/.test(String(s || '').trim());
+  };
+
+  const isValidPin = (s) => {
+    return /^[0-9]{6}$/.test(String(s || '').trim());
+  };
+
   const handleFileChange = (e) => {
     const { name, files } = e.target;
     if (files && files[0]) {
@@ -1013,6 +1032,34 @@ const HostelAdmissionForm = () => {
       alert(`Please fill in all required fields before submitting. Missing: ${missingFields.join(', ')}`);
       return;
     }
+
+    // Additional validations: names, numbers and PIN
+    const nameFields = [
+      { key: 'studentName', label: 'Student Name' },
+      { key: 'motherName', label: "Mother's Name" },
+      { key: 'fatherName', label: "Father's Name" }
+    ];
+    const nameErrors = [];
+    for (const nf of nameFields) {
+      if (!isValidName(formData[nf.key])) {
+        nameErrors.push(`${nf.label} should contain only letters, spaces and dot (.)`);
+      }
+    }
+    // Allowed visitors validation
+    (allowedVisitors || []).forEach((v, i) => {
+      if (v && !isValidName(v)) {
+        nameErrors.push(`Visitor ${i + 1} name should contain only letters, spaces and dot (.)`);
+      }
+    });
+    if (nameErrors.length) {
+      alert(nameErrors.join('\n'));
+      return;
+    }
+
+    // Mobile and PIN validations
+    if (!isValidMobile(formData.mobile1)) { alert('Mobile No. (1) must be a 10 digit number'); return; }
+    if (formData.mobile2 && !isValidMobile(formData.mobile2)) { alert('Mobile No. (2) must be a 10 digit number'); return; }
+    if (!isValidPin(formData.pinCode)) { alert('PIN Code must be a 6 digit number'); return; }
 
     try {
       setLoading(true);
@@ -1762,7 +1809,9 @@ const HostelAdmissionForm = () => {
                   name="studentName"
                   value={formData.studentName}
                   onChange={handleInputChange}
-                  required
+                    required
+                    pattern="[A-Za-z.\s]+"
+                    title="Name may contain only letters, spaces and dot (.)"
                   style={responsiveStyles.input}
                   placeholder="Enter student name"
                 />
@@ -1778,6 +1827,8 @@ const HostelAdmissionForm = () => {
                   value={formData.motherName}
                   onChange={handleInputChange}
                   required
+                  pattern="[A-Za-z.\s]+"
+                  title="Name may contain only letters, spaces and dot (.)"
                   style={responsiveStyles.input}
                   placeholder="Enter mother's name"
                 />
@@ -1793,6 +1844,8 @@ const HostelAdmissionForm = () => {
                   value={formData.fatherName}
                   onChange={handleInputChange}
                   required
+                  pattern="[A-Za-z.\s]+"
+                  title="Name may contain only letters, spaces and dot (.)"
                   style={responsiveStyles.input}
                   placeholder="Enter father's name"
                 />
@@ -1951,7 +2004,7 @@ const HostelAdmissionForm = () => {
                       <input
                         type="text"
                         value={name}
-                        onChange={(e) => {
+                                onChange={(e) => {
                           const v = e.target.value;
                           const arr = [...allowedVisitors];
                           arr[idx] = v;
@@ -1959,6 +2012,8 @@ const HostelAdmissionForm = () => {
                           // keep formData in sync for preview/submission
                           setFormData(prev => ({ ...prev, [`allowedPerson${idx + 1}`]: v }));
                         }}
+                                pattern="[A-Za-z.\s]+"
+                                title="Name may contain only letters, spaces and dot (.)"
                         style={responsiveStyles.input}
                       />
                       <button type="button" onClick={() => {
