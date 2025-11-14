@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, UserPlus, Eye, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, UserPlus, Edit, Trash2, Check, X, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { renderStudentPrintHtml, renderRulesHtml } from '../utils/printTemplate';
 import { downloadStudentPdf } from '../utils/pdfUtils';
 import '../styles.css';
@@ -1064,7 +1064,7 @@ const StudentsPage = () => {
                     <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Reject"><X size={16} /></button>
                     <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile`, { state: { student } })} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
                     <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
-                    <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=view`, { state: { student } })} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
+                    {/* Preview button removed per request */}
                     {student.status === 'approved' && (
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', marginRight: 8 }}>
@@ -1177,9 +1177,9 @@ const StudentsPage = () => {
                         <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download">
                           <Download size={16} />
                         </button>
-                        <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=view`, { state: { student } })} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
+                        {/* <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=view`, { state: { student } })} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview">
                           <Eye size={16} />
-                        </button>
+                        </button> */}
                         {student.status === 'approved' && (
                           <button 
                             onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?tab=payments`, { state: { student } })}

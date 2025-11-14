@@ -85,9 +85,8 @@ const StudentPayments = () => {
     paymentMode: 'cash',
     remarks: '',
     type: 'credit', // credit for payment received, debit for refund/adjustment
-    // Penalty is hidden from the form and defaults to 0. If >0 it will be
-    // automatically applied as a debit entry after creating a payment.
-    penaltyAmount: '0'
+    // category indicates what this payment is for (rent, penalty, tiffin)
+    category: 'rent'
   });
 
   useEffect(() => {
@@ -158,19 +157,19 @@ const StudentPayments = () => {
           console.warn('Failed to enrich student with hostel data:', e);
         }
 
-  setStudent(studentObj);
-  // capture application number into dedicated state for reliable usage in exports
-  let app = '';
-  if (studentObj?.combinedId) {
-    // combinedId format like "05/0001" -> convert to digits only: "050001"
-    try { app = String(studentObj.combinedId).replace(/\D/g, ''); } catch (e) { app = '' }
-  }
-  if (!app) {
-    app = studentObj?.applicationNumber || studentObj?.applicationNo || studentObj?.application_id || studentObj?.appNo || '';
-    // strip non-digits just in case and preserve leading zeros
-    if (app) app = String(app).replace(/\D/g, '');
-  }
-  setApplicationNo(app);
+        setStudent(studentObj);
+        // capture application number into dedicated state for reliable usage in exports
+        let app = '';
+        if (studentObj?.combinedId) {
+          // combinedId format like "05/0001" -> convert to digits only: "050001"
+          try { app = String(studentObj.combinedId).replace(/\D/g, ''); } catch (e) { app = '' }
+        }
+        if (!app) {
+          app = studentObj?.applicationNumber || studentObj?.applicationNo || studentObj?.application_id || studentObj?.appNo || '';
+          // strip non-digits just in case and preserve leading zeros
+          if (app) app = String(app).replace(/\D/g, '');
+        }
+        setApplicationNo(app);
 
         // Fetch payment history
         const paymentsRes = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
@@ -211,83 +210,66 @@ const StudentPayments = () => {
       const token = localStorage.getItem('token');
       if (!token) return alert('Not authenticated');
 
-  // Parse amount exactly as typed (preserve the entered value)
-  const rawAmount = String(newPayment.amount || '').trim();
-  const parsedAmount = rawAmount === '' ? 0 : parseFloat(rawAmount);
-  const amount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
-  const pAmt = parseFloat(String(newPayment.penaltyAmount || '0')) || 0;
+      // Parse amount exactly as typed (preserve the entered value)
+      const rawAmount = String(newPayment.amount || '').trim();
+      const parsedAmount = rawAmount === '' ? 0 : parseFloat(rawAmount);
+      const amount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+      // Require a positive amount
+      if (amount <= 0 || isNaN(amount)) {
+        return alert('Please enter a valid Amount.');
+      }
 
-  // If both amount and penalty are zero or empty, do not process
-  if ((amount <= 0 || isNaN(amount)) && (pAmt <= 0 || isNaN(pAmt))) {
-    return alert('Please enter an Amount or a Penalty.');
-  }
+      const type = newPayment.type || 'credit';
 
-  const type = newPayment.type || 'credit';
+      // Create a single payment entry. Use `category` to indicate rent/penalty/tiffin.
+      const payload = {
+        ...newPayment,
+        amount,
+        type,
+        category: newPayment.category || 'rent',
+        timestamp: new Date().toISOString()
+      };
 
-  // If amount > 0, create a payment credit entry
-  let createdPaymentEntry = null;
-  if (amount > 0) {
-    const payload = {
-      ...newPayment,
-      amount,
-      type,
-      timestamp: new Date().toISOString()
-    };
-
-    const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) throw new Error('Failed to add payment');
-
-    const data = await res.json();
-    createdPaymentEntry = {
-      ...data,
-      amount,
-      type,
-      timestamp: payload.timestamp,
-      paymentMode: newPayment.paymentMode,
-      remarks: newPayment.remarks
-    };
-    setPayments(prev => [createdPaymentEntry, ...prev]);
-  }
-
-  // If penalty > 0, create a penalty debit entry
-  try {
-    if (pAmt > 0) {
-      const penaltyPayload = { amount: pAmt, type: 'debit', paymentMode: 'penalty', remarks: `Penalty`, timestamp: new Date().toISOString() };
-      const penRes = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
+      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(penaltyPayload)
+        body: JSON.stringify(payload)
       });
-      if (penRes.ok) {
-        const penData = await penRes.json();
-        const penEntry = { ...(penData || {}), amount: pAmt, type: 'debit', paymentMode: 'penalty', remarks: `Penalty`, timestamp: penaltyPayload.timestamp };
-            setPayments(prev => [penEntry, ...prev]);
-            try { window.alert('Penalty added successfully'); } catch (e) { /* ignore if alert unavailable */ }
-      }
-    }
-  } catch (e) {
-    console.warn('Failed to apply penalty entry', e);
-  }
 
-  // Reset form (always reset after attempted create)
-  setNewPayment({
-    amount: '',
-    paymentMode: 'cash',
-    remarks: '',
-    type: 'credit',
-    penaltyAmount: '0'
-  });
+      if (!res.ok) throw new Error('Failed to add payment');
+
+      const data = await res.json();
+      const createdPaymentEntry = {
+        ...data,
+        amount,
+        type,
+        timestamp: payload.timestamp,
+        paymentMode: newPayment.paymentMode,
+        remarks: newPayment.remarks,
+        category: payload.category
+      };
+      setPayments(prev => [createdPaymentEntry, ...prev]);
+
+      // If this entry represents a penalty debit, show a confirmation alert
+      try {
+        if ((payload.category || '') === 'penalty' && (payload.type || '') === 'debit') {
+          window.alert('Penalty added successfully');
+        }
+      } catch (e) {
+        // ignore alert failures
+      }
+
+      // Reset form (always reset after attempted create)
+      setNewPayment({
+        amount: '',
+        paymentMode: 'cash',
+        remarks: '',
+        type: 'credit',
+        category: 'rent'
+      });
 
     } catch (err) {
       console.error('Failed to add payment:', err);
@@ -380,15 +362,15 @@ const StudentPayments = () => {
         // compute effect of this transaction
         const amt = Number(p.amount) || 0;
         const remarks = getTruncatedRemarks(p.remarks);
-          if (p.type === 'credit') {
-            // student paid: reduces due (running = running - amt)
-            running = running - amt;
-            rows.push({ date: p.timestamp, paymentMode: (p.paymentMode || ''), remarks: remarks, debit: '', credit: amt, running });
-          } else {
-            // debit (refund/adjustment): increases due
-            running = running + amt;
-            rows.push({ date: p.timestamp, paymentMode: (p.paymentMode || ''), remarks: remarks, debit: amt, credit: '', running });
-          }
+        if (p.type === 'credit') {
+          // student paid: reduces due (running = running - amt)
+          running = running - amt;
+          rows.push({ date: p.timestamp, paymentMode: (p.paymentMode || ''), remarks: remarks, debit: '', credit: amt, running });
+        } else {
+          // debit (refund/adjustment): increases due
+          running = running + amt;
+          rows.push({ date: p.timestamp, paymentMode: (p.paymentMode || ''), remarks: remarks, debit: amt, credit: '', running });
+        }
       }
 
       setLedgerOpeningBalance(openingBal);
@@ -408,7 +390,7 @@ const StudentPayments = () => {
   const downloadLedgerCsv = () => {
     const startLabel = ledgerStart || 'start';
     const endLabel = ledgerEnd || 'end';
-    const filename = `${(student.studentName||'student').replace(/\s+/g,'_')}_ledger_${startLabel}_${endLabel}.csv`;
+    const filename = `${(student.studentName || 'student').replace(/\s+/g, '_')}_ledger_${startLabel}_${endLabel}.csv`;
     const lines = [];
     lines.push(['Date', 'Payment Mode', 'Debit ', 'Credit ', 'Running Balance '].join(','));
     // Opening balance
@@ -417,10 +399,10 @@ const StudentPayments = () => {
       // Use date only (YYYY-MM-DD) for CSV
       const dateObj = r.date instanceof Date ? r.date : new Date(r.date);
       const dateStr = dateObj.toISOString().split('T')[0];
-      lines.push([dateStr, `"${(r.paymentMode||'').replace(/"/g,'""')}"`, r.debit || '', r.credit || '', r.running].join(','));
+      lines.push([dateStr, `"${(r.paymentMode || '').replace(/"/g, '""')}"`, r.debit || '', r.credit || '', r.running].join(','));
     }
     // Closing balance
-    const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
+    const closing = ledgerRows.length ? ledgerRows[ledgerRows.length - 1].running : ledgerOpeningBalance;
     lines.push(['Closing Balance', '', '', '', `${closing}`].join(','));
 
     const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -439,8 +421,8 @@ const StudentPayments = () => {
     try {
       // build simple HTML for the ledger with improved styling
       // Ensure hostel name shows (try multiple possible fields on student)
-  const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
-  const appNoForPdf = applicationNo || '';
+      const hostelName = student?.hostelName || student?.hostel?.name || student?.hostelName || '';
+      const appNoForPdf = applicationNo || '';
       const periodStart = ledgerStart ? formatDateDDMMYYYY(ledgerStart) : 'start';
       const periodEnd = ledgerEnd ? formatDateDDMMYYYY(ledgerEnd) : 'end';
       const headerHtml = `
@@ -482,14 +464,14 @@ const StudentPayments = () => {
       const rowsHtml = ledgerRows.map((r, idx) => `
         <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#fbfbfd'};">
           <td style="padding:8px; border-right:1px solid #eef2f6">${formatDateDDMMYYYY(r.date)}</td>
-          <td style="padding:8px; border-right:1px solid #eef2f6">${(r.paymentMode||'')}</td>
+          <td style="padding:8px; border-right:1px solid #eef2f6">${(r.paymentMode || '')}</td>
           <td style="text-align:right; padding:8px; border-right:1px solid #eef2f6">${r.debit || ''}</td>
           <td style="text-align:right; padding:8px; border-right:1px solid #eef2f6">${r.credit || ''}</td>
           <td style="text-align:right; padding:8px">${formatCurrency(r.running)}</td>
         </tr>
       `).join('');
 
-      const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
+      const closing = ledgerRows.length ? ledgerRows[ledgerRows.length - 1].running : ledgerOpeningBalance;
       const footerHtml = `
             </tbody>
           </table>
@@ -498,10 +480,10 @@ const StudentPayments = () => {
         </div>
       `;
 
-  const html = headerHtml + rowsHtml + footerHtml;
-  const { generatePdfFromHtmlString } = await import('../utils/pdf');
-  const safeName = (student.studentName||'student').replace(/\s+/g,'_');
-  await generatePdfFromHtmlString(html, `${safeName}_ledger_${periodStart}_${periodEnd}.pdf`);
+      const html = headerHtml + rowsHtml + footerHtml;
+      const { generatePdfFromHtmlString } = await import('../utils/pdf');
+      const safeName = (student.studentName || 'student').replace(/\s+/g, '_');
+      await generatePdfFromHtmlString(html, `${safeName}_ledger_${periodStart}_${periodEnd}.pdf`);
     } catch (err) {
       console.error('downloadLedgerPdf error', err);
       alert('Failed to generate PDF');
@@ -512,6 +494,13 @@ const StudentPayments = () => {
     const num = Number(v || 0);
     const abs = Math.abs(num).toLocaleString('en-IN');
     return num < 0 ? `-₹${abs}` : `₹${abs}`;
+  };
+
+  // Format number with Indian separators but without currency symbol
+  const formatNumber = (v) => {
+    const num = Number(v || 0);
+    const sign = num < 0 ? '-' : '';
+    return sign + Math.abs(num).toLocaleString('en-IN');
   };
 
   const calculateTotals = (paymentsArr) => {
@@ -536,18 +525,18 @@ const StudentPayments = () => {
   const totalCredit = payments
     .filter(p => p.type === 'credit')
     .reduce((a, b) => a + (Number(b.amount) || 0), 0);
-    
+
   const totalDebit = payments
     .filter(p => p.type === 'debit')
     .reduce((a, b) => a + (Number(b.amount) || 0), 0);
-    
+
   // Initial fee is considered as a debit (money owed by student)
   const initialFeeDebit = usedFee || 0;
   const totalDebitIncludingFee = totalDebit + initialFeeDebit;
-  
+
   // Net paid is total payments (credit) minus refunds (debit) and initial fee
   const netPaid = totalCredit - totalDebitIncludingFee;
-  
+
   // Current balance (positive = pending, negative = advance)
   const currentBalance = usedFee - (totalCredit - totalDebit);
 
@@ -556,14 +545,18 @@ const StudentPayments = () => {
   const advancePaid = currentBalance < 0 ? Math.abs(currentBalance) : 0;
 
   // If user is composing a payment and has entered a penalty, show adjusted balance
-  const parsedPenaltyPreview = (() => {
+  // If composing a payment and category is 'penalty' with type=debit, preview its effect
+  const composingPenaltyPreview = (() => {
     try {
-      const p = parseFloat(String(newPayment.penaltyAmount || '0')) || 0;
-      return p > 0 ? p : 0;
+      if (!showPaymentForm) return 0;
+      if ((newPayment.category || '') !== 'penalty') return 0;
+      if ((newPayment.type || '') !== 'debit') return 0;
+      const v = parseFloat(String(newPayment.amount || '0')) || 0;
+      return v > 0 ? v : 0;
     } catch (e) { return 0; }
   })();
 
-  const feesDueWithPenaltyPreview = feesDue + (showPaymentForm ? parsedPenaltyPreview : 0);
+  const feesDueWithPenaltyPreview = feesDue + composingPenaltyPreview;
 
   return (
     <div style={styles.container}>
@@ -587,9 +580,9 @@ const StudentPayments = () => {
                   ...styles.balanceAmount,
                   color: feesDueWithPenaltyPreview > 0 ? '#dc2626' : (advancePaid > 0 ? '#059669' : '#6b7280')  // Red if due, green if advance, gray if zero
                 }}>
-                  { (showPaymentForm && parsedPenaltyPreview > 0) ?
-                    `Due: ${formatCurrency(feesDueWithPenaltyPreview)} (includes penalty ${formatCurrency(parsedPenaltyPreview)})` :
-                    (feesDue > 0 ? `Due: ${formatCurrency(feesDue)}` : (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)) }
+                  {(showPaymentForm && composingPenaltyPreview > 0) ?
+                    `Due: ${formatCurrency(feesDueWithPenaltyPreview)} (includes penalty ${formatCurrency(composingPenaltyPreview)})` :
+                    (feesDue > 0 ? `Due: ${formatCurrency(feesDue)}` : (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`))}
                   <button
                     onClick={() => setShowHistory(!showHistory)}
                     style={styles.infoButton}
@@ -624,65 +617,71 @@ const StudentPayments = () => {
 
         {showPaymentForm && (
           <div style={styles.formSection}>
-              <form onSubmit={handleSubmit} style={styles.form}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Amount</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={newPayment.amount}
-                    onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
-                    style={styles.input}
-                    // Amount is optional; payment can be processed when penalty > 0
-                  />
+            <form onSubmit={handleSubmit} style={styles.form}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Transaction Type</label>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <input type="radio" name="type" value="credit" checked={newPayment.type === 'credit'} onChange={() => setNewPayment(prev => ({ ...prev, type: 'credit' }))} /> <span style={{ marginLeft: 4 }}>Credit (Cr)</span>
+                  </label>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <input type="radio" name="type" value="debit" checked={newPayment.type === 'debit'} onChange={() => setNewPayment(prev => ({ ...prev, type: 'debit' }))} /> <span style={{ marginLeft: 4 }}>Debit (Dr)</span>
+                  </label>
                 </div>
+              </div>
 
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Mode</label>
-                  <select
-                    value={newPayment.paymentMode}
-                    onChange={(e) => setNewPayment(prev => ({ ...prev, paymentMode: e.target.value }))}
-                    style={styles.select}
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="upi">UPI</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="cheque">Cheque</option>
-                  </select>
-                </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Category</label>
+                <select value={newPayment.category} onChange={(e) => setNewPayment(prev => ({ ...prev, category: e.target.value }))} style={styles.select}>
+                  <option value="rent">Rent</option>
+                  <option value="penalty">Penalty</option>
+                  <option value="tiffin">Tiffin</option>
+                </select>
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Amount</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={newPayment.amount}
+                  onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
+                  style={styles.input}
+                // Amount is optional; payment can be processed when penalty > 0
+                />
+              </div>
 
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Remarks</label>
-                  <textarea
-                    value={newPayment.remarks}
-                    onChange={(e) => setNewPayment(prev => ({ ...prev, remarks: e.target.value }))}
-                    style={{ ...styles.input, minHeight: '80px' }}
-                    placeholder="Add any additional notes here..."
-                  />
-                </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Mode</label>
+                <select
+                  value={newPayment.paymentMode}
+                  onChange={(e) => setNewPayment(prev => ({ ...prev, paymentMode: e.target.value }))}
+                  style={styles.select}
+                >
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="cheque">Cheque</option>
+                </select>
+              </div>
 
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <label style={styles.label}>Penalty Amount (optional)</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={newPayment.penaltyAmount}
-                      onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyAmount: e.target.value }))}
-                      style={{ ...styles.input, width: 160 }}
-                      placeholder="0"
-                    />
-                  </div>
 
-                  <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-                    <button type="submit" style={styles.submitButton}>Add Payment</button>
-                    <button type="button" onClick={() => { setShowPaymentForm(false); setNewPayment({ amount: '', paymentMode: 'cash', remarks: '', type: 'credit', penaltyAmount: '0' }); }} style={{ ...styles.actionButton, backgroundColor: '#f3f4f6' }}>Cancel</button>
-                  </div>
-                </div>
-              </form>
-            </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Remarks</label>
+                <textarea
+                  value={newPayment.remarks}
+                  onChange={(e) => setNewPayment(prev => ({ ...prev, remarks: e.target.value }))}
+                  style={{ ...styles.input, minHeight: '80px' }}
+                  placeholder="Add any additional notes here..."
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
+                <button type="submit" style={styles.submitButton}>Add Payment</button>
+                <button type="button" onClick={() => { setShowPaymentForm(false); setNewPayment({ amount: '', paymentMode: 'cash', remarks: '', type: 'credit', category: 'rent' }); }} style={{ ...styles.actionButton, backgroundColor: '#f3f4f6' }}>Cancel</button>
+              </div>
+            </form>
+          </div>
         )}
 
         {showHistory && (
@@ -708,18 +707,18 @@ const StudentPayments = () => {
                   <div style={styles.summaryLabel}>Total Received</div>
                   <div style={{ ...styles.summaryValue, color: '#059669' }}>{formatCurrency(totalCredit)}</div>
                 </div>
-                      <div style={{ ...styles.summaryItem, borderTop: '1px solid #e5e7eb', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
-                        <div style={{ ...styles.summaryLabel, fontWeight: '600' }}>Current Balance</div>
-                        <div style={{ 
-                          ...styles.summaryValue, 
-                          color: feesDue > 0 ? '#b91c1c' : (advancePaid > 0 ? '#059669' : '#6b7280'),
-                          fontWeight: '600'
-                        }}>
-                          {feesDue > 0 
-                            ? `Due: ${formatCurrency(feesDue)}` 
-                            : (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
-                        </div>
-                      </div>
+                <div style={{ ...styles.summaryItem, paddingTop: '0.75rem', marginTop: '0.5rem' }}>
+                  <div style={{ ...styles.summaryLabel, fontWeight: '600' }}>Current Balance</div>
+                  <div style={{
+                    ...styles.summaryValue,
+                    color: feesDue > 0 ? '#b91c1c' : (advancePaid > 0 ? '#059669' : '#6b7280'),
+                    fontWeight: '600'
+                  }}>
+                    {feesDue > 0
+                      ? `Due: ${formatCurrency(feesDue)}`
+                      : (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
+                  </div>
+                </div>
               </div>
 
               <div style={styles.historyList}>
@@ -884,31 +883,37 @@ const StudentPayments = () => {
                       <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Remarks</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Debit</th>
                       <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Credit</th>
-                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Balance</th>
+                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Balance (₹)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {ledgerRows.length === 0 ? (
                       <tr><td colSpan={5} style={{ padding: 12, color: '#6b7280' }}>No transactions in the selected period</td></tr>
                     ) : (
-                      ledgerRows.map((r, i) => (
-                        <tr key={i}>
-                          <td style={{ padding: 8 }}>{new Date(r.date).toLocaleDateString('en-IN')}</td>
-                          <td style={{ padding: 8 }}>{r.paymentMode}{r.remarks ? ` (${r.remarks})` : ''}</td>
-                          <td style={{ padding: 8, textAlign: 'right', color: r.debit ? '#dc2626' : undefined }}>{r.debit || ''}</td>
-                          <td style={{ padding: 8, textAlign: 'right', color: r.credit ? '#059669' : undefined }}>{r.credit || ''}</td>
-                          <td style={{ padding: 8, textAlign: 'right' }}>{formatCurrency(r.running)}</td>
+                      <>
+                        {/* Opening balance row first */}
+                        <tr>
+                          <td style={{ padding: 8 }}>{/* empty date for opening */}</td>
+                          <td style={{ padding: 8 }}>Opening Balance</td>
+                          <td style={{ padding: 8, textAlign: 'right' }}>{''}</td>
+                          <td style={{ padding: 8, textAlign: 'right' }}>{''}</td>
+                          <td style={{ padding: 8, textAlign: 'right', fontWeight: 700 }}>{formatNumber(ledgerOpeningBalance)} {ledgerOpeningBalance > 0 ? 'Dr' : ledgerOpeningBalance < 0 ? 'Cr' : ''}</td>
                         </tr>
-                      ))
+                        {ledgerRows.map((r, i) => (
+                          <tr key={i}>
+                            <td style={{ padding: 8 }}>{new Date(r.date).toLocaleDateString('en-IN')}</td>
+                            <td style={{ padding: 8 }}>{r.paymentMode}{r.remarks ? ` (${r.remarks})` : ''}</td>
+                            <td style={{ padding: 8, textAlign: 'right', color: r.debit ? '#dc2626' : undefined }}>{r.debit ? formatNumber(r.debit) : ''}</td>
+                            <td style={{ padding: 8, textAlign: 'right', color: r.credit ? '#059669' : undefined }}>{r.credit ? formatNumber(r.credit) : ''}</td>
+                            <td style={{ padding: 8, textAlign: 'right' }}>{formatNumber(r.running)}</td>
+                          </tr>
+                        ))}
+                        <tr>
+                          <td colSpan={4} style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>Closing Balance</td>
+                          <td style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>{formatNumber(ledgerRows.length ? ledgerRows[ledgerRows.length - 1].running : ledgerOpeningBalance)} {(ledgerRows.length ? ledgerRows[ledgerRows.length - 1].running : ledgerOpeningBalance) > 0 ? 'Dr' : (ledgerRows.length ? ledgerRows[ledgerRows.length - 1].running : ledgerOpeningBalance) < 0 ? 'Cr' : ''}</td>
+                        </tr>
+                      </>
                     )}
-                    <tr>
-                      <td colSpan={4} style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>Opening Balance</td>
-                      <td style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>{formatCurrency(ledgerOpeningBalance)} {ledgerOpeningBalance > 0 ? 'Dr' : ledgerOpeningBalance < 0 ? 'Cr' : ''}</td>
-                    </tr>
-                    <tr>
-                      <td colSpan={4} style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>Closing Balance</td>
-                      <td style={{ textAlign: 'right', padding: 8, fontWeight: 700 }}>{formatCurrency(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance)} {(ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance) > 0 ? 'Dr' : (ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance) < 0 ? 'Cr' : ''}</td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -918,50 +923,51 @@ const StudentPayments = () => {
                 {ledgerRows.length === 0 ? (
                   <div style={{ padding: 12, color: '#6b7280', textAlign: 'center' }}>No transactions in the selected period</div>
                 ) : (
-                  ledgerRows.map((r, i) => (
-                    <div key={i} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 'clamp(0.75rem, 3vw, 1rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                        <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Date</span>
-                        <span style={{ flex: 1, textAlign: 'right' }}>{new Date(r.date).toLocaleDateString('en-IN')}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                        <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Mode</span>
-                        <span style={{ flex: 1, textAlign: 'right' }}>{r.paymentMode}{r.remarks ? ` (${r.remarks})` : ''}</span>
-                      </div>
-                      {r.debit && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                          <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Debit</span>
-                          <span style={{ flex: 1, textAlign: 'right', color: '#dc2626', fontWeight: 500 }}>{r.debit}</span>
-                        </div>
-                      )}
-                      {r.credit && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                          <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Credit</span>
-                          <span style={{ flex: 1, textAlign: 'right', color: '#059669', fontWeight: 500 }}>{r.credit}</span>
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, borderTop: '1px solid #d1d5db', paddingTop: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
-                        <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Balance</span>
-                        <span style={{ flex: 1, textAlign: 'right', fontWeight: 700 }}>{formatCurrency(r.running)}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-                {ledgerRows.length > 0 && (
-                  <>
+                  <div>
+                    {/* Opening balance card first */}
                     <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 'clamp(0.75rem, 3vw, 1rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                        <span style={{ fontWeight: 700, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Opening Balance</span>
-                        <span style={{ flex: 1, textAlign: 'right', fontWeight: 700 }}>{formatCurrency(ledgerOpeningBalance)} {ledgerOpeningBalance > 0 ? 'Dr' : ledgerOpeningBalance < 0 ? 'Cr' : ''}</span>
+                        <span style={{ fontWeight: 700, color: '#6b7280' }}>Opening Balance</span>
+                        <span style={{ fontWeight: 700 }}>{formatNumber(ledgerOpeningBalance)} {ledgerOpeningBalance > 0 ? 'Dr' : ledgerOpeningBalance < 0 ? 'Cr' : ''}</span>
                       </div>
                     </div>
-                    <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: 'clamp(0.75rem, 3vw, 1rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                        <span style={{ fontWeight: 700, color: '#059669', minWidth: 'clamp(80px, 30vw, 120px)' }}>Closing Balance</span>
-                        <span style={{ flex: 1, textAlign: 'right', fontWeight: 700, color: '#059669' }}>{formatCurrency(ledgerRows[ledgerRows.length-1].running)} {ledgerRows[ledgerRows.length-1].running > 0 ? 'Dr' : ledgerRows[ledgerRows.length-1].running < 0 ? 'Cr' : ''}</span>
+                    {ledgerRows.map((r, i) => (
+                      <div key={i} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 'clamp(0.75rem, 3vw, 1rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                          <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Date</span>
+                          <span style={{ flex: 1, textAlign: 'right' }}>{new Date(r.date).toLocaleDateString('en-IN')}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                          <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Mode</span>
+                          <span style={{ flex: 1, textAlign: 'right' }}>{r.paymentMode}{r.remarks ? ` (${r.remarks})` : ''}</span>
+                        </div>
+                        {r.debit && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                            <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Debit</span>
+                            <span style={{ flex: 1, textAlign: 'right', color: '#dc2626', fontWeight: 500 }}>{formatNumber(r.debit)}</span>
+                          </div>
+                        )}
+                        {r.credit && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                            <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Credit</span>
+                            <span style={{ flex: 1, textAlign: 'right', color: '#059669', fontWeight: 500 }}>{formatNumber(r.credit)}</span>
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, borderTop: '1px solid #d1d5db', paddingTop: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
+                          <span style={{ fontWeight: 600, color: '#6b7280', minWidth: 'clamp(80px, 30vw, 120px)' }}>Balance</span>
+                          <span style={{ flex: 1, textAlign: 'right', fontWeight: 700 }}>{formatNumber(r.running)}</span>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+                {ledgerRows.length > 0 && (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: 'clamp(0.75rem, 3vw, 1rem)', display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                      <span style={{ fontWeight: 700, color: '#059669', minWidth: 'clamp(80px, 30vw, 120px)' }}>Closing Balance</span>
+                      <span style={{ flex: 1, textAlign: 'right', fontWeight: 700, color: '#059669' }}>{formatNumber(ledgerRows[ledgerRows.length - 1].running)} {ledgerRows[ledgerRows.length - 1].running > 0 ? 'Dr' : ledgerRows[ledgerRows.length - 1].running < 0 ? 'Cr' : ''}</span>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
