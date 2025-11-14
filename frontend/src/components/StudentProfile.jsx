@@ -737,12 +737,17 @@ const StudentProfile = () => {
                   {/* If a file is selected and pending, show preview + Add/Cancel buttons */}
                   {pendingDoc ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <img
+                        src={pendingDoc.dataUrl}
+                        alt={pendingDoc.fileName || 'Selected file'}
+                        style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb', cursor: 'pointer' }}
+                        onClick={() => setPreviewImage(pendingDoc.dataUrl)}
+                      />
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <div style={{ fontSize: '0.9rem', color: '#111827', fontWeight: 600 }}>{pendingDoc.fileName || 'Selected file'}</div>
                         <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{pendingDoc.type || ''}</div>
                       </div>
                       <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
-                        <button onClick={() => setPreviewImage(pendingDoc.dataUrl)} style={{ ...styles.button, background: '#2563eb', color: '#fff' }}>Preview</button>
                         <button onClick={addPendingDocument} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>{pendingDoc.isEdit ? 'Save' : 'Add'}</button>
                         <button onClick={cancelPendingDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
                       </div>
