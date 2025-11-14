@@ -837,12 +837,29 @@ const fetchHostels = async () => {
       for (const r of results) {
         if (!r || !r.data) continue;
         const students = r.data.data || r.data || [];
-        const hostelMatches = students.filter(s =>
-          (s.studentName || '').toLowerCase().includes(query) ||
-          String(s.mobile1 || '').includes(query) ||
-          String(s.applicationNumber || '').toLowerCase().includes(query) ||
-          String(s.combinedId || '').toLowerCase().includes(query)
-        );
+        const hostelMatches = students.filter(s => {
+          const nameMatch = (s.studentName || '').toLowerCase().includes(query);
+
+          // Normalize a bunch of possible mobile fields
+          const mobileRaw = String(s.mobile1 || s.mobile || s.mobileNumber || s.primaryMobile || '').trim();
+          const mobileDigits = mobileRaw.replace(/\D/g, '');
+
+          // Normalize application-like fields (applicationNumber, combinedId, studentId, applicationNo)
+          const appRaw = String(s.applicationNumber || s.applicationNo || s.combinedId || s.studentId || '').trim();
+          const appDigits = appRaw.replace(/\D/g, '');
+
+          // If the query contains digits, match against normalized digit forms to handle formatting (slashes, spaces, dashes)
+          const queryDigits = query.replace(/\D/g, '');
+          const digitSearch = queryDigits.length > 0 && (
+            (mobileDigits && mobileDigits.includes(queryDigits)) ||
+            (appDigits && appDigits.includes(queryDigits))
+          );
+
+          // Also fall back to text matching for non-digit queries
+          const textMatch = (String(mobileRaw) || '').toLowerCase().includes(query) || (String(appRaw) || '').toLowerCase().includes(query);
+
+          return nameMatch || digitSearch || textMatch;
+        });
         matchedStudents.push(...hostelMatches.map(s => ({ ...s, hostelId: r.hostel.id, hostelName: r.hostel.name })));
       }
 
