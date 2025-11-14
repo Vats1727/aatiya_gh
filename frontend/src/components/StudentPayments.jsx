@@ -505,6 +505,23 @@ const StudentPayments = () => {
     return sign + Math.abs(num).toLocaleString('en-IN');
   };
 
+  // Format remarks for a payment; if category is 'penalty' append Penalty + Dr/Cr marker
+  const formatPaymentRemarks = (p) => {
+    try {
+      const base = p && p.remarks ? String(p.remarks).trim() : '';
+      const isPenalty = String((p && p.category) || '').toLowerCase() === 'penalty';
+      const type = (p && p.type) || '';
+      const marker = type === 'debit' ? 'Dr' : (type === 'credit' ? 'Cr' : '');
+      if (isPenalty) {
+        const suffix = marker ? `Penalty - ${marker}` : 'Penalty';
+        return base ? `${base} (${suffix})` : suffix;
+      }
+      return base;
+    } catch (e) {
+      return (p && p.remarks) || '';
+    }
+  };
+
   const calculateTotals = (paymentsArr) => {
     let totalCredit = 0;
     let totalDebit = 0;
@@ -761,16 +778,16 @@ const StudentPayments = () => {
                           </tr>
                           {payments.map((payment, i) => (
                             <tr key={i}>
-                              <td>{formatDate(payment.timestamp)}</td>
-                              <td>{payment.paymentMode}</td>
-                              <td>{payment.remarks || '—'}</td>
-                              <td style={{ textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
-                                {payment.type === 'debit' ? formatCurrency(payment.amount) : ''}
-                              </td>
-                              <td style={{ textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
-                                {payment.type === 'credit' ? formatCurrency(payment.amount) : ''}
-                              </td>
-                            </tr>
+                                <td>{formatDate(payment.timestamp)}</td>
+                                <td>{payment.paymentMode}</td>
+                                <td>{(formatPaymentRemarks(payment)) || '—'}</td>
+                                <td style={{ textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
+                                  {payment.type === 'debit' ? formatCurrency(payment.amount) : ''}
+                                </td>
+                                <td style={{ textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
+                                  {payment.type === 'credit' ? formatCurrency(payment.amount) : ''}
+                                </td>
+                              </tr>
                           ))}
                           <tr>
                             <td colSpan={3} style={{ textAlign: 'right', fontWeight: '600' }}>Balance</td>
@@ -824,10 +841,10 @@ const StudentPayments = () => {
                             <div style={styles.cardLabel}>Mode</div>
                             <div style={styles.cardValue}>{payment.paymentMode || '—'}</div>
                           </div>
-                          {payment.remarks && (
+                          {(formatPaymentRemarks(payment)) && (
                             <div style={styles.cardRow}>
                               <div style={styles.cardLabel}>Remarks</div>
-                              <div style={styles.cardValue}>{payment.remarks}</div>
+                              <div style={styles.cardValue}>{formatPaymentRemarks(payment)}</div>
                             </div>
                           )}
                           <div style={styles.cardRow}>
