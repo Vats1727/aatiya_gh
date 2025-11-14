@@ -219,7 +219,7 @@ const StudentPayments = () => {
 
   // If both amount and penalty are zero or empty, do not process
   if ((amount <= 0 || isNaN(amount)) && (pAmt <= 0 || isNaN(pAmt))) {
-    return alert('Please enter an Amount or a Penalty greater than 0');
+    return alert('Please enter an Amount or a Penalty.');
   }
 
   const type = newPayment.type || 'credit';
