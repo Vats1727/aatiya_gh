@@ -50,7 +50,9 @@ export const renderStudentPrintHtml = (student = {}) => {
   // Build address line from bilingual address fields; prefer address_hi + ' / ' + address (English)
   const addrHi = s.hostelAddressHi || s.address_hi || '';
   const addrEn = s.hostelAddress || s.hostelAddressEn || s.address || '';
-  const addressLine = (addrHi || addrEn) ? `${addrHi || ''}${addrHi && addrEn ? ' / ' : ''}${addrEn || ''}` : 'रामपाड़ा कटिहार / Rampada Katihar';
+  // Prefer available bilingual fields; if only English present, show that.
+  // Do not use a hardcoded static fallback — show empty when address isn't available.
+  const addressLine = (addrHi || addrEn) ? `${addrHi || ''}${addrHi && addrEn ? ' / ' : ''}${addrEn || ''}` : '';
 
   const formHtml = `
   <div style="${pageStyle}">
