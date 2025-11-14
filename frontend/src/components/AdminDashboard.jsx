@@ -5,7 +5,6 @@ import QRCode from 'qrcode';
 import HindiKeyboard from './HindiKeyboard';
 import Spinner from './Spinner';
 import { itransToDevanagari } from '../libs/itransToDevanagari';
-import '../Styles/AdminDashboard.responsive.css';
 
 // Dynamic loader for Sanscript transliteration library (loads from CDN at runtime)
 const loadSanscript = () => {
