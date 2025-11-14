@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Building, Users, Plus, ArrowRight, Home, UserPlus, LogOut, Edit, Trash2, Search } from 'lucide-react';
 import QRCode from 'qrcode';
 import HindiKeyboard from './HindiKeyboard';
+import Spinner from './Spinner';
 import { itransToDevanagari } from '../libs/itransToDevanagari';
 
 // Dynamic loader for Sanscript transliteration library (loads from CDN at runtime)
@@ -350,7 +351,7 @@ const AdminDashboard = () => {
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [globalSearchResults, setGlobalSearchResults] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const HOSTELS_PER_PAGE = 8;
+  const HOSTELS_PER_PAGE = 10;
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
   const translitTimers = useRef({ name: null, address: null, name_hi: null, address_hi: null });
   const [showHindiKeyboard, setShowHindiKeyboard] = useState(false);
@@ -1684,7 +1685,11 @@ const fetchHostels = async () => {
         <div className="table-container" style={styles.tableContainer}>
           {/* hostels count moved into global search bar */}
 
-          {isMobile ? (
+          {loading && (!hostels || hostels.length === 0) ? (
+            <div style={{ padding: 24, display: 'flex', justifyContent: 'center' }}>
+              <Spinner />
+            </div>
+          ) : isMobile ? (
             <div style={styles.hostelGrid}>
               {paginatedHostels.map((hostel) => (
                 <div key={hostel.id} style={styles.hostelCard}>
@@ -1771,12 +1776,19 @@ const fetchHostels = async () => {
             </table>
           )}
 
-          {/* Pagination controls */}
-          {filteredHostels.length > HOSTELS_PER_PAGE && (
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', padding: '0.75rem' }}>
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '0.5rem 0.75rem' }}>Prev</button>
-              <div style={{ padding: '0.25rem 0.75rem' }}>{currentPage} / {totalPages}</div>
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: '0.5rem 0.75rem' }}>Next</button>
+          {/* Pagination controls (matches StudentsPage style) */}
+          {filteredHostels.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem' }}>
+              <div style={{ color: '#4b5563', fontSize: '0.9rem' }}>
+                Showing {filteredHostels.length === 0 ? 0 : Math.min((currentPage - 1) * HOSTELS_PER_PAGE + 1, filteredHostels.length)}-{Math.min(currentPage * HOSTELS_PER_PAGE, filteredHostels.length)} of {filteredHostels.length} hostels
+              </div>
+              {filteredHostels.length > HOSTELS_PER_PAGE && (
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
+                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '0.5rem 0.75rem' }}>Prev</button>
+                  <div style={{ padding: '0.25rem 0.75rem' }}>{currentPage} / {totalPages}</div>
+                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: '0.5rem 0.75rem' }}>Next</button>
+                </div>
+              )}
             </div>
           )}
         </div>
