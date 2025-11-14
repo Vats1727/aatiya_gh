@@ -270,7 +270,8 @@ const StudentPayments = () => {
       if (penRes.ok) {
         const penData = await penRes.json();
         const penEntry = { ...(penData || {}), amount: pAmt, type: 'debit', paymentMode: 'penalty', remarks: `Penalty`, timestamp: penaltyPayload.timestamp };
-        setPayments(prev => [penEntry, ...prev]);
+            setPayments(prev => [penEntry, ...prev]);
+            try { window.alert('Penalty added successfully'); } catch (e) { /* ignore if alert unavailable */ }
       }
     }
   } catch (e) {
