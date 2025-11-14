@@ -1156,13 +1156,14 @@ const HostelAdmissionForm = () => {
       }
 
       alert('Record updated successfully');
-      // If this was an admin editing an existing record, redirect back to the hostel's students list
+      // If this was an admin editing an existing record, redirect to the student's profile page
       if (editId) {
         try {
           const targetHostel = effectiveHostelId || formData.hostelDocId || preHostelId;
           if (targetHostel) {
-            navigate(`/hostel/${encodeURIComponent(targetHostel)}/students`);
+            navigate(`/hostel/${encodeURIComponent(targetHostel)}/students/${encodeURIComponent(editId)}/profile`);
           } else {
+            // If we don't have a hostel id, fall back to dashboard
             navigate('/admin/dashboard');
           }
         } catch (e) {

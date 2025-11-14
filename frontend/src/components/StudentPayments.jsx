@@ -544,6 +544,16 @@ const StudentPayments = () => {
   const feesDue = currentBalance > 0 ? currentBalance : 0;
   const advancePaid = currentBalance < 0 ? Math.abs(currentBalance) : 0;
 
+  // If user is composing a payment and has entered a penalty, show adjusted balance
+  const parsedPenaltyPreview = (() => {
+    try {
+      const p = parseFloat(String(newPayment.penaltyAmount || '0')) || 0;
+      return p > 0 ? p : 0;
+    } catch (e) { return 0; }
+  })();
+
+  const feesDueWithPenaltyPreview = feesDue + (showPaymentForm ? parsedPenaltyPreview : 0);
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -564,11 +574,11 @@ const StudentPayments = () => {
                 <span>Current Balance:</span>
                 <div style={{
                   ...styles.balanceAmount,
-                  color: feesDue > 0 ? '#dc2626' : (advancePaid > 0 ? '#059669' : '#6b7280')  // Red if due, green if advance, gray if zero
+                  color: feesDueWithPenaltyPreview > 0 ? '#dc2626' : (advancePaid > 0 ? '#059669' : '#6b7280')  // Red if due, green if advance, gray if zero
                 }}>
-                  {feesDue > 0 ? 
-                    `Due: ${formatCurrency(feesDue)}` : 
-                    (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)}
+                  { (showPaymentForm && parsedPenaltyPreview > 0) ?
+                    `Due: ${formatCurrency(feesDueWithPenaltyPreview)} (includes penalty ${formatCurrency(parsedPenaltyPreview)})` :
+                    (feesDue > 0 ? `Due: ${formatCurrency(feesDue)}` : (advancePaid > 0 ? `Advance: ${formatCurrency(advancePaid)}` : `₹0`)) }
                   <button
                     onClick={() => setShowHistory(!showHistory)}
                     style={styles.infoButton}
@@ -641,9 +651,24 @@ const StudentPayments = () => {
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button type="submit" style={styles.submitButton}>Add Payment</button>
-                  <button type="button" onClick={() => { setShowPaymentForm(false); setNewPayment({ amount: '', paymentMode: 'cash', remarks: '', type: 'credit', penaltyAmount: '0' }); }} style={{ ...styles.actionButton, backgroundColor: '#f3f4f6' }}>Cancel</button>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <label style={styles.label}>Penalty Amount (optional)</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={newPayment.penaltyAmount}
+                      onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyAmount: e.target.value }))}
+                      style={{ ...styles.input, width: 160 }}
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+                    <button type="submit" style={styles.submitButton}>Add Payment</button>
+                    <button type="button" onClick={() => { setShowPaymentForm(false); setNewPayment({ amount: '', paymentMode: 'cash', remarks: '', type: 'credit', penaltyAmount: '0' }); }} style={{ ...styles.actionButton, backgroundColor: '#f3f4f6' }}>Cancel</button>
+                  </div>
                 </div>
               </form>
             </div>

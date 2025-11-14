@@ -297,8 +297,7 @@ const StudentProfile = () => {
       // create pending doc (do not persist yet)
       const pending = { id: `pending_${Date.now()}`, type: docSelection || 'NONE', dataUrl: compressedDataUrl, uploadedAt: new Date().toISOString(), fileName: file.name };
       setPendingDoc(pending);
-      // show preview of pending doc
-      setPreviewImage(pending.dataUrl);
+      // Do NOT auto-show preview. Preview will be shown only when user clicks Preview.
     } catch (err) {
       console.error(err);
       alert('Failed to process selected image');
@@ -505,8 +504,12 @@ const StudentProfile = () => {
                   {/* If a file is selected and pending, show preview + Add/Cancel buttons */}
                   {pendingDoc ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <img src={pendingDoc.dataUrl} alt="preview" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }} />
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ fontSize: '0.9rem', color: '#111827', fontWeight: 600 }}>{pendingDoc.fileName || 'Selected file'}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{pendingDoc.type || ''}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
+                        <button onClick={() => setPreviewImage(pendingDoc.dataUrl)} style={{ ...styles.button, background: '#2563eb', color: '#fff' }}>Preview</button>
                         <button onClick={addPendingDocument} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>Add</button>
                         <button onClick={cancelPendingDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
                       </div>
