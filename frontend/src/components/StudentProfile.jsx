@@ -473,15 +473,19 @@ const StudentProfile = () => {
             <h3 style={styles.tabTitle}>Upload Documents ({Array.isArray(student.documents) ? `${student.documents.length} document${student.documents.length !== 1 ? 's' : ''}` : '0 documents'})</h3>
             <div style={styles.docControls}>
               <select value={docSelection} onChange={(e) => setDocSelection(e.target.value)} style={styles.docSelect}>
-                {((docOptions || ['NONE','AADHAR CARD']).filter(opt => {
-                  // hide NONE and any document types already uploaded for this student
-                  if (!opt) return false;
-                  if (String(opt).toUpperCase() === 'NONE') return false;
+                {(docOptions || ['NONE','AADHAR CARD']).map(opt => {
+                  const label = opt || '';
+                  const isNone = String(opt || '').toUpperCase() === 'NONE';
+                  let disabled = false;
                   try {
-                    const exists = Array.isArray(student?.documents) && student.documents.some(d => String(d.type || '').toUpperCase() === String(opt || '').toUpperCase());
-                    return !exists;
-                  } catch (e) { return true; }
-                })).map(opt => (<option key={opt} value={opt}>{opt}</option>))}
+                    if (!isNone) {
+                      disabled = Array.isArray(student?.documents) && student.documents.some(d => String(d.type || '').toUpperCase() === String(opt || '').toUpperCase());
+                    }
+                  } catch (e) { disabled = false; }
+                  return (
+                    <option key={opt} value={opt} disabled={disabled}>{label}</option>
+                  );
+                })}
                 <option value="__ADD_OTHER__">Others (add)</option>
               </select>
 

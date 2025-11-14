@@ -608,13 +608,13 @@ const StudentPayments = () => {
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Amount</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={newPayment.amount}
                     onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
                     style={styles.input}
                     required
-                    min="0"
-                    step="1"
                   />
                 </div>
 
@@ -645,11 +645,11 @@ const StudentPayments = () => {
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <label style={styles.label}>Penalty Amount</label>
-                      <input type="number" min="0" step="1" value={newPayment.penaltyAmount} onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyAmount: e.target.value }))} style={{ ...styles.input, width: 160 }} />
+                      <input type="text" inputMode="numeric" pattern="[0-9]*" value={newPayment.penaltyAmount} onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyAmount: e.target.value }))} style={{ ...styles.input, width: 160 }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <label style={styles.label}>Penalty Count</label>
-                    <input type="number" min="0" step="1" value={newPayment.penaltyCount} onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyCount: e.target.value }))} style={{ ...styles.input, width: 160 }} />
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" value={newPayment.penaltyCount} onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyCount: e.target.value }))} style={{ ...styles.input, width: 160 }} />
                   </div>
                 </div>
 
