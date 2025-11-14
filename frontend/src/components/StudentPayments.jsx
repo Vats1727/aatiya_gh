@@ -210,73 +210,81 @@ const StudentPayments = () => {
       if (!token) return alert('Not authenticated');
 
   // Parse amount exactly as typed (preserve the entered value)
-  const rawAmount = parseFloat(String(newPayment.amount).trim());
-  const amount = Number.isFinite(rawAmount) ? rawAmount : 0;
-      if (amount <= 0) return alert('Please enter a valid amount greater than 0');
-      
-      const type = newPayment.type || 'credit';
+  const rawAmount = String(newPayment.amount || '').trim();
+  const parsedAmount = rawAmount === '' ? 0 : parseFloat(rawAmount);
+  const amount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+  const pAmt = parseFloat(String(newPayment.penaltyAmount || '0')) || 0;
 
-      const payload = {
-        ...newPayment,
-        amount,
-        type,
-        timestamp: new Date().toISOString()
-      };
+  // If both amount and penalty are zero or empty, do not process
+  if ((amount <= 0 || isNaN(amount)) && (pAmt <= 0 || isNaN(pAmt))) {
+    return alert('Please enter an Amount or a Penalty greater than 0');
+  }
 
-      const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
+  const type = newPayment.type || 'credit';
+
+  // If amount > 0, create a payment credit entry
+  let createdPaymentEntry = null;
+  if (amount > 0) {
+    const payload = {
+      ...newPayment,
+      amount,
+      type,
+      timestamp: new Date().toISOString()
+    };
+
+    const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Failed to add payment');
+
+    const data = await res.json();
+    createdPaymentEntry = {
+      ...data,
+      amount,
+      type,
+      timestamp: payload.timestamp,
+      paymentMode: newPayment.paymentMode,
+      remarks: newPayment.remarks
+    };
+    setPayments(prev => [createdPaymentEntry, ...prev]);
+  }
+
+  // If penalty > 0, create a penalty debit entry
+  try {
+    if (pAmt > 0) {
+      const penaltyPayload = { amount: pAmt, type: 'debit', paymentMode: 'penalty', remarks: `Penalty`, timestamp: new Date().toISOString() };
+      const penRes = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(penaltyPayload)
       });
-
-      if (!res.ok) throw new Error('Failed to add payment');
-
-      const data = await res.json();
-
-      // Update payments list and reset form
-      const newEntry = {
-        ...data,
-        amount,
-        type,
-        timestamp: payload.timestamp,
-        paymentMode: newPayment.paymentMode,
-        remarks: newPayment.remarks
-      };
-      setPayments(prev => [newEntry, ...prev]);
-      setNewPayment({
-        amount: '',
-        paymentMode: 'cash',
-        remarks: '',
-        type: 'credit',
-        penaltyAmount: '0'
-      });
-
-      // If a penalty amount (non-zero) is configured, apply it automatically
-      // as a debit entry. There is no UI to toggle this; default is '0'.
-      try {
-        const pAmt = parseFloat(String(newPayment.penaltyAmount || '0')) || 0;
-        if (pAmt > 0) {
-          const penaltyPayload = { amount: pAmt, type: 'debit', paymentMode: 'penalty', remarks: `Penalty`, timestamp: new Date().toISOString() };
-          const penRes = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(penaltyPayload)
-          });
-          if (penRes.ok) {
-            const penData = await penRes.json();
-            const penEntry = { ...(penData || {}), amount: pAmt, type: 'debit', paymentMode: 'penalty', remarks: `Penalty`, timestamp: penaltyPayload.timestamp };
-            setPayments(prev => [penEntry, ...prev]);
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to apply penalty entry', e);
+      if (penRes.ok) {
+        const penData = await penRes.json();
+        const penEntry = { ...(penData || {}), amount: pAmt, type: 'debit', paymentMode: 'penalty', remarks: `Penalty`, timestamp: penaltyPayload.timestamp };
+        setPayments(prev => [penEntry, ...prev]);
       }
+    }
+  } catch (e) {
+    console.warn('Failed to apply penalty entry', e);
+  }
+
+  // Reset form (always reset after attempted create)
+  setNewPayment({
+    amount: '',
+    paymentMode: 'cash',
+    remarks: '',
+    type: 'credit',
+    penaltyAmount: '0'
+  });
 
     } catch (err) {
       console.error('Failed to add payment:', err);
@@ -623,7 +631,7 @@ const StudentPayments = () => {
                     value={newPayment.amount}
                     onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
                     style={styles.input}
-                    required
+                    // Amount is optional; payment can be processed when penalty > 0
                   />
                 </div>
 

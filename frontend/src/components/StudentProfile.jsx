@@ -22,6 +22,9 @@ const StudentProfile = () => {
   const [pendingDoc, setPendingDoc] = useState(null); // holds selected file preview before user clicks Add
   const [previewImage, setPreviewImage] = useState(null);
   const [previewFee, setPreviewFee] = useState('');
+  const [editDocId, setEditDocId] = useState(null);
+  const [editDocPending, setEditDocPending] = useState(null);
+  const [editDocType, setEditDocType] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -304,6 +307,104 @@ const StudentProfile = () => {
     }
   };
 
+  // Handle file selection when editing an existing document
+  const handleEditFileUpload = async (file) => {
+    if (!file) return;
+    try {
+      const dataUrlFromFile = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = (err) => reject(err);
+        fr.readAsDataURL(file);
+      });
+
+      const img = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = (e) => reject(new Error('Invalid image'));
+        image.src = dataUrlFromFile;
+      });
+
+      const MAX_DIM = 1200;
+      let { width, height } = img;
+      let ratio = 1;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      let compressedDataUrl;
+      try {
+        compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+      } catch (e) {
+        compressedDataUrl = canvas.toDataURL();
+      }
+
+      const approxBytes = Math.ceil((compressedDataUrl.length * 3) / 4);
+      if (approxBytes > 800 * 1024) {
+        return alert('Image is too large after compression. Please choose a smaller image or crop it before uploading.');
+      }
+
+      const pending = { id: `edit_pending_${Date.now()}`, dataUrl: compressedDataUrl, uploadedAt: new Date().toISOString(), fileName: file.name };
+      setEditDocPending(pending);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to process selected image');
+    }
+  };
+
+  const startEditDocument = (doc) => {
+    setEditDocId(doc.id);
+    setEditDocType(doc.type || '');
+    setEditDocPending(null);
+  };
+
+  const cancelEditDocument = () => {
+    setEditDocId(null);
+    setEditDocType('');
+    setEditDocPending(null);
+  };
+
+  const saveEditedDocument = async (doc) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return alert('Not authenticated');
+      const pendingType = String(editDocType || '').trim().toUpperCase();
+      if (!pendingType || pendingType === 'NONE') return alert('Please select a valid document type');
+
+      const existingDocs = Array.isArray(student.documents) ? student.documents : [];
+      // Check duplicate type among other docs
+      const duplicate = existingDocs.some(d => d.id !== doc.id && String(d.type || '').trim().toUpperCase() === pendingType);
+      if (duplicate) return alert(`Another document with type "${pendingType}" already exists`);
+
+      const newDoc = { ...doc, type: pendingType, uploadedAt: (editDocPending && editDocPending.uploadedAt) || new Date().toISOString(), dataUrl: (editDocPending && editDocPending.dataUrl) || doc.dataUrl };
+      const updated = existingDocs.map(d => d.id === doc.id ? newDoc : d);
+
+      const resp = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ documents: updated })
+      });
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        console.error('Failed to save edited document', resp.status, txt);
+        throw new Error('Failed to save edited document');
+      }
+      setStudent(prev => ({ ...prev, documents: updated }));
+      cancelEditDocument();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save document edits');
+    }
+  };
+
   // Commit pendingDoc to student's documents (persist to backend)
   const addPendingDocument = async () => {
     if (!pendingDoc || !student) return alert('No file selected');
@@ -523,9 +624,53 @@ const StudentProfile = () => {
               {Array.isArray(student.documents) && student.documents.length > 0 ? (
                 student.documents.map(doc => (
                   <div key={doc.id} style={styles.docItem}>
-                    <img src={doc.dataUrl} alt={doc.type} style={styles.docImage} onClick={() => setPreviewImage(doc.dataUrl)} />
-                    <button onClick={() => handleDeleteDocument(doc.id)} style={styles.docDeleteBtn}>×</button>
-                    <div style={styles.docLabel}>{doc.type}</div>
+                    {editDocId === doc.id ? (
+                      <div style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <select value={editDocType} onChange={(e) => setEditDocType(e.target.value)} style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid #e5e7eb' }}>
+                            { (Array.from(new Set([...'NONE','AADHAR CARD', ...(docOptions||[])]))).filter(opt => {
+                                try {
+                                  // allow current doc type even if duplicate; otherwise exclude types used by other docs
+                                  const exists = Array.isArray(student.documents) && student.documents.some(d => d.id !== doc.id && String(d.type||'').toUpperCase() === String(opt||'').toUpperCase());
+                                  return !exists || String(opt||'').toUpperCase() === String(doc.type||'').toUpperCase();
+                                } catch (e) { return true }
+                              }).map(opt => <option key={opt} value={opt}>{opt}</option>) }
+                          </select>
+                          <label style={styles.fileUploadLabel}>
+                            Replace
+                            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleEditFileUpload(f); e.target.value = ''; }} style={{ display: 'none' }} />
+                          </label>
+                        </div>
+                        {editDocPending ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                            <img src={editDocPending.dataUrl} alt="preview" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }} />
+                            <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
+                              <button onClick={() => setPreviewImage(editDocPending.dataUrl)} style={{ ...styles.button, background: '#2563eb', color: '#fff' }}>Preview</button>
+                              <button onClick={() => saveEditedDocument(doc)} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>Save</button>
+                              <button onClick={cancelEditDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
+                            <img src={doc.dataUrl} alt={doc.type} style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }} onClick={() => setPreviewImage(doc.dataUrl)} />
+                            <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
+                              <button onClick={() => setPreviewImage(doc.dataUrl)} style={{ ...styles.button, background: '#2563eb', color: '#fff' }}>Preview</button>
+                              <button onClick={() => saveEditedDocument(doc)} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>Save (no change)</button>
+                              <button onClick={cancelEditDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <img src={doc.dataUrl} alt={doc.type} style={styles.docImage} onClick={() => setPreviewImage(doc.dataUrl)} />
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+                          <button onClick={() => startEditDocument(doc)} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Edit</button>
+                          <button onClick={() => handleDeleteDocument(doc.id)} style={styles.docDeleteBtn}>×</button>
+                        </div>
+                        <div style={styles.docLabel}>{doc.type}</div>
+                      </>
+                    )}
                   </div>
                 ))
               ) : (
