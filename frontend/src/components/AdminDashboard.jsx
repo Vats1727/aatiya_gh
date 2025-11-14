@@ -1683,6 +1683,24 @@ const fetchHostels = async () => {
         {/* Removed duplicate header + global-search block (kept the first instance above). */}
 
         <div className="table-container" style={styles.tableContainer}>
+          {/* Table header with pagination on the top-right */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem' }}>
+            <div style={{ color: '#4b5563', fontSize: '0.95rem' }}>
+              {/* left side intentionally left for potential filters/labels */}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ color: '#4b5563', fontSize: '0.95rem' }}>
+                Showing {filteredHostels.length === 0 ? 0 : Math.min((currentPage - 1) * HOSTELS_PER_PAGE + 1, filteredHostels.length)}-{Math.min(currentPage * HOSTELS_PER_PAGE, filteredHostels.length)} of {filteredHostels.length} hostels
+              </div>
+              {filteredHostels.length > HOSTELS_PER_PAGE && (
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
+                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '0.5rem 0.75rem' }}>Prev</button>
+                  <div style={{ padding: '0.25rem 0.75rem' }}>{currentPage} / {totalPages}</div>
+                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: '0.5rem 0.75rem' }}>Next</button>
+                </div>
+              )}
+            </div>
+          </div>
           {/* hostels count moved into global search bar */}
 
           {loading && (!hostels || hostels.length === 0) ? (
@@ -1776,21 +1794,7 @@ const fetchHostels = async () => {
             </table>
           )}
 
-          {/* Pagination controls (matches StudentsPage style) */}
-          {filteredHostels.length > 0 && (
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem' }}>
-              <div style={{ color: '#4b5563', fontSize: '0.9rem' }}>
-                Showing {filteredHostels.length === 0 ? 0 : Math.min((currentPage - 1) * HOSTELS_PER_PAGE + 1, filteredHostels.length)}-{Math.min(currentPage * HOSTELS_PER_PAGE, filteredHostels.length)} of {filteredHostels.length} hostels
-              </div>
-              {filteredHostels.length > HOSTELS_PER_PAGE && (
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
-                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '0.5rem 0.75rem' }}>Prev</button>
-                  <div style={{ padding: '0.25rem 0.75rem' }}>{currentPage} / {totalPages}</div>
-                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: '0.5rem 0.75rem' }}>Next</button>
-                </div>
-              )}
-            </div>
-          )}
+          
         </div>
 
         {selectedHostel && (
