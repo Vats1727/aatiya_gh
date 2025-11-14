@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Edit } from 'lucide-react';
 import StudentPayments from './StudentPayments';
 import Spinner from './Spinner';
 import { downloadStudentPdf } from '../utils/pdfUtils';
@@ -370,7 +370,7 @@ const StudentProfile = () => {
     setEditDocId(doc.id);
     setDocSelection(doc.type || 'NONE');
     setEditDocType(doc.type || '');
-    setPendingDoc({ ...doc, isEdit: true });
+    setPendingDoc({ ...(doc || {}), isEdit: true, fileName: doc.fileName || doc.type || 'Selected file' });
   };
 
   const cancelEditDocument = () => {
@@ -597,7 +597,11 @@ const StudentProfile = () => {
                     if (String(opt).toUpperCase() === 'NONE') return true;
                     try {
                       // hide options that are already uploaded for this student
-                      const exists = Array.isArray(student?.documents) && student.documents.some(d => String(d.type || '').toUpperCase() === String(opt || '').toUpperCase());
+                      const exists = Array.isArray(student?.documents) && student.documents.some(d => {
+                        // when editing, allow the current document's type to remain selectable
+                        if (editDocId && d.id === editDocId) return false;
+                        return String(d.type || '').toUpperCase() === String(opt || '').toUpperCase();
+                      });
                       return !exists;
                     } catch (e) {
                       return true;
@@ -629,7 +633,7 @@ const StudentProfile = () => {
                       </div>
                       <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
                         <button onClick={() => setPreviewImage(pendingDoc.dataUrl)} style={{ ...styles.button, background: '#2563eb', color: '#fff' }}>Preview</button>
-                        <button onClick={addPendingDocument} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>Add</button>
+                        <button onClick={addPendingDocument} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>{pendingDoc.isEdit ? 'Save' : 'Add'}</button>
                         <button onClick={cancelPendingDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
                       </div>
                     </div>
@@ -639,43 +643,22 @@ const StudentProfile = () => {
             </div>
 
             <div style={styles.docGrid}>
-              {Array.isArray(student.documents) && student.documents.length > 0 ? (
-                student.documents.map(doc => (
-                  <div key={doc.id} style={styles.docItem}>
-                    {editDocId === doc.id ? (
-                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <img src={(editDocPending && editDocPending.dataUrl) || doc.dataUrl} alt={doc.type} style={{ width: 120, height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb', opacity: 0.98 }} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ color: '#0f172a', fontWeight: 700, fontSize: '0.95rem' }}>Editing document</div>
-                            <div style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: 4 }}>{doc.type}</div>
-                            <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
-                              <label style={styles.fileUploadLabel}>
-                                Upload
-                                <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleEditFileUpload(f); e.target.value = ''; }} style={{ display: 'none' }} />
-                              </label>
-                              <button onClick={() => saveEditedDocument(doc)} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>Save</button>
-                              <button onClick={cancelEditDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel Edit</button>
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ marginTop: 4, color: '#6b7280', fontSize: '0.875rem' }}>{doc.type}</div>
+                {Array.isArray(student.documents) && student.documents.length > 0 ? (
+                  student.documents.map(doc => (
+                    <div key={doc.id} style={styles.docItem}>
+                      <img src={doc.dataUrl} alt={doc.type} style={styles.docImage} onClick={() => setPreviewImage(doc.dataUrl)} />
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', marginTop: 6 }}>
+                        <button onClick={() => startEditDocument(doc)} title="Edit document" style={{ ...styles.iconButton }}>
+                          <Edit size={16} />
+                        </button>
+                        <button onClick={() => handleDeleteDocument(doc.id)} style={styles.docDeleteBtn}>×</button>
                       </div>
-                    ) : (
-                      <>
-                        <img src={doc.dataUrl} alt={doc.type} style={styles.docImage} onClick={() => setPreviewImage(doc.dataUrl)} />
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
-                          <button onClick={() => startEditDocument(doc)} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Edit</button>
-                          <button onClick={() => handleDeleteDocument(doc.id)} style={styles.docDeleteBtn}>×</button>
-                        </div>
-                        <div style={styles.docLabel}>{doc.type}</div>
-                      </>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div style={styles.emptyState}>No documents uploaded yet</div>
-              )}
+                      <div style={styles.docLabel}>{doc.type}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={styles.emptyState}>No documents uploaded yet</div>
+                )}
             </div>
           </div>
         )}
@@ -973,6 +956,18 @@ const styles = {
     alignItems: 'center',
     marginBottom: '1.5rem',
     flexWrap: 'wrap',
+  },
+  iconButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    border: '1px solid #e5e7eb',
+    background: '#f3f4f6',
+    cursor: 'pointer',
+    color: '#374151',
   },
   docSelect: {
     padding: '0.625rem 0.875rem',
