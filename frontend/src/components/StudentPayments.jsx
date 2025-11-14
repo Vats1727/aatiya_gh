@@ -85,8 +85,9 @@ const StudentPayments = () => {
     paymentMode: 'cash',
     remarks: '',
     type: 'credit', // credit for payment received, debit for refund/adjustment
-    penaltyAmount: '50',
-    penaltyApply: false
+    // Penalty is hidden from the form and defaults to 0. If >0 it will be
+    // automatically applied as a debit entry after creating a payment.
+    penaltyAmount: '0'
   });
 
   useEffect(() => {
@@ -250,15 +251,14 @@ const StudentPayments = () => {
         paymentMode: 'cash',
         remarks: '',
         type: 'credit',
-        penaltyAmount: '50',
-        penaltyApply: false
+        penaltyAmount: '0'
       });
 
-      // If penalty is requested, create a single debit entry for the penalty amount
+      // If a penalty amount (non-zero) is configured, apply it automatically
+      // as a debit entry. There is no UI to toggle this; default is '0'.
       try {
-        const pApply = !!newPayment.penaltyApply;
         const pAmt = parseFloat(String(newPayment.penaltyAmount || '0')) || 0;
-        if (pApply && pAmt > 0) {
+        if (pAmt > 0) {
           const penaltyPayload = { amount: pAmt, type: 'debit', paymentMode: 'penalty', remarks: `Penalty`, timestamp: new Date().toISOString() };
           const penRes = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${studentId}/payments`, {
             method: 'POST',
@@ -641,21 +641,9 @@ const StudentPayments = () => {
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <label style={styles.label}>Penalty Amount</label>
-                    <input type="text" inputMode="numeric" pattern="[0-9]*" value={newPayment.penaltyAmount} onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyAmount: e.target.value }))} style={{ ...styles.input, width: 160 }} />
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input id="penaltyApply" type="checkbox" checked={!!newPayment.penaltyApply} onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyApply: !!e.target.checked }))} />
-                    <label htmlFor="penaltyApply" style={{ fontSize: '0.95rem', color: '#374151' }}>Apply penalty to current balance</label>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                   <button type="submit" style={styles.submitButton}>Add Payment</button>
-                  <button type="button" onClick={() => { setShowPaymentForm(false); setNewPayment({ amount: '', paymentMode: 'cash', remarks: '', type: 'credit', penaltyAmount: '50', penaltyApply: false }); }} style={{ ...styles.actionButton, backgroundColor: '#f3f4f6' }}>Cancel</button>
+                  <button type="button" onClick={() => { setShowPaymentForm(false); setNewPayment({ amount: '', paymentMode: 'cash', remarks: '', type: 'credit', penaltyAmount: '0' }); }} style={{ ...styles.actionButton, backgroundColor: '#f3f4f6' }}>Cancel</button>
                 </div>
               </form>
             </div>
