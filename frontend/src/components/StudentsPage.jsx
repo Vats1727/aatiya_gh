@@ -952,75 +952,210 @@ const StudentsPage = () => {
       </div>
 
       {/* Search and Filter Section */}
-      <div style={styles.searchFilterContainer}>
-        <div style={styles.searchContainer}>
-          {isSearching ? (
-            // inline SVG spinner (SMIL animateTransform) so it rotates without external CSS
-            <svg width="18" height="18" viewBox="0 0 50 50" style={styles.searchIcon}>
-              <path fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" d="M25 5a20 20 0 1 0 0 40a20 20 0 1 0 0-40">
-                <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
-              </path>
-            </svg>
-          ) : (
-            <Search size={18} style={styles.searchIcon} />
-          )}
-          <input
-            type="text"
-            placeholder="Search by name or application number..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page when searching
-              // show buffering icon while user types (debounced)
-              setIsSearching(true);
-              if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-              searchTimerRef.current = setTimeout(() => {
-                setIsSearching(false);
-                searchTimerRef.current = null;
-              }, 600);
-            }}
-            style={styles.searchInput}
-          />
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
+        marginBottom: '1.5rem',
+        width: '100%'
+      }}>
+        {/* Students Header */}
+        <div style={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          gap: isMobile ? '0.5rem' : '1rem',
+          marginBottom: '0.5rem'
+        }}>
+          <h3 style={{ 
+            margin: 0, 
+            fontSize: isMobile ? '1.25rem' : '1.5rem',
+            fontWeight: '600',
+            color: '#1f2937'
+          }}>
+            Students
+          </h3>
+          <div style={{
+            fontSize: isMobile ? '0.875rem' : '0.9375rem',
+            color: '#4b5563',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <span>
+              {isMobile 
+                ? `${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-${Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of ${filteredStudents.length}`
+                : `Showing ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-${Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of ${filteredStudents.length} students`
+              }
+            </span>
+          </div>
         </div>
 
-        <div style={styles.filterContainer}>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setCurrentPage(1); // Reset to first page when changing filter
-            }}
-            style={styles.statusFilter}
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Active</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </div>
+        {/* Search and Filters Row */}
+        <div style={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: '0.75rem',
+          width: '100%',
+          alignItems: isMobile ? 'stretch' : 'center'
+        }}>
+          {/* Search Input */}
+          <div style={{
+            position: 'relative',
+            flex: 1,
+            minWidth: isMobile ? '100%' : '250px',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            {isSearching ? (
+              <svg width="18" height="18" viewBox="0 0 50 50" style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#6b7280',
+                zIndex: 1
+              }}>
+                <path fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" d="M25 5a20 20 0 1 0 0 40a20 20 0 1 0 0-40">
+                  <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
+                </path>
+              </svg>
+            ) : (
+              <Search size={18} style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#6b7280',
+                zIndex: 1
+              }} />
+            )}
+            <input
+              type="text"
+              placeholder={isMobile ? "Search..." : "Search by name or application number..."}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+                setIsSearching(true);
+                if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+                searchTimerRef.current = setTimeout(() => {
+                  setIsSearching(false);
+                  searchTimerRef.current = null;
+                }, 600);
+              }}
+              style={{
+                width: '100%',
+                padding: '0.6rem 1rem 0.6rem 2.5rem',
+                borderRadius: '0.5rem',
+                border: '1px solid #d1d5db',
+                fontSize: '0.9375rem',
+                backgroundColor: '#fff',
+                boxSizing: 'border-box',
+                height: '42px',
+                outline: 'none',
+                ':focus': {
+                  borderColor: '#3b82f6',
+                  boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)'
+                },
+                '::placeholder': {
+                  color: '#9ca3af',
+                },
+                ...(isMobile ? {
+                  fontSize: '0.9375rem',
+                  height: '42px'
+                } : {})
+              }}
+            />
+          </div>
 
-        <div style={styles.filterContainer}>
-          <select
-            value={sortOption}
-            onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
-            style={styles.statusFilter}
-            aria-label="Sort students"
-          >
-            <option value="name_asc">Name: A → Z</option>
-            <option value="name_desc">Name: Z → A</option>
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="acc_asc">Account No ↑</option>
-            <option value="acc_desc">Account No ↓</option>
-          </select>
-        </div>
-      </div>
+          {/* Status and Sort Filters */}
+          <div style={{
+            display: 'flex',
+            gap: '0.75rem',
+            flexWrap: 'wrap',
+            width: isMobile ? '100%' : 'auto'
+          }}>
+            <div style={{ flex: isMobile ? 1 : '0 1 auto', minWidth: isMobile ? '120px' : '160px' }}>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.6rem 2rem 0.6rem 0.75rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #d1d5db',
+                  backgroundColor: 'white',
+                  fontSize: '0.9375rem',
+                  color: '#374151',
+                  cursor: 'pointer',
+                  height: '42px',
+                  appearance: 'none',
+                  backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.5em 1.5em',
+                  outline: 'none',
+                  ':focus': {
+                    borderColor: '#3b82f6',
+                    boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)'
+                  },
+                  ...(isMobile ? {
+                    fontSize: '0.9375rem',
+                    height: '42px'
+                  } : {})
+                }}
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Active</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
 
-      <div className="card" style={styles.tableContainer}>
-        <div style={styles.tableHeader}>
-          <h3>Students</h3>
-          <div style={styles.resultCountTop}>
-            Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of {filteredStudents.length} students
+            <div style={{ flex: isMobile ? 1 : '0 1 auto', minWidth: isMobile ? '120px' : '180px' }}>
+              <select
+                value={sortOption}
+                onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
+                style={{
+                  width: '100%',
+                  padding: '0.6rem 2rem 0.6rem 0.75rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #d1d5db',
+                  backgroundColor: 'white',
+                  fontSize: '0.9375rem',
+                  color: '#374151',
+                  cursor: 'pointer',
+                  height: '42px',
+                  appearance: 'none',
+                  backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.5em 1.5em',
+                  outline: 'none',
+                  ':focus': {
+                    borderColor: '#3b82f6',
+                    boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)'
+                  },
+                  ...(isMobile ? {
+                    fontSize: '0.9375rem',
+                    height: '42px'
+                  } : {})
+                }}
+                aria-label="Sort students"
+              >
+                <option value="name_asc">{isMobile ? 'A → Z' : 'Name: A → Z'}</option>
+                <option value="name_desc">{isMobile ? 'Z → A' : 'Name: Z → A'}</option>
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="acc_asc">{isMobile ? 'Acc ↑' : 'Account No ↑'}</option>
+                <option value="acc_desc">{isMobile ? 'Acc ↓' : 'Account No ↓'}</option>
+              </select>
+            </div>
           </div>
         </div>
 
