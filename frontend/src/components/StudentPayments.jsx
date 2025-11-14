@@ -402,14 +402,16 @@ const StudentPayments = () => {
       lines.push([dateStr, `"${(r.paymentMode || '').replace(/"/g, '""')}"`, r.debit || '', r.credit || '', r.running].join(','));
     }
     // Closing balance
-    const closing = ledgerRows.length ? ledgerRows[ledgerRows.length - 1].running : ledgerOpeningBalance;
-    lines.push(['Closing Balance', '', '', '', `${closing}`].join(','));
-
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
+      const closing = ledgerRows.length ? ledgerRows[ledgerRows.length-1].running : ledgerOpeningBalance;
+      const footerHtml = `
+            <tr>
+              <td colspan="4" style="text-align:right; padding:8px; border-top:1px solid #e6e6e6; font-weight:600">Closing Balance</td>
+              <td style="text-align:right; padding:8px; border-top:1px solid #e6e6e6; font-weight:600">${formatCurrency(closing)} ${closing > 0 ? 'Dr' : closing < 0 ? 'Cr' : ''}</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
     document.body.appendChild(a);
     a.click();
     a.remove();
