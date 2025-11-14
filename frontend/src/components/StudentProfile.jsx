@@ -642,41 +642,15 @@ const StudentProfile = () => {
                 student.documents.map(doc => (
                   <div key={doc.id} style={styles.docItem}>
                     {editDocId === doc.id ? (
-                      <div style={{ width: '100%' }}>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <select value={editDocType} onChange={(e) => setEditDocType(e.target.value)} style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid #e5e7eb' }}>
-                            { (Array.from(new Set([...'NONE','AADHAR CARD', ...(docOptions||[])]))).filter(opt => {
-                                try {
-                                  // allow current doc type even if duplicate; otherwise exclude types used by other docs
-                                  const exists = Array.isArray(student.documents) && student.documents.some(d => d.id !== doc.id && String(d.type||'').toUpperCase() === String(opt||'').toUpperCase());
-                                  return !exists || String(opt||'').toUpperCase() === String(doc.type||'').toUpperCase();
-                                } catch (e) { return true }
-                              }).map(opt => <option key={opt} value={opt}>{opt}</option>) }
-                          </select>
-                          <label style={styles.fileUploadLabel}>
-                            Replace
-                            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleEditFileUpload(f); e.target.value = ''; }} style={{ display: 'none' }} />
-                          </label>
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <img src={doc.dataUrl} alt={doc.type} style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb', opacity: 0.9 }} />
+                          <div style={{ color: '#0f172a', fontWeight: 600 }}>Editing — use the dropdown & Upload controls above</div>
+                          <div style={{ marginLeft: 'auto' }}>
+                            <button onClick={cancelPendingDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel Edit</button>
+                          </div>
                         </div>
-                        {editDocPending ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                            <img src={editDocPending.dataUrl} alt="preview" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }} />
-                            <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
-                              <button onClick={() => setPreviewImage(editDocPending.dataUrl)} style={{ ...styles.button, background: '#2563eb', color: '#fff' }}>Preview</button>
-                              <button onClick={() => saveEditedDocument(doc)} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>Save</button>
-                              <button onClick={cancelEditDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
-                            <img src={doc.dataUrl} alt={doc.type} style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }} onClick={() => setPreviewImage(doc.dataUrl)} />
-                            <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
-                              <button onClick={() => setPreviewImage(doc.dataUrl)} style={{ ...styles.button, background: '#2563eb', color: '#fff' }}>Preview</button>
-                              <button onClick={() => saveEditedDocument(doc)} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>Save (no change)</button>
-                              <button onClick={cancelEditDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel</button>
-                            </div>
-                          </div>
-                        )}
+                        <div style={{ marginTop: 8, color: '#6b7280', fontSize: '0.875rem' }}>{doc.type}</div>
                       </div>
                     ) : (
                       <>
