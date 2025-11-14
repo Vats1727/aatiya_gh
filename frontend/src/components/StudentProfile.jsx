@@ -369,6 +369,7 @@ const StudentProfile = () => {
     // Reuse the top dropdown + upload flow for editing: preselect type and set pendingDoc to existing doc
     setEditDocId(doc.id);
     setDocSelection(doc.type || 'NONE');
+    setEditDocType(doc.type || '');
     setPendingDoc({ ...doc, isEdit: true });
   };
 
@@ -642,15 +643,23 @@ const StudentProfile = () => {
                 student.documents.map(doc => (
                   <div key={doc.id} style={styles.docItem}>
                     {editDocId === doc.id ? (
-                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <img src={doc.dataUrl} alt={doc.type} style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb', opacity: 0.9 }} />
-                          <div style={{ color: '#0f172a', fontWeight: 600 }}>Editing — use the dropdown & Upload controls above</div>
-                          <div style={{ marginLeft: 'auto' }}>
-                            <button onClick={cancelPendingDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel Edit</button>
+                          <img src={(editDocPending && editDocPending.dataUrl) || doc.dataUrl} alt={doc.type} style={{ width: 120, height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb', opacity: 0.98 }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ color: '#0f172a', fontWeight: 700, fontSize: '0.95rem' }}>Editing document</div>
+                            <div style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: 4 }}>{doc.type}</div>
+                            <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={styles.fileUploadLabel}>
+                                Upload
+                                <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleEditFileUpload(f); e.target.value = ''; }} style={{ display: 'none' }} />
+                              </label>
+                              <button onClick={() => saveEditedDocument(doc)} style={{ ...styles.button, background: '#10b981', color: '#fff' }}>Save</button>
+                              <button onClick={cancelEditDocument} style={{ ...styles.button, background: '#f3f4f6', color: '#374151' }}>Cancel Edit</button>
+                            </div>
                           </div>
                         </div>
-                        <div style={{ marginTop: 8, color: '#6b7280', fontSize: '0.875rem' }}>{doc.type}</div>
+                        <div style={{ marginTop: 4, color: '#6b7280', fontSize: '0.875rem' }}>{doc.type}</div>
                       </div>
                     ) : (
                       <>
