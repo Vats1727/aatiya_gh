@@ -1640,12 +1640,12 @@ const fetchHostels = async () => {
                   placeholder="Monthly fee per student"
                   style={{ ...styles.input, maxWidth: 220 }}
                 />
-                <select value={newHostel.monthlyFeeCurrency} onChange={(e) => setNewHostel(prev => ({ ...prev, monthlyFeeCurrency: e.target.value }))} style={{ padding: '0.75rem 1rem', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>
-                  <option value="INR">INR</option>
-                </select>
+                <div style={{ display: 'inline-flex', alignItems: 'center', padding: '0.5rem 0.75rem', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: 600 }}>
+                  INR
+                </div>
               </div>
               <div className="form-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button type="submit" className="btn btn-primary" style={styles.submitButton}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
+                <button type="submit" className="btn btn-primary" style={{...styles.addButton, minWidth: 140}}>{newHostel.id ? 'Save Hostel' : 'Add Hostel'}</button>
                 <button
                   type="button"
                   className="btn btn-secondary"
