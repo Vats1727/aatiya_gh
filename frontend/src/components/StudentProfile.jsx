@@ -685,7 +685,7 @@ const styles = {
   container: {
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%)',
-    padding: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
+    padding: { xs: '0.75rem', sm: '1.25rem', md: '1.5rem' },
     boxSizing: 'border-box',
     maxWidth: '1400px',
     margin: '0 auto',
@@ -694,16 +694,20 @@ const styles = {
   },
   header: {
     background: 'white',
-    padding: { xs: '1rem', sm: '1.25rem 1.5rem' },
+    padding: { xs: '0.75rem', sm: '1.25rem 1.5rem' },
     borderRadius: '0.75rem',
     boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
-    marginBottom: { xs: '1rem', sm: '1.5rem' },
+    marginBottom: { xs: '0.75rem', sm: '1.5rem' },
     display: 'flex',
     flexDirection: { xs: 'column', sm: 'row' },
     alignItems: { xs: 'stretch', sm: 'center' },
     gap: { xs: '0.75rem', sm: '1rem' },
     position: 'relative',
     zIndex: 10,
+    '@media (max-width: 480px)': {
+      padding: '0.75rem',
+      borderRadius: '0.5rem',
+    },
     '&::before': {
       content: '""',
       position: 'absolute',
@@ -779,14 +783,20 @@ const styles = {
   },
   headerDetails: {
     display: 'flex',
-    gap: { xs: '0.75rem', sm: '1.25rem' },
-    alignItems: { xs: 'stretch', sm: 'center' },
+    gap: { xs: '0.5rem', sm: '1.25rem' },
+    alignItems: { xs: 'flex-start', sm: 'center' },
     flexWrap: 'wrap',
-    paddingTop: 6,
+    paddingTop: 4,
+    width: '100%',
     '& > div': {
-      flex: { xs: '1 1 45%', sm: '0 0 auto' },
-      minWidth: { xs: '45%', sm: '140px' },
+      flex: { xs: '1 1 100%', sm: '0 0 auto' },
+      minWidth: { xs: '100%', sm: '140px' },
       marginBottom: { xs: '0.5rem', sm: 0 },
+      padding: { xs: '0.25rem 0', sm: 0 },
+    },
+    '@media (max-width: 480px)': {
+      flexDirection: 'column',
+      gap: '0.25rem',
     },
   },
   headerDetailItem: {
@@ -806,9 +816,18 @@ const styles = {
     gap: '0.5rem',
     alignItems: 'stretch',
     width: { xs: '100%', sm: 'auto' },
+    marginTop: { xs: '0.25rem', sm: 0 },
     '& > button': {
       width: { xs: '100%', sm: 'auto' },
       margin: { xs: '0.125rem 0', sm: 0 },
+      padding: { xs: '0.5rem 0.75rem', sm: '0.5rem 1rem' },
+      fontSize: { xs: '0.875rem', sm: '0.9375rem' },
+    },
+    '@media (max-width: 360px)': {
+      '& > button': {
+        padding: '0.5rem',
+        fontSize: '0.8125rem',
+      },
     },
   },
   card: {
@@ -820,9 +839,12 @@ const styles = {
   },
   detailsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-    gap: '1.5rem',
-    marginBottom: '1.5rem',
+    gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fill, minmax(250px, 1fr))' },
+    gap: { xs: '1rem', sm: '1.5rem' },
+    marginBottom: { xs: '1rem', sm: '1.5rem' },
+    '& > div': {
+      minWidth: 0, // Prevents overflow
+    },
   },
   label: {
     fontSize: '0.8125rem',
@@ -1056,9 +1078,17 @@ const styles = {
   },
   docGrid: {
     display: 'grid',
-    gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(auto-fill, minmax(200px, 1fr))' },
-    gap: { xs: '0.75rem', sm: '1.5rem' },
-    marginTop: '1.5rem',
+    gridTemplateColumns: { 
+      xs: 'repeat(1, 1fr)',
+      sm: 'repeat(2, 1fr)',
+      md: 'repeat(auto-fill, minmax(200px, 1fr))' 
+    },
+    gap: { xs: '0.75rem', sm: '1rem', md: '1.5rem' },
+    marginTop: { xs: '1rem', sm: '1.5rem' },
+    padding: { xs: '0.25rem', sm: 0 },
+    '@media (max-width: 360px)': {
+      gap: '0.5rem',
+    },
   },
   docItem: {
     position: 'relative',
@@ -1066,10 +1096,16 @@ const styles = {
   },
   docImage: {
     width: '100%',
-    height: { xs: '120px', sm: '160px' },
+    height: { xs: '140px', sm: '160px' },
     objectFit: 'cover',
     cursor: 'pointer',
     flexGrow: 1,
+    borderRadius: '0.5rem',
+    border: '1px solid #e5e7eb',
+    backgroundColor: '#f9fafb',
+    '@media (max-width: 480px)': {
+      height: '160px',
+    },
   },
   docDeleteBtn: {
     position: 'absolute',
@@ -1094,15 +1130,19 @@ const styles = {
     },
   },
   docLabel: {
-    padding: '0.5rem',
+    padding: '0.5rem 0.25rem',
     textAlign: 'center',
-    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+    fontSize: { xs: '0.8125rem', sm: '0.875rem' },
     fontWeight: '500',
     color: '#374151',
-    borderTop: '1px solid #f1f5f9',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+    lineHeight: '1.3',
+    '@media (max-width: 360px)': {
+      fontSize: '0.75rem',
+      padding: '0.25rem 0',
+    },
   },
   emptyState: {
     gridColumn: '1 / -1',
