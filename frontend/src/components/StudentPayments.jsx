@@ -85,8 +85,8 @@ const StudentPayments = () => {
     paymentMode: 'cash',
     remarks: '',
     type: 'credit', // credit for payment received, debit for refund/adjustment
-    penaltyAmount: 50,
-    penaltyCount: 0
+    penaltyAmount: '50',
+    penaltyCount: '0'
   });
 
   useEffect(() => {
@@ -208,9 +208,9 @@ const StudentPayments = () => {
       const token = localStorage.getItem('token');
       if (!token) return alert('Not authenticated');
 
-  // Ensure amount is a clean integer (round to nearest whole number)
-  const rawAmount = Number(newPayment.amount);
-  const amount = Number.isFinite(rawAmount) ? Math.round(rawAmount) : 0;
+  // Parse amount exactly as typed (preserve the entered value)
+  const rawAmount = parseFloat(String(newPayment.amount).trim());
+  const amount = Number.isFinite(rawAmount) ? rawAmount : 0;
       if (amount <= 0) return alert('Please enter a valid amount greater than 0');
       
       const type = newPayment.type || 'credit';
@@ -250,14 +250,14 @@ const StudentPayments = () => {
         paymentMode: 'cash',
         remarks: '',
         type: 'credit',
-        penaltyAmount: 50,
-        penaltyCount: 0
+        penaltyAmount: '50',
+        penaltyCount: '0'
       });
 
       // If penalty needs to be applied, create a debit entry for the penalty
       try {
-        const pCount = Math.max(0, Math.round(Number(newPayment.penaltyCount || 0)));
-        const pAmt = Number(newPayment.penaltyAmount || 0) || 0;
+        const pCount = Math.max(0, parseInt(String(newPayment.penaltyCount || '0'), 10) || 0);
+        const pAmt = parseFloat(String(newPayment.penaltyAmount || '0')) || 0;
         if (pCount > 0 && pAmt > 0) {
           const penaltyTotal = pAmt * pCount;
           const penaltyPayload = { amount: penaltyTotal, type: 'debit', paymentMode: 'penalty', remarks: `Penalty x${pCount}`, timestamp: new Date().toISOString() };
@@ -645,7 +645,7 @@ const StudentPayments = () => {
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <label style={styles.label}>Penalty Amount</label>
-                    <input type="number" min="0" step="1" value={newPayment.penaltyAmount} onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyAmount: e.target.value }))} style={{ ...styles.input, width: 160 }} />
+                      <input type="number" min="0" step="1" value={newPayment.penaltyAmount} onChange={(e) => setNewPayment(prev => ({ ...prev, penaltyAmount: e.target.value }))} style={{ ...styles.input, width: 160 }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <label style={styles.label}>Penalty Count</label>
