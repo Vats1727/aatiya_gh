@@ -44,6 +44,27 @@ img,video{max-width:100%;height:auto}
 /* Touch-friendly inputs */
 input,select,textarea,button{font-size:1rem;padding:0.6rem;border-radius:0.5rem}
 
+/* Global hover / focus effects for buttons to ensure consistent UX across pages */
+button, .btn, .btn.primary, .btn.ghost, .btn.primary, .btn.secondary, .btn-icon, .action-button {
+	transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease, opacity 150ms ease;
+	will-change: transform, box-shadow;
+}
+
+button:hover, .btn:hover, .btn.primary:hover, .btn.ghost:hover, .btn.secondary:hover, .btn-icon:hover, .action-button:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
+button:active, .btn:active, .btn.primary:active, .btn.ghost:active, .btn.secondary:active, .btn-icon:active, .action-button:active {
+	transform: translateY(0);
+	box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+}
+
+/* Reduce effect on small screens to avoid jumpiness */
+@media (max-width: 640px) {
+	button:hover, .btn:hover, .btn-icon:hover, .action-button:hover { transform: translateY(0); box-shadow: none; }
+}
+
 /* Breakpoints */
 @media (max-width:1024px){
 	.header{padding:0.75rem}

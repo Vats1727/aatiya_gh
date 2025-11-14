@@ -487,6 +487,28 @@ const fetchUserProfile = async () => {
   }
 };
 
+// Validators for hostel name and address. Use Unicode-aware regex where supported,
+// fall back to ASCII-only regex for older browsers.
+const isValidHostelName = (s) => {
+  if (!s) return false;
+  const v = String(s).trim();
+  try {
+    return /^[\p{L}0-9&.\-\s'(),\/]+$/u.test(v);
+  } catch (e) {
+    return /^[A-Za-z0-9&.\-\s'(),\/]+$/.test(v);
+  }
+};
+
+const isValidAddress = (s) => {
+  if (!s) return false;
+  const v = String(s).trim();
+  try {
+    return /^[\p{L}0-9#.,\-\/\s'()]+$/u.test(v);
+  } catch (e) {
+    return /^[A-Za-z0-9#.,\-\/\s'()]+$/.test(v);
+  }
+};
+
 // Fetch hostels function
 const fetchHostels = async () => {
   try {
@@ -633,6 +655,17 @@ const fetchHostels = async () => {
     // require at least English name and English address for compatibility
     if (!newHostel.name || !newHostel.address) {
       setError('Please fill in all required fields (English name and address)');
+      return;
+    }
+
+    // Validate characters allowed in hostel name and address
+    if (!isValidHostelName(newHostel.name)) {
+      setError("Hostel name may contain only letters, numbers, spaces and these symbols: & . - , ( ) / '");
+      return;
+    }
+
+    if (!isValidAddress(newHostel.address)) {
+      setError("Address contains invalid characters. Allowed: letters, numbers, spaces and , . - / # ( ) '");
       return;
     }
 
@@ -1559,6 +1592,8 @@ const fetchHostels = async () => {
                 }}
                 placeholder="Hostel name (English)"
                 style={styles.input}
+                pattern="[A-Za-z0-9&.\-\s'(),\/]+"
+                title="Hostel name may contain letters, numbers, spaces and & . - , ( ) / and apostrophes."
                 required
               />
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1602,6 +1637,8 @@ const fetchHostels = async () => {
                 }}
                 placeholder="Address (English)"
                 style={styles.input}
+                pattern="[A-Za-z0-9#.,\-\s'()\/]+"
+                title="Address may contain letters, numbers, spaces and , . - / # ( ) and apostrophes."
                 required
               />
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
