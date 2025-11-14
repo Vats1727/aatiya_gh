@@ -1059,40 +1059,147 @@ const StudentsPage = () => {
                     </div>
                   </div>
 
-                    <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-                    <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Accept"><Check size={16} /></button>
-                    <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Reject"><X size={16} /></button>
-                    <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile`, { state: { student } })} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
-                    <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
-                    <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=view`, { state: { student } })} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
-                    {student.status === 'approved' && (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', marginRight: 8 }}>
-                          <div style={{ fontSize: 12, color: '#6b7280', marginRight: 6 }}>Balance</div>
-                          <div style={{ 
-                            fontWeight: 600, 
-                            color: (student.currentBalance || 0) > 0 ? '#dc2626' : '#059669' 
-                          }}>
-                            {(student.currentBalance || 0) > 0 ? 
-                              `Due: ₹${Math.abs(student.currentBalance)} Dr` : 
-                              `Advance: ₹${Math.abs(student.currentBalance || 0)} Cr`}
-                          </div>
-                        </div>
-                        <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?tab=payments`, { state: { student } })} style={{ ...styles.iconButton, ...styles.paymentButton }} title="Payments">💳</button>
-                      </>
-                    )}
-                    <button onClick={async () => {
-                      if (!confirm('Delete this student? This cannot be undone.')) return;
-                      try {
-                        const token = localStorage.getItem('token');
-                        const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-                        if (!res.ok) throw new Error('Delete failed');
-                        setStudents(prev => prev.filter(s => s.id !== student.id));
-                      } catch (err) {
-                        console.error('Delete failed', err);
-                        alert('Failed to delete student');
-                      }
-                    }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete"><Trash2 size={16} /></button>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12, width: '100%' }}>
+                      {student.status !== 'approved' && (
+                        <>
+                          <button 
+                            onClick={() => handleAccept(student)} 
+                            style={{ 
+                              flex: 1, 
+                              padding: '0.5rem', 
+                              display: 'flex', 
+                              flexDirection: 'column',
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              gap: '2px',
+                              backgroundColor: '#dcfce7',
+                              color: '#166534',
+                              border: '1px solid #bbf7d0',
+                              borderRadius: '0.375rem'
+                            }} 
+                            title="Accept"
+                          >
+                            <Check size={16} />
+                            <span style={{fontSize: '0.7rem'}}>Accept</span>
+                          </button>
+                          <button 
+                            onClick={() => handleReject(student)}
+                            style={{ 
+                              flex: 1, 
+                              padding: '0.5rem', 
+                              display: 'flex', 
+                              flexDirection: 'column',
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              gap: '2px',
+                              backgroundColor: '#fee2e2',
+                              color: '#991b1b',
+                              border: '1px solid #fecaca',
+                              borderRadius: '0.375rem'
+                            }} 
+                            title="Reject"
+                          >
+                            <X size={16} />
+                            <span style={{fontSize: '0.7rem'}}>Reject</span>
+                          </button>
+                        </>
+                      )}
+                      <button 
+                        onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile`, { state: { student } })} 
+                        style={{ 
+                          flex: 1, 
+                          padding: '0.5rem', 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          gap: '2px',
+                          backgroundColor: '#e0f2fe',
+                          color: '#0369a1',
+                          border: '1px solid #bae6fd',
+                          borderRadius: '0.375rem'
+                        }} 
+                        title="Edit"
+                      >
+                        <Edit size={16} />
+                        <span style={{fontSize: '0.7rem'}}>Edit</span>
+                      </button>
+                      <button 
+                        onClick={() => handleDownload(student)} 
+                        style={{ 
+                          flex: 1, 
+                          padding: '0.5rem', 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          gap: '2px',
+                          backgroundColor: '#f0f9ff',
+                          color: '#0c4a6e',
+                          border: '1px solid #e0f2fe',
+                          borderRadius: '0.375rem'
+                        }} 
+                        title="Download"
+                      >
+                        <Download size={16} />
+                        <span style={{fontSize: '0.7rem'}}>Download</span>
+                      </button>
+                      {student.status === 'approved' && (
+                        <button 
+                          onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?tab=payments`, { state: { student } })}
+                          style={{ 
+                            flex: 1, 
+                            padding: '0.5rem', 
+                            display: 'flex', 
+                            flexDirection: 'column',
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            gap: '2px',
+                            backgroundColor: '#f5f3ff',
+                            color: '#5b21b6',
+                            border: '1px solid #ede9fe',
+                            borderRadius: '0.375rem'
+                          }} 
+                          title="Payments"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                            <line x1="2" y1="10" x2="22" y2="10" />
+                          </svg>
+                          <span style={{fontSize: '0.7rem'}}>Payments</span>
+                        </button>
+                      )}
+                      <button 
+                        onClick={async () => {
+                          if (!confirm('Delete this student? This cannot be undone.')) return;
+                          try {
+                            const token = localStorage.getItem('token');
+                            const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                            if (!res.ok) throw new Error('Delete failed');
+                            setStudents(prev => prev.filter(s => s.id !== student.id));
+                          } catch (err) {
+                            console.error('Delete failed', err);
+                            alert('Failed to delete student');
+                          }
+                        }} 
+                        style={{ 
+                          flex: 1, 
+                          padding: '0.5rem', 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          gap: '2px',
+                          backgroundColor: '#fef2f2',
+                          color: '#dc2626',
+                          border: '1px solid #fecaca',
+                          borderRadius: '0.375rem'
+                        }} 
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                        <span style={{fontSize: '0.7rem'}}>Delete</span>
+                      </button>
                   </div>
                 </div>
               );
