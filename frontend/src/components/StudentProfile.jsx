@@ -90,7 +90,32 @@ const StudentProfile = () => {
         setStudent(studentData);
         const opts = (studentData?.documents || []).map(d => d.type).filter(Boolean);
         const base = ['NONE', 'AADHAR CARD'];
-        setDocOptions(Array.from(new Set([...base, ...opts])));
+        // Try to load globally persisted custom document types from the authenticated hostel record.
+        let savedTypes = [];
+        try {
+          const token = localStorage.getItem('token');
+          if (token) {
+            const hostelsRes = await fetch(`${API_BASE}/api/users/me/hostels`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+            if (hostelsRes.ok) {
+              const hostelsPayload = await hostelsRes.json();
+              const hostels = hostelsPayload?.data || hostelsPayload || [];
+              const found = hostels.find(h => String(h.id) === String(hostelId) || String(h._id) === String(hostelId) || String(h.hostelId) === String(hostelId));
+              if (found) {
+                savedTypes = Array.isArray(found.customDocTypes) ? found.customDocTypes : (Array.isArray(found.documentTypes) ? found.documentTypes : (Array.isArray(found.docTypes) ? found.docTypes : []));
+              }
+            }
+          }
+        } catch (e) {
+          // ignore fetch errors and fall back to localStorage below
+        }
+        // fallback: localStorage for older browsers/data
+        if (!savedTypes || savedTypes.length === 0) {
+          try {
+            const raw = localStorage.getItem('aatiya_doc_types');
+            if (raw) savedTypes = JSON.parse(raw) || [];
+          } catch (e) { /* ignore localStorage parse errors */ }
+        }
+        setDocOptions(Array.from(new Set([...base, ...savedTypes, ...opts])));
         setPreviewFee(studentData?.appliedFee ?? studentData?.monthlyFee ?? '');
         return;
       }
@@ -163,7 +188,31 @@ const StudentProfile = () => {
             setStudent(merged);
             const opts = (merged?.documents || []).map(d => d.type).filter(Boolean);
             const base = ['NONE', 'AADHAR CARD'];
-            setDocOptions(Array.from(new Set([...base, ...opts])));
+            // Try to load persisted types from the authenticated hostel when possible
+            let savedTypes = [];
+            try {
+              const token = localStorage.getItem('token');
+              if (token) {
+                const hostelsRes = await fetch(`${API_BASE}/api/users/me/hostels`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+                if (hostelsRes.ok) {
+                  const hostelsPayload = await hostelsRes.json();
+                  const hostels = hostelsPayload?.data || hostelsPayload || [];
+                  const found = hostels.find(h => String(h.id) === String(hostelId) || String(h._id) === String(hostelId) || String(h.hostelId) === String(hostelId));
+                  if (found) {
+                    savedTypes = Array.isArray(found.customDocTypes) ? found.customDocTypes : (Array.isArray(found.documentTypes) ? found.documentTypes : (Array.isArray(found.docTypes) ? found.docTypes : []));
+                  }
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+            if (!savedTypes || savedTypes.length === 0) {
+              try {
+                const raw = localStorage.getItem('aatiya_doc_types');
+                if (raw) savedTypes = JSON.parse(raw) || [];
+              } catch (e) { /* ignore */ }
+            }
+            setDocOptions(Array.from(new Set([...base, ...savedTypes, ...opts])));
             setPreviewFee(merged?.appliedFee ?? merged?.monthlyFee ?? '');
           } else {
             console.warn('Student not found');
@@ -241,9 +290,70 @@ const StudentProfile = () => {
       alert('This document type already exists');
       return;
     }
-    setDocOptions(prev => Array.from(new Set([...(prev || ['NONE','AADHAR CARD']), u])));
-    setDocSelection(u);
-    setDocOtherValue('');
+    // Try to persist this custom type on the hostel record (server-side). If unauthenticated or request fails, fall back to localStorage.
+    (async () => {
+      const token = localStorage.getItem('token');
+      let succeeded = false;
+      if (token) {
+        try {
+          // Fetch hostels for this user to find the current hostel object
+          const hostelsRes = await fetch(`${API_BASE}/api/users/me/hostels`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+          if (hostelsRes.ok) {
+            const hostelsPayload = await hostelsRes.json();
+            const hostels = hostelsPayload?.data || hostelsPayload || [];
+            const found = hostels.find(h => String(h.id) === String(hostelId) || String(h._id) === String(hostelId) || String(h.hostelId) === String(hostelId));
+            if (found) {
+              const existing = Array.isArray(found.customDocTypes) ? found.customDocTypes : (Array.isArray(found.documentTypes) ? found.documentTypes : (Array.isArray(found.docTypes) ? found.docTypes : []));
+              const upperExisting = existing.map(x => String(x).toUpperCase());
+              if (!upperExisting.includes(u)) {
+                const next = Array.from(new Set([...(upperExisting || []), u]));
+                // Prepare payload merging the same fields used when editing hostels elsewhere in the app
+                const payloadBody = {
+                  name: found.name || found.hostelName || '',
+                  address: found.address || found.hostelAddress || '',
+                  name_hi: found.name_hi || '',
+                  address_hi: found.address_hi || '',
+                  monthlyFee: (found.monthlyFee != null ? Number(found.monthlyFee) : 0),
+                  monthlyFeeCurrency: found.monthlyFeeCurrency || 'INR',
+                  customDocTypes: next
+                };
+                const upd = await fetch(`${API_BASE}/api/users/me/hostels/${found.id}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                  body: JSON.stringify(payloadBody)
+                });
+                if (upd.ok) {
+                  succeeded = true;
+                  try { localStorage.setItem('hostels_updated', String(Date.now())); } catch (e) { /* ignore */ }
+                }
+              } else {
+                succeeded = true; // already present on server
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to persist custom doc type to server', e);
+        }
+      }
+
+      if (!succeeded) {
+        // fallback to localStorage for unauthenticated users or when server update fails
+        try {
+          const raw = localStorage.getItem('aatiya_doc_types');
+          const arr = raw ? (JSON.parse(raw) || []) : [];
+          const upper = arr.map(x => String(x).toUpperCase());
+          if (!upper.includes(u)) {
+            const next = Array.from(new Set([...(upper || []), u]));
+            localStorage.setItem('aatiya_doc_types', JSON.stringify(next));
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      // update UI state regardless of where it was persisted
+      setDocOptions(prev => Array.from(new Set([...(prev || ['NONE','AADHAR CARD']), u])));
+      setDocSelection(u);
+      setDocOtherValue('');
+    })();
   };
 
   // When user selects a file, process it and create a pending preview only.
