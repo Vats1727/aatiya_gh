@@ -130,7 +130,9 @@ const StudentPayments = () => {
                   ...studentObj,
                   monthlyFee: mf,
                   monthlyFeeCurrency: found.monthlyFeeCurrency || found.monthlyfeeCurrency || studentObj.monthlyFeeCurrency || 'INR',
-                  hostelName: found.name || found.hostelName || found.title || studentObj.hostelName || ''
+                  hostelName: found.name || found.hostelName || found.title || studentObj.hostelName || '',
+                  hostelAddress: found.address || found.hostelAddress || studentObj.hostelAddress || '',
+                  hostelAddressHi: found.address_hi || found.addressHi || studentObj.hostelAddressHi || ''
                 };
               }
             }

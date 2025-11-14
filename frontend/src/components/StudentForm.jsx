@@ -1292,7 +1292,9 @@ const HostelAdmissionForm = () => {
                   const { nameEn = '', nameHi = '', addressEn = '', addressHi = '' } = getHostelBilingual(formData.hostelDocId || preHostelId) || {};
                   const headerHi = nameHi || translitNameHi || nameEn || 'आतिया गर्ल्स हॉस्टल';
                   const headerEn = nameEn || (nameHi || translitNameHi ? '' : 'ATIYA GIRLS HOSTEL');
-                  const addressLine = (addressHi || translitAddressHi) ? `${addressHi || translitAddressHi} / ${addressEn || ''}` : (addressEn || 'रामपाड़ा कटिहार / Rampada Katihar');
+                  // Prefer bilingual address when available; otherwise show whichever exists.
+                  // Do not use a hardcoded static fallback.
+                  const addressLine = (addressHi || translitAddressHi || addressEn) ? `${addressHi || translitAddressHi || ''}${(addressHi || translitAddressHi) && addressEn ? ' / ' : ''}${addressEn || ''}` : '';
                   // Avoid showing identical English/Hindi lines twice (e.g., both 'Anapurna')
                   const normHi = (headerHi || '').trim();
                   const normEn = (headerEn || '').trim();
@@ -1696,7 +1698,7 @@ const HostelAdmissionForm = () => {
               const { nameEn = '', nameHi = '', addressEn = '', addressHi = '' } = getHostelBilingual(formData.hostelDocId || preHostelId) || {};
               const headerHi = nameHi || translitNameHi || nameEn || 'आतिया गर्ल्स हॉस्टल';
               const headerEn = nameEn || (nameHi || translitNameHi ? '' : 'ATIYA GIRLS HOSTEL');
-              const addressLine = (addressHi || translitAddressHi) ? `${addressHi || translitAddressHi} / ${addressEn || ''}` : (addressEn || 'रामपाड़ा कटिहार / Rampada Katihar');
+              const addressLine = (addressHi || translitAddressHi || addressEn) ? `${addressHi || translitAddressHi || ''}${(addressHi || translitAddressHi) && addressEn ? ' / ' : ''}${addressEn || ''}` : '';
               return (
                 <>
                   <h1 style={responsiveStyles.h1}>{headerHi}</h1>

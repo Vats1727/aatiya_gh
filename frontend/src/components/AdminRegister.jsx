@@ -13,6 +13,7 @@ const AdminRegister = () => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -243,18 +244,32 @@ const AdminRegister = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    
-    // Validation
-    if (!form.fullName || !form.email || !form.password) {
-      return setError('All fields are required');
-    }
-    
-    if (form.password !== form.confirmPassword) {
-      return setError('Passwords do not match');
-    }
-    
-    if (form.password.length < 6) {
-      return setError('Password must be at least 6 characters');
+    setFieldErrors({});
+
+    // Field-level validation
+    const errs = {};
+    const name = String(form.fullName || '').trim();
+    const email = String(form.email || '').trim().toLowerCase();
+    const password = String(form.password || '');
+    const confirm = String(form.confirmPassword || '');
+
+    if (!name) errs.fullName = 'Full name is required';
+    else if (name.length < 3) errs.fullName = 'Full name must be at least 3 characters';
+    else if (!/^[\p{L} .'-]+$/u.test(name)) errs.fullName = 'Full name contains invalid characters';
+
+    if (!email) errs.email = 'Email is required';
+    else if (!/^[\w-.+]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) errs.email = 'Please enter a valid email address';
+
+    if (!password) errs.password = 'Password is required';
+    else if (password.length < 6) errs.password = 'Password must be at least 6 characters';
+    else if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) errs.password = 'Password should include letters and numbers';
+
+    if (password !== confirm) errs.confirmPassword = 'Passwords do not match';
+
+    if (Object.keys(errs).length) {
+      setFieldErrors(errs);
+      setError('Please fix the highlighted fields');
+      return;
     }
     
     setIsSubmitting(true);
@@ -262,10 +277,14 @@ const AdminRegister = () => {
     try {
       console.log('Attempting to create user with email:', form.email);
       
+      // Normalize values
+      const normalizedEmail = String(form.email || '').trim().toLowerCase();
+      const normalizedName = String(form.fullName || '').trim();
+
       // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        form.email,
+        normalizedEmail,
         form.password
       );
       
@@ -273,7 +292,7 @@ const AdminRegister = () => {
       
       // Update user profile with display name
       await updateProfile(userCredential.user, {
-        displayName: form.fullName
+        displayName: normalizedName
       });
       
       console.log('Profile updated, creating user document...');
@@ -282,8 +301,8 @@ const AdminRegister = () => {
       const userDocRef = doc(db, 'users', userCredential.user.uid);
       await setDoc(userDocRef, {
         uid: userCredential.user.uid,
-        email: form.email,
-        displayName: form.fullName,
+        email: normalizedEmail,
+        displayName: normalizedName,
         role: 'admin',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -375,6 +394,9 @@ const AdminRegister = () => {
               disabled={isSubmitting}
               autoComplete="name"
             />
+            {fieldErrors.fullName && (
+              <div style={{ color: '#b91c1c', fontSize: '0.85rem', marginTop: 6 }}>{fieldErrors.fullName}</div>
+            )}
           </div>
           
           <div style={styles.inputGroup}>
@@ -395,6 +417,9 @@ const AdminRegister = () => {
               autoComplete="email"
               autoCapitalize="off"
             />
+            {fieldErrors.email && (
+              <div style={{ color: '#b91c1c', fontSize: '0.85rem', marginTop: 6 }}>{fieldErrors.email}</div>
+            )}
           </div>
           
           <div style={styles.inputGroup}>
@@ -414,6 +439,9 @@ const AdminRegister = () => {
               disabled={isSubmitting}
               autoComplete="new-password"
             />
+            {fieldErrors.password && (
+              <div style={{ color: '#b91c1c', fontSize: '0.85rem', marginTop: 6 }}>{fieldErrors.password}</div>
+            )}
           </div>
           
           <div style={styles.inputGroup}>
@@ -431,6 +459,9 @@ const AdminRegister = () => {
               style={styles.input}
               disabled={isSubmitting}
             />
+            {fieldErrors.confirmPassword && (
+              <div style={{ color: '#b91c1c', fontSize: '0.85rem', marginTop: 6 }}>{fieldErrors.confirmPassword}</div>
+            )}
           </div>
           
           <button
