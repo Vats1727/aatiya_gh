@@ -952,210 +952,75 @@ const StudentsPage = () => {
       </div>
 
       {/* Search and Filter Section */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1rem',
-        marginBottom: '1.5rem',
-        width: '100%'
-      }}>
-        {/* Students Header */}
-        <div style={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          justifyContent: 'space-between',
-          alignItems: isMobile ? 'flex-start' : 'center',
-          gap: isMobile ? '0.5rem' : '1rem',
-          marginBottom: '0.5rem'
-        }}>
-          <h3 style={{ 
-            margin: 0, 
-            fontSize: isMobile ? '1.25rem' : '1.5rem',
-            fontWeight: '600',
-            color: '#1f2937'
-          }}>
-            Students
-          </h3>
-          <div style={{
-            fontSize: isMobile ? '0.875rem' : '0.9375rem',
-            color: '#4b5563',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <span>
-              {isMobile 
-                ? `${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-${Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of ${filteredStudents.length}`
-                : `Showing ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-${Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of ${filteredStudents.length} students`
-              }
-            </span>
-          </div>
+      <div style={styles.searchFilterContainer}>
+        <div style={styles.searchContainer}>
+          {isSearching ? (
+            // inline SVG spinner (SMIL animateTransform) so it rotates without external CSS
+            <svg width="18" height="18" viewBox="0 0 50 50" style={styles.searchIcon}>
+              <path fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" d="M25 5a20 20 0 1 0 0 40a20 20 0 1 0 0-40">
+                <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
+              </path>
+            </svg>
+          ) : (
+            <Search size={18} style={styles.searchIcon} />
+          )}
+          <input
+            type="text"
+            placeholder="Search by name or application number..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page when searching
+              // show buffering icon while user types (debounced)
+              setIsSearching(true);
+              if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+              searchTimerRef.current = setTimeout(() => {
+                setIsSearching(false);
+                searchTimerRef.current = null;
+              }, 600);
+            }}
+            style={styles.searchInput}
+          />
         </div>
 
-        {/* Search and Filters Row */}
-        <div style={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: '0.75rem',
-          width: '100%',
-          alignItems: isMobile ? 'stretch' : 'center'
-        }}>
-          {/* Search Input */}
-          <div style={{
-            position: 'relative',
-            flex: 1,
-            minWidth: isMobile ? '100%' : '250px',
-            display: 'flex',
-            alignItems: 'center'
-          }}>
-            {isSearching ? (
-              <svg width="18" height="18" viewBox="0 0 50 50" style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#6b7280',
-                zIndex: 1
-              }}>
-                <path fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" d="M25 5a20 20 0 1 0 0 40a20 20 0 1 0 0-40">
-                  <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
-                </path>
-              </svg>
-            ) : (
-              <Search size={18} style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#6b7280',
-                zIndex: 1
-              }} />
-            )}
-            <input
-              type="text"
-              placeholder={isMobile ? "Search..." : "Search by name or application number..."}
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-                setIsSearching(true);
-                if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-                searchTimerRef.current = setTimeout(() => {
-                  setIsSearching(false);
-                  searchTimerRef.current = null;
-                }, 600);
-              }}
-              style={{
-                width: '100%',
-                padding: '0.6rem 1rem 0.6rem 2.5rem',
-                borderRadius: '0.5rem',
-                border: '1px solid #d1d5db',
-                fontSize: '0.9375rem',
-                backgroundColor: '#fff',
-                boxSizing: 'border-box',
-                height: '42px',
-                outline: 'none',
-                ':focus': {
-                  borderColor: '#3b82f6',
-                  boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)'
-                },
-                '::placeholder': {
-                  color: '#9ca3af',
-                },
-                ...(isMobile ? {
-                  fontSize: '0.9375rem',
-                  height: '42px'
-                } : {})
-              }}
-            />
-          </div>
+        <div style={styles.filterContainer}>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1); // Reset to first page when changing filter
+            }}
+            style={styles.statusFilter}
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Active</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
 
-          {/* Status and Sort Filters */}
-          <div style={{
-            display: 'flex',
-            gap: '0.75rem',
-            flexWrap: 'wrap',
-            width: isMobile ? '100%' : 'auto'
-          }}>
-            <div style={{ flex: isMobile ? 1 : '0 1 auto', minWidth: isMobile ? '120px' : '160px' }}>
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '0.6rem 2rem 0.6rem 0.75rem',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  backgroundColor: 'white',
-                  fontSize: '0.9375rem',
-                  color: '#374151',
-                  cursor: 'pointer',
-                  height: '42px',
-                  appearance: 'none',
-                  backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
-                  backgroundPosition: 'right 0.5rem center',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: '1.5em 1.5em',
-                  outline: 'none',
-                  ':focus': {
-                    borderColor: '#3b82f6',
-                    boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)'
-                  },
-                  ...(isMobile ? {
-                    fontSize: '0.9375rem',
-                    height: '42px'
-                  } : {})
-                }}
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Active</option>
-                <option value="rejected">Rejected</option>
-              </select>
-            </div>
+        <div style={styles.filterContainer}>
+          <select
+            value={sortOption}
+            onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
+            style={styles.statusFilter}
+            aria-label="Sort students"
+          >
+            <option value="name_asc">Name: A → Z</option>
+            <option value="name_desc">Name: Z → A</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="acc_asc">Account No ↑</option>
+            <option value="acc_desc">Account No ↓</option>
+          </select>
+        </div>
+      </div>
 
-            <div style={{ flex: isMobile ? 1 : '0 1 auto', minWidth: isMobile ? '120px' : '180px' }}>
-              <select
-                value={sortOption}
-                onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
-                style={{
-                  width: '100%',
-                  padding: '0.6rem 2rem 0.6rem 0.75rem',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  backgroundColor: 'white',
-                  fontSize: '0.9375rem',
-                  color: '#374151',
-                  cursor: 'pointer',
-                  height: '42px',
-                  appearance: 'none',
-                  backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
-                  backgroundPosition: 'right 0.5rem center',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: '1.5em 1.5em',
-                  outline: 'none',
-                  ':focus': {
-                    borderColor: '#3b82f6',
-                    boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)'
-                  },
-                  ...(isMobile ? {
-                    fontSize: '0.9375rem',
-                    height: '42px'
-                  } : {})
-                }}
-                aria-label="Sort students"
-              >
-                <option value="name_asc">{isMobile ? 'A → Z' : 'Name: A → Z'}</option>
-                <option value="name_desc">{isMobile ? 'Z → A' : 'Name: Z → A'}</option>
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="acc_asc">{isMobile ? 'Acc ↑' : 'Account No ↑'}</option>
-                <option value="acc_desc">{isMobile ? 'Acc ↓' : 'Account No ↓'}</option>
-              </select>
-            </div>
+      <div className="card" style={styles.tableContainer}>
+        <div style={styles.tableHeader}>
+          <h3>Students</h3>
+          <div style={styles.resultCountTop}>
+            Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredStudents.length)}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)} of {filteredStudents.length} students
           </div>
         </div>
 
@@ -1194,147 +1059,40 @@ const StudentsPage = () => {
                     </div>
                   </div>
 
-                    <div style={{ display: 'flex', gap: 8, marginTop: 12, width: '100%' }}>
-                      {student.status !== 'approved' && (
-                        <>
-                          <button 
-                            onClick={() => handleAccept(student)} 
-                            style={{ 
-                              flex: 1, 
-                              padding: '0.5rem', 
-                              display: 'flex', 
-                              flexDirection: 'column',
-                              alignItems: 'center', 
-                              justifyContent: 'center',
-                              gap: '2px',
-                              backgroundColor: '#dcfce7',
-                              color: '#166534',
-                              border: '1px solid #bbf7d0',
-                              borderRadius: '0.375rem'
-                            }} 
-                            title="Accept"
-                          >
-                            <Check size={16} />
-                            <span style={{fontSize: '0.7rem'}}>Accept</span>
-                          </button>
-                          <button 
-                            onClick={() => handleReject(student)}
-                            style={{ 
-                              flex: 1, 
-                              padding: '0.5rem', 
-                              display: 'flex', 
-                              flexDirection: 'column',
-                              alignItems: 'center', 
-                              justifyContent: 'center',
-                              gap: '2px',
-                              backgroundColor: '#fee2e2',
-                              color: '#991b1b',
-                              border: '1px solid #fecaca',
-                              borderRadius: '0.375rem'
-                            }} 
-                            title="Reject"
-                          >
-                            <X size={16} />
-                            <span style={{fontSize: '0.7rem'}}>Reject</span>
-                          </button>
-                        </>
-                      )}
-                      <button 
-                        onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile`, { state: { student } })} 
-                        style={{ 
-                          flex: 1, 
-                          padding: '0.5rem', 
-                          display: 'flex', 
-                          flexDirection: 'column',
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          gap: '2px',
-                          backgroundColor: '#e0f2fe',
-                          color: '#0369a1',
-                          border: '1px solid #bae6fd',
-                          borderRadius: '0.375rem'
-                        }} 
-                        title="Edit"
-                      >
-                        <Edit size={16} />
-                        <span style={{fontSize: '0.7rem'}}>Edit</span>
-                      </button>
-                      <button 
-                        onClick={() => handleDownload(student)} 
-                        style={{ 
-                          flex: 1, 
-                          padding: '0.5rem', 
-                          display: 'flex', 
-                          flexDirection: 'column',
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          gap: '2px',
-                          backgroundColor: '#f0f9ff',
-                          color: '#0c4a6e',
-                          border: '1px solid #e0f2fe',
-                          borderRadius: '0.375rem'
-                        }} 
-                        title="Download"
-                      >
-                        <Download size={16} />
-                        <span style={{fontSize: '0.7rem'}}>Download</span>
-                      </button>
-                      {student.status === 'approved' && (
-                        <button 
-                          onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?tab=payments`, { state: { student } })}
-                          style={{ 
-                            flex: 1, 
-                            padding: '0.5rem', 
-                            display: 'flex', 
-                            flexDirection: 'column',
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            gap: '2px',
-                            backgroundColor: '#f5f3ff',
-                            color: '#5b21b6',
-                            border: '1px solid #ede9fe',
-                            borderRadius: '0.375rem'
-                          }} 
-                          title="Payments"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="2" y="4" width="20" height="16" rx="2" />
-                            <line x1="2" y1="10" x2="22" y2="10" />
-                          </svg>
-                          <span style={{fontSize: '0.7rem'}}>Payments</span>
-                        </button>
-                      )}
-                      <button 
-                        onClick={async () => {
-                          if (!confirm('Delete this student? This cannot be undone.')) return;
-                          try {
-                            const token = localStorage.getItem('token');
-                            const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-                            if (!res.ok) throw new Error('Delete failed');
-                            setStudents(prev => prev.filter(s => s.id !== student.id));
-                          } catch (err) {
-                            console.error('Delete failed', err);
-                            alert('Failed to delete student');
-                          }
-                        }} 
-                        style={{ 
-                          flex: 1, 
-                          padding: '0.5rem', 
-                          display: 'flex', 
-                          flexDirection: 'column',
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          gap: '2px',
-                          backgroundColor: '#fef2f2',
-                          color: '#dc2626',
-                          border: '1px solid #fecaca',
-                          borderRadius: '0.375rem'
-                        }} 
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                        <span style={{fontSize: '0.7rem'}}>Delete</span>
-                      </button>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
+                    <button onClick={() => handleAccept(student)} style={{ ...styles.iconButton, ...styles.acceptButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Accept"><Check size={16} /></button>
+                    <button onClick={() => handleReject(student)} style={{ ...styles.iconButton, ...styles.rejectButton, visibility: student.status === 'approved' ? 'hidden' : 'visible' }} title="Reject"><X size={16} /></button>
+                    <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile`, { state: { student } })} style={{ ...styles.iconButton, ...styles.editButton }} title="Edit"><Edit size={16} /></button>
+                    <button onClick={() => handleDownload(student)} style={{ ...styles.iconButton, ...styles.downloadButton }} title="Download"><Download size={16} /></button>
+                    <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?mode=view`, { state: { student } })} style={{ ...styles.iconButton, ...styles.viewButton }} title="Preview"><Eye size={16} /></button>
+                    {student.status === 'approved' && (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', marginRight: 8 }}>
+                          <div style={{ fontSize: 12, color: '#6b7280', marginRight: 6 }}>Balance</div>
+                          <div style={{ 
+                            fontWeight: 600, 
+                            color: (student.currentBalance || 0) > 0 ? '#dc2626' : '#059669' 
+                          }}>
+                            {(student.currentBalance || 0) > 0 ? 
+                              `Due: ₹${Math.abs(student.currentBalance)} Dr` : 
+                              `Advance: ₹${Math.abs(student.currentBalance || 0)} Cr`}
+                          </div>
+                        </div>
+                        <button onClick={() => navigate(`/hostel/${hostelId}/students/${student.id}/profile?tab=payments`, { state: { student } })} style={{ ...styles.iconButton, ...styles.paymentButton }} title="Payments">💳</button>
+                      </>
+                    )}
+                    <button onClick={async () => {
+                      if (!confirm('Delete this student? This cannot be undone.')) return;
+                      try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch(`${API_BASE}/api/users/me/hostels/${hostelId}/students/${student.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                        if (!res.ok) throw new Error('Delete failed');
+                        setStudents(prev => prev.filter(s => s.id !== student.id));
+                      } catch (err) {
+                        console.error('Delete failed', err);
+                        alert('Failed to delete student');
+                      }
+                    }} style={{ ...styles.iconButton, ...styles.deleteButton }} title="Delete"><Trash2 size={16} /></button>
                   </div>
                 </div>
               );

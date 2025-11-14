@@ -1751,94 +1751,12 @@ const fetchHostels = async () => {
                 <div key={hostel.id} style={styles.hostelCard}>
                   <h4 style={{ margin: 0, fontSize: '1rem', color: '#111827' }}>{hostel.name}</h4>
                   <div style={{ color: '#6b7280', marginTop: 6 }}>{hostel.address || ''}</div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, width: '100%' }}>
-                    <button 
-                      onClick={() => handleViewStudents(hostel.id)} 
-                      className="btn btn-primary" 
-                      style={{ 
-                        ...styles.viewButton, 
-                        flex: 1, 
-                        padding: '0.5rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '4px',
-                        fontSize: '0.85rem',
-                        whiteSpace: 'nowrap'
-                      }}
-                      title="View Students"
-                    >
-                      <Users size={14} />
-                      <span>View</span>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
+                    <button onClick={() => handleViewStudents(hostel.id)} className="btn btn-primary" style={{ ...styles.viewButton, flex: 1 }}>
+                      View Students
                     </button>
-                    <button 
-                      onClick={() => generateQrForHostel(hostel)} 
-                      className="btn" 
-                      style={{ 
-                        flex: 1, 
-                        padding: '0.5rem', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        flexDirection: 'column',
-                        gap: '2px'
-                      }} 
-                      title="Generate QR Code"
-                    >
-                      <UserPlus size={16} />
-                      <span style={{fontSize: '0.7rem'}}>QR</span>
-                    </button>
-                    <button 
-                      onClick={() => { 
-                        setNewHostel({ 
-                          id: hostel.id, 
-                          name: hostel.name || '', 
-                          name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', 
-                          address: hostel.address || '', 
-                          address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '', 
-                          monthlyFee: (hostel.monthlyFee != null ? hostel.monthlyFee : 0), 
-                          monthlyFeeCurrency: hostel.monthlyFeeCurrency || 'INR' 
-                        }); 
-                        setShowAddHostel(true); 
-                      }} 
-                      className="btn" 
-                      style={{ 
-                        flex: 1, 
-                        padding: '0.5rem', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        flexDirection: 'column',
-                        gap: '2px'
-                      }} 
-                      title="Edit Hostel"
-                    >
-                      <Edit size={16} />
-                      <span style={{fontSize: '0.7rem'}}>Edit</span>
-                    </button>
-                    <button 
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this hostel? This action cannot be undone.')) {
-                          handleDeleteHostel(hostel.id);
-                        }
-                      }}
-                      className="btn" 
-                      style={{ 
-                        flex: 1, 
-                        padding: '0.5rem', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        flexDirection: 'column',
-                        gap: '2px',
-                        color: '#ef4444',
-                        borderColor: '#ef4444'
-                      }} 
-                      title="Delete Hostel"
-                    >
-                      <Trash2 size={16} />
-                      <span style={{fontSize: '0.7rem'}}>Delete</span>
-                    </button>
+                    <button onClick={() => generateQrForHostel(hostel)} className="btn" style={{ padding: '0.5rem' }} title="QR"><UserPlus size={16} /></button>
+                    <button onClick={() => { setNewHostel({ id: hostel.id, name: hostel.name || '', name_hi: hostel.name_hi || (hostel.name && hostel.name.hi) || '', address: hostel.address || '', address_hi: hostel.address_hi || (hostel.address && hostel.address.hi) || '', monthlyFee: (hostel.monthlyFee != null ? hostel.monthlyFee : 0), monthlyFeeCurrency: hostel.monthlyFeeCurrency || 'INR' }); setShowAddHostel(true); }} className="btn" style={{ padding: '0.5rem' }} title="Edit"><Edit size={16} /></button>
                   </div>
                 </div>
               ))}

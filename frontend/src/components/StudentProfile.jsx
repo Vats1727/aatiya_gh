@@ -681,37 +681,27 @@ const StudentProfile = () => {
 export default StudentProfile;
 
 // Common styles for consistent UI
-// Base styles with mobile-first approach
 const styles = {
   container: {
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%)',
-    padding: '0.75rem',
+    padding: '1.5rem',
     boxSizing: 'border-box',
     maxWidth: '1400px',
     margin: '0 auto',
-    width: '100%',
-    overflowX: 'hidden',
-    '@media (min-width: 481px)': {
-      padding: '1.25rem',
-    },
-    '@media (min-width: 1025px)': {
-      padding: '1.5rem',
-    },
   },
   header: {
     background: 'white',
-    padding: '0.75rem',
-    borderRadius: '0.5rem',
+    padding: '1.25rem 1.5rem',
+    borderRadius: '0.75rem',
     boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
-    marginBottom: '0.75rem',
+    marginBottom: '1.5rem',
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'stretch',
-    gap: '0.75rem',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '1rem',
     position: 'relative',
     zIndex: 10,
-    overflow: 'hidden',
     '&::before': {
       content: '""',
       position: 'absolute',
@@ -720,24 +710,8 @@ const styles = {
       right: 0,
       height: '4px',
       background: 'linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%)',
-      borderTopLeftRadius: '0.5rem',
-      borderTopRightRadius: '0.5rem',
-    },
-    '@media (min-width: 481px)': {
-      padding: '1rem',
-      borderRadius: '0.75rem',
-      marginBottom: '1rem',
-      '&::before': {
-        borderTopLeftRadius: '0.75rem',
-        borderTopRightRadius: '0.75rem',
-      },
-    },
-    '@media (min-width: 769px)': {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      padding: '1.25rem 1.5rem',
-      marginBottom: '1.5rem',
-      gap: '1.5rem',
+      borderTopLeftRadius: '0.9rem',
+      borderTopRightRadius: '0.9rem',
     },
   },
   backButton: {
@@ -774,15 +748,13 @@ const styles = {
     transition: 'all 0.15s ease',
   },
   title: {
-    fontSize: '1.1rem',
+    fontSize: '1.5rem',
     fontWeight: '600',
     color: '#1e293b',
     margin: 0,
-    lineHeight: 1.3,
-    wordBreak: 'break-word',
-    '@media (min-width: 481px)': {
-      fontSize: '1.25rem',
-    },
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
   },
   downloadHeaderButton: {
     display: 'inline-flex',
@@ -804,83 +776,28 @@ const styles = {
     },
   },
   headerDetails: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-    gap: '0.75rem',
-    width: '100%',
-    padding: '0.25rem 0',
-    '@media (max-width: 480px)': {
-      gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: '0.5rem',
-    },
-    '@media (min-width: 1024px)': {
-      gridTemplateColumns: 'repeat(4, 1fr)',
-    },
-    '& > div': {
-      minWidth: 0, // Prevents overflow
-    },
-    '& input': {
-      width: '100%',
-      maxWidth: '100%',
-      fontSize: '0.875rem',
-      padding: '0.375rem 0.5rem',
-    },
+    display: 'flex',
+    gap: '1.25rem',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    paddingTop: 6,
   },
   headerDetailItem: {
     display: 'flex',
     flexDirection: 'column',
-    minWidth: 0, // Allows text truncation
+    minWidth: 140,
+    marginRight: 8,
   },
   valueSmall: {
-    fontSize: '0.9375rem',
-    fontWeight: '500',
+    fontSize: '1rem',
+    fontWeight: 700,
     color: '#111827',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    '@media (max-width: 480px)': {
-      fontSize: '0.875rem',
-    },
   },
   headerActions: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
+    display: 'flex',
     gap: '0.5rem',
-    width: '100%',
-    marginTop: '0.5rem',
-    '& > button': {
-      width: '100%',
-      padding: '0.5rem',
-      fontSize: '0.8125rem',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '0.25rem',
-    },
-    '& > button svg': {
-      flexShrink: 0,
-    },
-    '@media (min-width: 481px)': {
-      gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-      '& > button': {
-        padding: '0.5rem 0.75rem',
-        fontSize: '0.8125rem',
-      },
-    },
-    '@media (min-width: 769px)': {
-      display: 'flex',
-      flexWrap: 'wrap',
-      width: 'auto',
-      marginTop: 0,
-      '& > button': {
-        width: 'auto',
-        padding: '0.5rem 0.75rem',
-        fontSize: '0.875rem',
-      },
-    },
+    alignItems: 'center',
+    flexShrink: 0,
   },
   card: {
     backgroundColor: 'white',
@@ -891,22 +808,9 @@ const styles = {
   },
   detailsGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr',
-    gap: '1rem',
-    marginBottom: '1rem',
-    '& > div': {
-      minWidth: 0, // Prevents overflow
-      wordBreak: 'break-word',
-    },
-    '@media (min-width: 481px)': {
-      gap: '1.25rem',
-      marginBottom: '1.25rem',
-    },
-    '@media (min-width: 769px)': {
-      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-      gap: '1.5rem',
-      marginBottom: '1.5rem',
-    },
+    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+    gap: '1.5rem',
+    marginBottom: '1.5rem',
   },
   label: {
     fontSize: '0.8125rem',
@@ -1000,24 +904,11 @@ const styles = {
   tabsContainer: {
     display: 'flex',
     gap: '0.5rem',
-    marginBottom: '1rem',
+    marginBottom: '1.5rem',
     borderBottom: '2px solid #e5e7eb',
-    overflowX: 'auto',
-    paddingBottom: '2px',
-    scrollbarWidth: 'none',
-    msOverflowStyle: 'none',
-    '&::-webkit-scrollbar': {
-      display: 'none',
-    },
-    '@media (min-width: 481px)': {
-      marginBottom: '1.25rem',
-    },
-    '@media (min-width: 769px)': {
-      marginBottom: '1.5rem',
-    },
   },
   tabButton: {
-    padding: '0.5rem 0.75rem',
+    padding: '0.75rem 1rem',
     background: 'transparent',
     border: 'none',
     borderBottom: '3px solid transparent',
@@ -1025,14 +916,8 @@ const styles = {
     fontWeight: '500',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
-    whiteSpace: 'nowrap',
-    fontSize: '0.875rem',
     '&:hover': {
       color: '#374151',
-    },
-    '@media (min-width: 481px)': {
-      padding: '0.75rem 1rem',
-      fontSize: '1rem',
     },
   },
   tabActive: {
@@ -1041,25 +926,9 @@ const styles = {
   },
   tabTitle: {
     fontSize: '1.125rem',
-    fontWeight: '600',
-    color: '#1e293b',
+    fontWeight: '700',
+    color: '#111827',
     margin: '0 0 1rem 0',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: '0.5rem',
-    '@media (min-width: 481px)': {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: '0.75rem',
-      marginBottom: '1.25rem',
-    },
-    '@media (min-width: 769px)': {
-      fontSize: '1.25rem',
-      marginBottom: '1.5rem',
-      gap: '1rem',
-    },
   },
   editTabButton: {
     padding: '0.5rem 1rem',
@@ -1076,34 +945,17 @@ const styles = {
     },
   },
   previewFrame: {
-    width: '100%',
-    height: { xs: '400px', sm: '560px' },
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.5rem',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0.75rem',
     overflow: 'hidden',
-    backgroundColor: '#f8fafc',
-    iframe: {
-      width: '100%',
-      height: '100%',
-      border: 'none',
-    },
+    background: '#f9fafb',
   },
   docControls: {
     display: 'flex',
-    flexDirection: 'column',
     gap: '0.75rem',
-    alignItems: 'stretch',
+    alignItems: 'center',
     marginBottom: '1.5rem',
-    '& > *': {
-      width: '100%',
-    },
-    '@media (min-width: 481px)': {
-      flexDirection: 'row',
-      alignItems: 'center',
-      '& > *': {
-        width: 'auto',
-      },
-    },
+    flexWrap: 'wrap',
   },
   iconButton: {
     display: 'inline-flex',
@@ -1118,31 +970,12 @@ const styles = {
     color: '#374151',
   },
   docSelect: {
-    padding: '0.5rem 2.5rem 0.5rem 0.75rem',
-    borderRadius: '0.375rem',
-    border: '1px solid #d1d5db',
+    padding: '0.625rem 0.875rem',
+    borderRadius: '0.5rem',
+    border: '1px solid #e5e7eb',
     backgroundColor: 'white',
     fontSize: '0.875rem',
-    color: '#374151',
     cursor: 'pointer',
-    minWidth: '100%',
-    width: '100%',
-    appearance: 'none',
-    '@media (min-width: 481px)': {
-      minWidth: '200px',
-      width: 'auto',
-      fontSize: '0.9375rem',
-    },
-    backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M6 8l4 4 4-4\'/%3e%3c/svg%3e")',
-    backgroundPosition: 'right 0.5rem center',
-    backgroundRepeat: 'no-repeat',
-    backgroundSize: '1.5em 1.5em',
-    '&:focus': {
-      outline: 'none',
-      ring: '2px',
-      ringColor: '#3b82f6',
-      borderColor: '#3b82f6',
-    },
   },
   addOtherContainer: {
     display: 'flex',
@@ -1155,43 +988,22 @@ const styles = {
     fontSize: '0.875rem',
   },
   fileUploadLabel: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.5rem',
-    padding: '0.5rem 1rem',
-    borderRadius: '0.375rem',
-    backgroundColor: '#3b82f6',
-    color: 'white',
+    padding: '0.625rem 1rem',
+    background: '#f3f4f6',
+    borderRadius: '0.5rem',
+    cursor: 'pointer',
     fontWeight: '500',
     fontSize: '0.875rem',
-    cursor: 'pointer',
+    border: '1px solid #d1d5db',
     transition: 'all 0.2s ease',
-    textAlign: 'center',
-    '@media (min-width: 481px)': {
-      fontSize: '0.9375rem',
-    },
     '&:hover': {
-      backgroundColor: '#2563eb',
-      transform: 'translateY(-1px)',
+      background: '#e5e7eb',
     },
   },
   docGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr',
-    gap: '0.75rem',
-    marginTop: '1rem',
-    padding: '0.25rem',
-    '@media (min-width: 481px)': {
-      gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: '1rem',
-      padding: 0,
-    },
-    '@media (min-width: 1025px)': {
-      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-      gap: '1.5rem',
-      marginTop: '1.5rem',
-    },
+    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+    gap: '1rem',
   },
   docItem: {
     position: 'relative',
@@ -1199,18 +1011,14 @@ const styles = {
   },
   docImage: {
     width: '100%',
-    height: '160px',
+    height: '100px',
     objectFit: 'cover',
-    cursor: 'pointer',
-    flexGrow: 1,
     borderRadius: '0.5rem',
     border: '1px solid #e5e7eb',
-    backgroundColor: '#f9fafb',
-    '@media (min-width: 481px)': {
-      height: '180px',
-    },
-    '@media (min-width: 1025px)': {
-      height: '200px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
     },
   },
   docDeleteBtn: {
@@ -1236,19 +1044,12 @@ const styles = {
     },
   },
   docLabel: {
-    padding: '0.5rem 0.25rem',
-    textAlign: 'center',
-    fontSize: '0.8125rem',
-    fontWeight: '500',
-    color: '#374151',
+    fontSize: '0.75rem',
+    color: '#6b7280',
+    marginTop: '0.5rem',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    lineHeight: '1.3',
-    '@media (min-width: 481px)': {
-      fontSize: '0.875rem',
-      padding: '0.5rem 0.25rem',
-    },
   },
   emptyState: {
     gridColumn: '1 / -1',
