@@ -753,8 +753,8 @@ const StudentPayments = () => {
                             <th style={styles.th}>Date</th>
                             <th style={styles.th}>Mode</th>
                             <th style={styles.th}>Remarks</th>
-                            <th style={{ ...styles.th, textAlign: 'right' }}>Debit</th>
-                            <th style={{ ...styles.th, textAlign: 'right' }}>Credit</th>
+                            <th style={{ ...styles.th, textAlign: 'right' }}>Debit (₹)</th>
+                            <th style={{ ...styles.th, textAlign: 'right' }}>Credit (₹)</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -772,7 +772,7 @@ const StudentPayments = () => {
                               ) : 'Rent'}
                             </td>
                             <td style={{ textAlign: 'right', color: '#dc2626' }}>
-                              {formatCurrency(usedFee)}
+                              {formatNumber(usedFee)}
                             </td>
                             <td style={{ textAlign: 'right' }}>—</td>
                           </tr>
@@ -782,10 +782,10 @@ const StudentPayments = () => {
                                 <td>{payment.paymentMode}</td>
                                 <td>{(formatPaymentRemarks(payment)) || '—'}</td>
                                 <td style={{ textAlign: 'right', color: payment.type === 'debit' ? '#dc2626' : undefined }}>
-                                  {payment.type === 'debit' ? formatCurrency(payment.amount) : ''}
+                                  {payment.type === 'debit' ? formatNumber(payment.amount) : ''}
                                 </td>
                                 <td style={{ textAlign: 'right', color: payment.type === 'credit' ? '#059669' : undefined }}>
-                                  {payment.type === 'credit' ? formatCurrency(payment.amount) : ''}
+                                  {payment.type === 'credit' ? formatNumber(payment.amount) : ''}
                                 </td>
                               </tr>
                           ))}
@@ -854,7 +854,7 @@ const StudentPayments = () => {
                               color: payment.type === 'debit' ? '#dc2626' : '#059669',
                               fontWeight: '600'
                             }}>
-                              {payment.type === 'debit' ? `Debit: ${formatCurrency(payment.amount)}` : `Credit: ${formatCurrency(payment.amount)}`}
+                              {payment.type === 'debit' ? `Debit: ${formatNumber(payment.amount)}` : `Credit: ${formatNumber(payment.amount)}`}
                             </div>
                           </div>
                         </div>
